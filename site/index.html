@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Panda 🐼 — a cute YouTube music bot for TeamSpeak 6</title>
+<meta name="description" content="Panda is a tiny, open-source YouTube music bot for TeamSpeak 6 with a lovely web panel, a song library and a one-line installer.">
+<meta property="og:title" content="Panda 🐼 — YouTube music bot for TeamSpeak 6">
+<meta property="og:description" content="Tiny, cute and open source. Song library, web panel, one-line install.">
+<meta property="og:image" content="https://kaanbahasever.github.io/panda/img/now-playing.png">
+<meta name="theme-color" content="#2bbf6f">
+<link rel="icon" href="img/logo.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="img/avatar.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="top">
+  <a class="brand" href="#"><img src="img/logo.svg" alt="" width="34" height="34"> Panda</a>
+  <nav>
+    <a href="#features" data-i18n="nav.features">Features</a>
+    <a href="#install" data-i18n="nav.install">Install</a>
+    <a href="#commands" data-i18n="nav.commands">Commands</a>
+    <a href="#faq" data-i18n="nav.faq">FAQ</a>
+  </nav>
+  <button id="lang" class="pill" type="button" aria-label="Türkçe / English">TR</button>
+</header>
+
+<main>
+  <section class="hero">
+    <img class="mascot" src="img/logo.svg" alt="Panda mascot with headphones" width="180" height="180">
+    <h1>Panda <span class="wave">🐼</span></h1>
+    <p class="tagline" data-i18n="hero.tagline">A tiny, cute YouTube music bot for <b>TeamSpeak 6</b> — with a lovely web panel.</p>
+    <div class="chips">
+      <span class="chip" data-i18n="chip.ts6">Works with TeamSpeak 6</span>
+      <span class="chip" data-i18n="chip.oss">Open source</span>
+      <span class="chip" data-i18n="chip.key">No API key</span>
+      <span class="chip" data-i18n="chip.light">~130 MB RAM</span>
+    </div>
+    <div class="cta">
+      <a class="btn primary" href="#install" data-i18n="hero.start">Get started</a>
+      <a class="btn" href="https://github.com/KaanBahaSever/panda"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"/></svg> GitHub</a>
+      <a class="btn" href="https://github.com/KaanBahaSever/panda/releases/latest" data-i18n="hero.download">Download</a>
+    </div>
+    <figure class="shot">
+      <div class="frame"><span></span><span></span><span></span></div>
+      <img src="img/now-playing.png" alt="Panda's web panel playing a song" width="800" height="500">
+    </figure>
+  </section>
+
+  <section id="features" class="section">
+    <h2 data-i18n="features.title">Why Panda?</h2>
+    <p class="lead" data-i18n="features.lead">SinusBot can't join TeamSpeak 6 servers. Panda can — and it's small, friendly and free.</p>
+    <div class="grid">
+      <article class="card"><div class="ico">🐼</div><h3 data-i18n="f1.t">Made for TeamSpeak 6</h3><p data-i18n="f1.d">Talks to the server directly. No TeamSpeak client, no X server, no plugins running in the background. TS3 servers work too.</p></article>
+      <article class="card"><div class="ico">📚</div><h3 data-i18n="f2.t">A song library</h3><p data-i18n="f2.d">Every requested song is saved. Favourites start instantly and never hit YouTube again; when it's full, the least played songs make room.</p></article>
+      <article class="card"><div class="ico">⚡</div><h3 data-i18n="f3.t">No waiting</h3><p data-i18n="f3.d">Upcoming songs are downloaded ahead of time, so the next song starts the moment the last one ends.</p></article>
+      <article class="card"><div class="ico">🎵</div><h3 data-i18n="f4.t">Any YouTube link</h3><p data-i18n="f4.d">Song names, youtube.com, youtu.be, YouTube Music, Shorts. Playlist links add just one song instead of loading the whole list.</p></article>
+      <article class="card"><div class="ico">🌐</div><h3 data-i18n="f5.t">A panel you'll like</h3><p data-i18n="f5.d">Now playing, drag &amp; drop queue, search, library, history, volume, loop and seek. Light and dark, English and Turkish, works on phones.</p></article>
+      <article class="card"><div class="ico">💬</div><h3 data-i18n="f6.t">Chat commands</h3><p data-i18n="f6.d"><code>!play</code>, <code>!skip</code>, <code>!queue</code>… in English or Turkish. Limit who can use them with TeamSpeak UIDs or server groups.</p></article>
+      <article class="card"><div class="ico">🍪</div><h3 data-i18n="f7.t">Bot check? Solved.</h3><p data-i18n="f7.d">When YouTube asks to "confirm you're not a bot", paste your cookies in the panel and carry on.</p></article>
+      <article class="card"><div class="ico">📦</div><h3 data-i18n="f8.t">One-line install</h3><p data-i18n="f8.d">One command sets up everything on Linux and keeps yt-dlp up to date. Docker, Windows and macOS builds too.</p></article>
+    </div>
+  </section>
+
+  <section class="section split">
+    <div>
+      <h2 data-i18n="lib.title">Your songs, saved</h2>
+      <p data-i18n="lib.p1">Panda keeps every song you ask for, up to the size you choose (5 GB by default). Saved songs show up in the panel with their play counts, start without any delay and are found by name: <code>!play bohemian</code> plays your saved <i>Bohemian Rhapsody</i>.</p>
+      <p data-i18n="lib.p2">When the library is full, the songs you listened to the least are removed first, so your favourites always stay.</p>
+    </div>
+    <figure class="shot small"><img src="img/library.png" alt="The song library in dark mode" width="800" height="500" loading="lazy"></figure>
+  </section>
+
+  <section id="install" class="section">
+    <h2 data-i18n="install.title">Install in one line</h2>
+    <p class="lead" data-i18n="install.lead">On a Linux server (Ubuntu, Debian, Fedora, Arch; x64 or ARM):</p>
+    <div class="code"><pre><code id="cmd">curl -fsSL https://raw.githubusercontent.com/KaanBahaSever/panda/main/scripts/install.sh | sudo bash</code></pre><button class="copy" type="button" data-copy="cmd" data-i18n="copy">Copy</button></div>
+    <ol class="steps">
+      <li data-i18n="install.s1">The installer asks for your TeamSpeak server address and prints the panel address and password.</li>
+      <li data-i18n="install.s2">Open the panel and set the server password and channel under <b>Settings</b>.</li>
+      <li data-i18n="install.s3">Write <code>!play</code> and a song in the bot's channel. That's it! 🎶</li>
+    </ol>
+    <div class="alt">
+      <details>
+        <summary>Docker</summary>
+        <div class="code"><pre><code id="docker">git clone https://github.com/KaanBahaSever/panda && cd panda
+docker compose up -d
+docker compose logs panda   # panel password</code></pre><button class="copy" type="button" data-copy="docker" data-i18n="copy">Copy</button></div>
+      </details>
+      <details>
+        <summary>Windows / macOS</summary>
+        <p data-i18n="install.desktop">Download Panda from the <a href="https://github.com/KaanBahaSever/panda/releases/latest">releases page</a>, install <a href="https://ffmpeg.org/download.html">ffmpeg</a>, <a href="https://github.com/yt-dlp/yt-dlp#installation">yt-dlp</a> and <a href="https://deno.com/">deno</a>, then run <code>panda</code>.</p>
+      </details>
+    </div>
+    <figure class="shot small center"><img src="img/settings.png" alt="Panda's settings" width="800" height="500" loading="lazy"></figure>
+  </section>
+
+  <section id="commands" class="section">
+    <h2 data-i18n="cmd.title">Chat commands</h2>
+    <p class="lead" data-i18n="cmd.lead">Write them in the bot's channel or in a private message. Turkish versions work too.</p>
+    <div class="table">
+      <div><code>!play</code><code>!çal</code><span data-i18n="cmd.play">Play a song name or link, or add it to the queue</span></div>
+      <div><code>!skip</code><code>!geç</code><span data-i18n="cmd.skip">Next song</span></div>
+      <div><code>!stop</code><code>!dur</code><span data-i18n="cmd.stop">Stop and clear the queue</span></div>
+      <div><code>!pause</code><code>!duraklat</code><span data-i18n="cmd.pause">Pause (and <code>!resume</code> to continue)</span></div>
+      <div><code>!queue</code><code>!sıra</code><span data-i18n="cmd.queue">Show the queue</span></div>
+      <div><code>!vol 40</code><code>!ses 40</code><span data-i18n="cmd.vol">Change the volume</span></div>
+      <div><code>!loop</code><code>!tekrar</code><span data-i18n="cmd.loop">Repeat one song or the whole queue</span></div>
+      <div><code>!join</code><code>!gel</code><span data-i18n="cmd.join">Come to my channel</span></div>
+    </div>
+  </section>
+
+  <section id="faq" class="section">
+    <h2 data-i18n="faq.title">Questions</h2>
+    <details class="faq"><summary data-i18n="faq.q1">Do I need a YouTube API key?</summary><p data-i18n="faq.a1">No. Panda uses yt-dlp, which reads YouTube like a browser does: no API key, no Google project, no daily quota.</p></details>
+    <details class="faq"><summary data-i18n="faq.q2">Why can't SinusBot join my TeamSpeak 6 server?</summary><p data-i18n="faq.a2">TeamSpeak 6 servers only accept TeamSpeak 3 clients from version 3.6.0, and SinusBot runs an older one. Panda speaks the protocol itself and understands the new license data that TeamSpeak 6 sends while connecting.</p></details>
+    <details class="faq"><summary data-i18n="faq.q3">YouTube says "confirm you're not a bot"</summary><p data-i18n="faq.a3">That happens on some server IPs. Log in to YouTube in a private window, export the cookies with a cookies.txt extension, close the window and paste them in Settings → YouTube cookies.</p></details>
+    <details class="faq"><summary data-i18n="faq.q4">How much does it need?</summary><p data-i18n="faq.a4">Very little: the bot uses about 130 MB of RAM, and yt-dlp and ffmpeg only run while a song plays. A small VPS next to your TeamSpeak server is plenty.</p></details>
+    <details class="faq"><summary data-i18n="faq.q5">Is it free?</summary><p data-i18n="faq.a5">Yes, Panda is open source under the Open Software License 3.0. Ideas, bug reports and pull requests are welcome on GitHub.</p></details>
+  </section>
+</main>
+
+<footer class="foot">
+  <img src="img/avatar.png" alt="" width="40" height="40">
+  <p><span data-i18n="foot.made">Made with 🎧 and bamboo.</span> <a href="https://github.com/KaanBahaSever/panda">GitHub</a> · <a href="https://github.com/KaanBahaSever/panda/blob/main/LICENSE">OSL-3.0</a></p>
+  <p class="small" data-i18n="foot.note">Panda is not affiliated with TeamSpeak or YouTube.</p>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>

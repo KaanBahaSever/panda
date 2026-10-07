@@ -6,6 +6,7 @@
 
 <p align="center">
   A tiny, cute YouTube music bot for <b>TeamSpeak 6</b> — with a lovely web panel.<br>
+  <a href="https://kaanbahasever.github.io/panda/">Website</a> ·
   <a href="README.tr.md">Türkçe</a>
 </p>
 

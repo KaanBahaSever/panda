@@ -6,6 +6,7 @@
 
 <p align="center">
   <b>TeamSpeak 6</b> için minik, tatlı bir YouTube müzik botu — şirin bir web paneliyle.<br>
+  <a href="https://kaanbahasever.github.io/panda/">Web sitesi</a> ·
   <a href="README.md">English</a>
 </p>
 
