@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#dff8ea"/><stop offset="1" stop-color="#b7efd0"/></linearGradient></defs>
+  <circle cx="256" cy="256" r="256" fill="url(#bg)"/>
+  <g transform="translate(36 40) scale(.86)">
+    <defs>
+      <radialGradient id="face" cx="50%" cy="38%" r="65%">
+        <stop offset="0" stop-color="#ffffff"/>
+        <stop offset="1" stop-color="#eef1f4"/>
+      </radialGradient>
+      <linearGradient id="cup" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#4fd98f"/>
+        <stop offset="1" stop-color="#27b367"/>
+      </linearGradient>
+    </defs>
+  
+    <!-- headphone band -->
+    <path d="M84 300 C 84 26, 428 26, 428 300" fill="none" stroke="#2bbf6f" stroke-width="26" stroke-linecap="round"/>
+  
+    <!-- ears -->
+    <circle cx="146" cy="138" r="62" fill="#26262e"/>
+    <circle cx="366" cy="138" r="62" fill="#26262e"/>
+    <circle cx="146" cy="138" r="30" fill="#3a3a44"/>
+    <circle cx="366" cy="138" r="30" fill="#3a3a44"/>
+  
+    <!-- head -->
+    <ellipse cx="256" cy="296" rx="180" ry="168" fill="url(#face)" stroke="#26262e" stroke-width="10"/>
+  
+    <!-- headphone cups -->
+    <rect x="52" y="236" width="64" height="122" rx="30" fill="url(#cup)" stroke="#1e8f52" stroke-width="8"/>
+    <rect x="396" y="236" width="64" height="122" rx="30" fill="url(#cup)" stroke="#1e8f52" stroke-width="8"/>
+    <rect x="70" y="262" width="18" height="70" rx="9" fill="#ffffff" opacity=".35"/>
+    <rect x="414" y="262" width="18" height="70" rx="9" fill="#ffffff" opacity=".35"/>
+  
+    <!-- eye patches -->
+    <ellipse cx="190" cy="280" rx="50" ry="62" transform="rotate(-28 190 280)" fill="#26262e"/>
+    <ellipse cx="322" cy="280" rx="50" ry="62" transform="rotate(28 322 280)" fill="#26262e"/>
+  
+    <!-- eyes -->
+    <circle cx="198" cy="276" r="21" fill="#ffffff"/>
+    <circle cx="314" cy="276" r="21" fill="#ffffff"/>
+    <circle cx="201" cy="279" r="13" fill="#26262e"/>
+    <circle cx="311" cy="279" r="13" fill="#26262e"/>
+    <circle cx="206" cy="272" r="5" fill="#ffffff"/>
+    <circle cx="316" cy="272" r="5" fill="#ffffff"/>
+  
+    <!-- cheeks -->
+    <ellipse cx="160" cy="352" rx="26" ry="15" fill="#ff8fab" opacity=".75"/>
+    <ellipse cx="352" cy="352" rx="26" ry="15" fill="#ff8fab" opacity=".75"/>
+  
+    <!-- nose and smile -->
+    <path d="M238 322 Q256 312 274 322 Q272 340 256 344 Q240 340 238 322 Z" fill="#26262e"/>
+    <path d="M232 360 Q244 374 256 360 Q268 374 280 360" fill="none" stroke="#26262e" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+  
+    <!-- music note -->
+    <g fill="#2bbf6f" stroke="#1e8f52" stroke-width="4">
+      <ellipse cx="447" cy="112" rx="21" ry="16" transform="rotate(-22 447 112)"/>
+      <path d="M464 108 L464 34 Q488 44 494 66 Q482 58 470 58 L470 108 Z" stroke-linejoin="round"/>
+    </g>
+  </g>
+</svg>

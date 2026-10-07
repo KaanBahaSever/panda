@@ -1,0 +1,96 @@
+diff --git a/TSLib/Full/License.cs b/TSLib/Full/License.cs
+index 92ab27f..51f0129 100644
+--- a/TSLib/Full/License.cs
++++ b/TSLib/Full/License.cs
+@@ -106,6 +106,25 @@ public static R<(LicenseBlock block, int read), string> Parse(ReadOnlySpan<byte>
+ 				read = 6 + nullStr.read;
+ 				break;
+ 
++			case 8:
++				// TS5/TS6 server license: 1 byte license type, 1 byte property count,
++				// then each property as 1 byte length + data (layout as in tsclientlib).
++				var props = data.Slice(MinBlockLen);
++				if (props.Length < 2)
++					return "License too short";
++				int pos = 2;
++				for (int i = 0; i < props[1]; i++)
++				{
++					if (pos >= props.Length)
++						return "Missing TS5 license property";
++					pos += 1 + props[pos];
++					if (pos > props.Length)
++						return "Cut off TS5 license property";
++				}
++				block = new Ts5ServerLicenseBlock(props[0]);
++				read = pos;
++				break;
++
+ 			case 32:
+ 				block = new EphemeralLicenseBlock();
+ 				read = 0;
+@@ -212,6 +231,17 @@ public ServerLicenseBlock(string issuer, ServerLicenseType licenseType)
+ 		}
+ 	}
+ 
++	public class Ts5ServerLicenseBlock : LicenseBlock
++	{
++		public override ChainBlockType Type => ChainBlockType.Ts5Server;
++		public byte LicenseType { get; }
++
++		public Ts5ServerLicenseBlock(byte licenseType)
++		{
++			LicenseType = licenseType;
++		}
++	}
++
+ 	public class EphemeralLicenseBlock : LicenseBlock
+ 	{
+ 		public override ChainBlockType Type => ChainBlockType.Ephemeral;
+@@ -227,6 +257,7 @@ public enum ChainBlockType : byte
+ 		//Token = 4,
+ 		//LicenseSign = 5,
+ 		//MyTsIdSign = 6,
++		Ts5Server = 8,
+ 		Ephemeral = 32,
+ 	}
+ 
+diff --git a/TSLib/Generated/M2B.cs b/TSLib/Generated/M2B.cs
+index b625460..f662e35 100644
+--- a/TSLib/Generated/M2B.cs
++++ b/TSLib/Generated/M2B.cs
+@@ -83,10 +83,12 @@ public void UpdateInitServer(InitServer msg)
+ 			{ var tmpa = msg.ServerIp; if (tmpa != null) { obj.Ips.Clear(); obj.Ips.UnionWith(tmpa); } }
+ 			{ var tmpv = msg.MaxClients; if (tmpv != null) obj.MaxClients = (u16)tmpv; }
+ 			{ var tmpv = msg.ServerName; if (tmpv != null) obj.Name = (str)tmpv; }
+-			{ var tmpv = msg.Name; if (tmpv != null) obj.Name = (str)tmpv; }
++			// TS6 sends the client's own client_nickname here too; it must not overwrite the server name.
++			// { var tmpv = msg.Name; if (tmpv != null) obj.Name = (str)tmpv; }
+ 			{ var tmpv = msg.Nickname; if (tmpv != null) obj.Nickname = (str)tmpv; }
+ 			{ var tmpv = msg.ServerPhoneticName; if (tmpv != null) obj.PhoneticName = (str)tmpv; }
+-			{ var tmpv = msg.PhoneticName; if (tmpv != null) obj.PhoneticName = (str)tmpv; }
++			// TS6 sends the client's own client_nickname here too; it must not overwrite the server name.
++			// { var tmpv = msg.PhoneticName; if (tmpv != null) obj.PhoneticName = (str)tmpv; }
+ 			{ var tmpv = msg.ServerPlatform; if (tmpv != null) obj.Platform = (str)tmpv; }
+ 			{ var tmpv = msg.PrioritySpeakerDimmModificator; if (tmpv != null) obj.PrioritySpeakerDimmModificator = (f32)tmpv; }
+ 			{ var tmpv = msg.ProtocolVersion; if (tmpv != null) obj.ProtocolVersion = (u16)tmpv; }
+diff --git a/TSLib/TSLib.csproj b/TSLib/TSLib.csproj
+index 8def056..1626bd4 100644
+--- a/TSLib/TSLib.csproj
++++ b/TSLib/TSLib.csproj
+@@ -1,7 +1,7 @@
+ <Project Sdk="Microsoft.NET.Sdk">
+   <PropertyGroup>
+     <OutputType>Library</OutputType>
+-    <TargetFrameworks>netcoreapp3.1;netstandard2.0;netstandard2.1</TargetFrameworks>
++    <TargetFramework>netstandard2.1</TargetFramework>
+     <LangVersion>8.0</LangVersion>
+     <RootNamespace>TSLib</RootNamespace>
+     <AssemblyName>TSLib</AssemblyName>
+@@ -43,7 +43,6 @@
+     <PackageReference Include="Portable.BouncyCastle" Version="1.8.6.7" />
+     <PackageReference Include="Splamy.Ed25519.Toolkit" Version="1.0.3" />
+     <PackageReference Include="System.IO.Pipelines" Version="4.7.2" />
+-    <PackageReference Condition="'$(TargetFramework)' == 'netstandard2.0'" Include="System.Memory" Version="4.5.4" />
+   </ItemGroup>
+   <ItemGroup>
+     <None Include="ReSpeak.png" Pack="true" PackagePath="\" />

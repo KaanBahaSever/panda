@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>panda</AssemblyName>
+    <RootNamespace>Panda</RootNamespace>
+    <Version>0.1.0</Version>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <!-- TSLib's NLog asks for en-US; let that resolve to the invariant culture. -->
+    <PredefinedCulturesOnly>false</PredefinedCulturesOnly>
+    <GenerateEmbeddedFilesManifest>true</GenerateEmbeddedFilesManifest>
+    <!-- The panel is embedded so a release is a single file. -->
+    <EnableDefaultContentItems>false</EnableDefaultContentItems>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <DebuggerSupport>false</DebuggerSupport>
+    <!-- A music bot needs little memory; the workstation GC keeps it small. -->
+    <ServerGarbageCollection>false</ServerGarbageCollection>
+    <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="wwwroot\**\*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Concentus" Version="2.2.2" />
+    <PackageReference Include="Microsoft.Extensions.FileProviders.Embedded" Version="8.0.10" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\lib\TSLib\TSLib.csproj" />
+  </ItemGroup>
+
+</Project>

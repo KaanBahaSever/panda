@@ -1,0 +1,10 @@
+services:
+  panda:
+    build: .
+    container_name: panda
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/data
+    # The first start prints the panel password: docker compose logs panda

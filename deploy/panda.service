@@ -1,0 +1,26 @@
+[Unit]
+Description=Panda - YouTube music bot for TeamSpeak
+Documentation=https://github.com/KaanBahaSever/panda
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=panda
+Group=panda
+WorkingDirectory=/var/lib/panda
+Environment=HOME=/var/lib/panda
+Environment=PATH=/opt/panda/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=/opt/panda/panda --data /var/lib/panda
+Restart=on-failure
+RestartSec=5
+
+# Hardening: Panda only needs its data folder.
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+ReadWritePaths=/var/lib/panda
+
+[Install]
+WantedBy=multi-user.target

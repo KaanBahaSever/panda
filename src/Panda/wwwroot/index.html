@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#2bbf6f">
+<title>Panda 🐼</title>
+<link rel="icon" type="image/png" href="img/favicon.png">
+<link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+<link rel="stylesheet" href="style.css">
+<script>
+  // Set the theme before first paint to avoid a flash.
+  try { document.documentElement.dataset.theme = localStorage.getItem('panda.theme') ||
+    (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'); } catch (e) {}
+</script>
+<script src="app.js" defer></script>
+</head>
+<body>
+
+<!-- Icon sprite (inline, no external requests) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.8v14.4a1 1 0 0 0 1.5.86l11.7-7.2a1 1 0 0 0 0-1.72L8.5 3.94A1 1 0 0 0 7 4.8z" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16" rx="1.3" fill="currentColor" stroke="none"/><rect x="14" y="4" width="4" height="16" rx="1.3" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-skip" viewBox="0 0 24 24"><path d="M5 5.2v13.6a1 1 0 0 0 1.5.85L16 13a1 1 0 0 0 0-1.7L6.5 4.35A1 1 0 0 0 5 5.2z" fill="currentColor" stroke="none"/><path d="M19 5v14"/></symbol>
+    <symbol id="i-stop" viewBox="0 0 24 24"><rect x="5.5" y="5.5" width="13" height="13" rx="2.5" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-repeat" viewBox="0 0 24 24"><path d="M17 2l4 4-4 4"/><path d="M3 11V9a3 3 0 0 1 3-3h15"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a3 3 0 0 1-3 3H3"/></symbol>
+    <symbol id="i-repeat1" viewBox="0 0 24 24"><path d="M17 2l4 4-4 4"/><path d="M3 11V9a3 3 0 0 1 3-3h15"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a3 3 0 0 1-3 3H3"/><path d="M11 10.5l1.5-1v5"/></symbol>
+    <symbol id="i-shuffle" viewBox="0 0 24 24"><path d="M16 3h5v5"/><path d="M4 20L21 3"/><path d="M21 16v5h-5"/><path d="M15 15l6 6"/><path d="M4 4l5 5"/></symbol>
+    <symbol id="i-vol" viewBox="0 0 24 24"><path d="M11 5L6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></symbol>
+    <symbol id="i-mute" viewBox="0 0 24 24"><path d="M11 5L6 9H3v6h3l5 4z"/><path d="M22 9l-6 6"/><path d="M16 9l6 6"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20.5 13.2A8.5 8.5 0 1 1 10.8 3.5a6.6 6.6 0 0 0 9.7 9.7z"/></symbol>
+    <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M2.5 12h19"/><path d="M12 2.5a14 14 0 0 1 0 19a14 14 0 0 1 0-19z"/></symbol>
+    <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></symbol>
+    <symbol id="i-logout" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20.5 20.5l-4.3-4.3"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></symbol>
+    <symbol id="i-up" viewBox="0 0 24 24"><path d="M18 15l-6-6-6 6"/></symbol>
+    <symbol id="i-down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+    <symbol id="i-grip" viewBox="0 0 24 24"><g fill="currentColor" stroke="none"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></g></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4L21 8"/><path d="M21 3v5h-5"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+    <symbol id="i-phones" viewBox="0 0 24 24"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1v-6h3zM3 19a2 2 0 0 0 2 2h1v-6H3z"/></symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 15V3"/><path d="M7 8l5-5 5 5"/><path d="M5 21h14"/></symbol>
+    <symbol id="i-ext" viewBox="0 0 24 24"><path d="M14 3h7v7"/><path d="M10 14L21 3"/><path d="M20 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h5"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M12 7.5v5.5M12 16.5v.01"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M12 7v5l3 2"/></symbol>
+  </defs>
+</svg>
+
+<!-- ============ Login ============ -->
+<section id="login" class="login" hidden>
+  <div class="corner-tools">
+    <button class="icon-btn js-lang" type="button" data-i18n-aria="language"><svg class="ic"><use href="#i-globe"/></svg><span class="js-lang-label">EN</span></button>
+    <button class="icon-btn js-theme" type="button" data-i18n-aria="theme"><svg class="ic"><use href="#i-moon"/></svg></button>
+  </div>
+  <form id="login-form" class="login-card card">
+    <img class="login-logo" src="img/logo.svg" alt="" width="120" height="120">
+    <h1 class="wordmark">Panda</h1>
+    <p class="muted" data-i18n="loginHint">Your cozy TeamSpeak DJ</p>
+    <label class="field">
+      <span data-i18n="password">Password</span>
+      <input id="login-pw" type="password" autocomplete="current-password" required>
+    </label>
+    <p id="login-err" class="form-err" role="alert"></p>
+    <button class="btn primary wide" type="submit"><span data-i18n="login">Log in</span></button>
+  </form>
+</section>
+
+<!-- ============ App ============ -->
+<div id="app" hidden>
+  <header class="topbar">
+    <div class="brand">
+      <img id="logo" class="logo" src="img/logo.svg" alt="" width="40" height="40">
+      <span class="wordmark">Panda</span>
+    </div>
+    <div id="status" class="status" role="status">
+      <span class="dot"></span><span id="status-text"></span>
+    </div>
+    <nav class="tools">
+      <button class="icon-btn js-lang" type="button" data-i18n-aria="language"><svg class="ic"><use href="#i-globe"/></svg><span class="js-lang-label">EN</span></button>
+      <button class="icon-btn js-theme" type="button" data-i18n-aria="theme"><svg class="ic"><use href="#i-moon"/></svg></button>
+      <button id="open-settings" class="icon-btn" type="button" data-i18n-aria="settings"><svg class="ic"><use href="#i-sliders"/></svg></button>
+      <button id="logout" class="icon-btn" type="button" data-i18n-aria="logout"><svg class="ic"><use href="#i-logout"/></svg></button>
+    </nav>
+  </header>
+  <p id="status-err" class="status-err" hidden></p>
+  <p id="offline" class="offline" hidden data-i18n="offline">Lost connection to Panda — reconnecting…</p>
+
+  <main class="layout">
+    <!-- Now playing -->
+    <section class="card np" aria-labelledby="np-label">
+      <img id="np-bg" class="np-bg" alt="" referrerpolicy="no-referrer" hidden>
+      <div class="np-head">
+        <h2 id="np-label" class="eyebrow"><span class="eq" aria-hidden="true"><i></i><i></i><i></i></span><span data-i18n="nowPlaying">Now playing</span></h2>
+        <span id="np-live" class="badge live" hidden data-i18n="live">LIVE</span>
+      </div>
+      <div id="np-empty" class="np-empty">
+        <img src="img/logo.svg" alt="" width="120" height="120">
+        <p data-i18n="napping">Panda is napping 💤 — add a song!</p>
+      </div>
+      <div id="np-track" hidden>
+        <div class="np-art"><img id="np-thumb" alt="" referrerpolicy="no-referrer"></div>
+        <a id="np-title" class="np-title" target="_blank" rel="noopener noreferrer"></a>
+        <p class="np-meta"><span id="np-channel"></span></p>
+        <p class="np-req"><svg class="ic sm"><use href="#i-user"/></svg><span id="np-req"></span></p>
+        <div class="seek">
+          <input id="seek" class="range" type="range" min="0" max="100" step="1" value="0" data-i18n-aria="seek">
+          <div class="times"><span id="t-pos">0:00</span><span id="t-dur">0:00</span></div>
+        </div>
+      </div>
+      <div class="controls">
+        <button id="btn-shuffle" class="icon-btn" type="button" data-i18n-aria="shuffle"><svg class="ic"><use href="#i-shuffle"/></svg></button>
+        <button id="btn-stop" class="icon-btn" type="button" data-i18n-aria="stop"><svg class="ic"><use href="#i-stop"/></svg></button>
+        <button id="btn-toggle" class="play-btn" type="button" data-i18n-aria="play"><svg class="ic"><use href="#i-play"/></svg></button>
+        <button id="btn-skip" class="icon-btn" type="button" data-i18n-aria="skip"><svg class="ic"><use href="#i-skip"/></svg></button>
+        <button id="btn-loop" class="icon-btn" type="button"><svg class="ic"><use href="#i-repeat"/></svg></button>
+      </div>
+      <div class="volume">
+        <button id="btn-mute" class="icon-btn" type="button" data-i18n-aria="mute"><svg class="ic"><use href="#i-vol"/></svg></button>
+        <input id="vol" class="range" type="range" min="0" max="100" step="1" value="50" data-i18n-aria="volume">
+        <output id="vol-val" class="vol-val">50</output>
+      </div>
+    </section>
+
+    <div class="col">
+      <!-- Add / search -->
+      <section class="card add" aria-labelledby="add-label">
+        <h2 id="add-label" class="sr-only" data-i18n="addSong">Add a song</h2>
+        <form id="add-form" class="add-form" role="search">
+          <svg class="ic add-ic" aria-hidden="true"><use href="#i-search"/></svg>
+          <input id="add-q" type="text" autocomplete="off" enterkeyhint="search" data-i18n-ph="addPh" data-i18n-aria="addPh">
+          <button id="add-go" class="btn primary" type="submit"><svg class="ic"><use href="#i-plus"/></svg><span class="lbl" data-i18n="add">Add</span></button>
+        </form>
+        <div id="results-wrap" hidden>
+          <div class="list-head">
+            <h3 class="eyebrow" data-i18n="results">Results</h3>
+            <button id="results-close" class="icon-btn sm" type="button" data-i18n-aria="close"><svg class="ic"><use href="#i-x"/></svg></button>
+          </div>
+          <ul id="results" class="tracks"></ul>
+        </div>
+      </section>
+
+      <!-- Queue -->
+      <section class="card" aria-labelledby="queue-label">
+        <div class="list-head">
+          <h2 id="queue-label" class="title"><span data-i18n="queue">Queue</span> <span id="queue-sum" class="muted sum"></span></h2>
+          <button id="btn-clear" class="btn ghost sm" type="button"><svg class="ic"><use href="#i-trash"/></svg><span data-i18n="clear">Clear</span></button>
+        </div>
+        <ol id="queue" class="tracks queue"></ol>
+        <p id="queue-empty" class="empty muted" data-i18n="queueEmpty">The queue is empty. Search for something above!</p>
+      </section>
+
+      <!-- History -->
+      <details class="card history" id="history-box">
+        <summary><svg class="ic"><use href="#i-clock"/></svg><span data-i18n="history">Recently played</span> <span id="history-sum" class="muted sum"></span><svg class="ic chev"><use href="#i-down"/></svg></summary>
+        <ul id="history" class="tracks"></ul>
+        <p id="history-empty" class="empty muted" data-i18n="historyEmpty">Nothing played yet.</p>
+      </details>
+    </div>
+  </main>
+</div>
+
+<!-- ============ Settings ============ -->
+<dialog id="settings" class="sheet" aria-labelledby="set-title">
+  <div class="sheet-head">
+    <h2 id="set-title" data-i18n="settings">Settings</h2>
+    <button class="icon-btn" type="button" data-close data-i18n-aria="close"><svg class="ic"><use href="#i-x"/></svg></button>
+  </div>
+  <div class="sheet-body">
+    <form id="set-form" novalidate>
+      <fieldset class="group">
+        <legend>🔌 <span data-i18n="sConn">Connection</span></legend>
+        <p class="hint" data-i18n="sConnHint">Changing these makes the bot reconnect.</p>
+        <label class="field"><span data-i18n="sAddress">Server address</span>
+          <input name="serverAddress" type="text" placeholder="ts.example.com" autocomplete="off" spellcheck="false" required></label>
+        <label class="field"><span data-i18n="sServerPw">Server password</span>
+          <input name="serverPassword" type="password" autocomplete="new-password"></label>
+        <label class="check" data-has="hasServerPassword"><input type="checkbox" name="serverPasswordRemove"><span data-i18n="removePw">Remove password</span></label>
+        <label class="field"><span data-i18n="sChannel">Channel</span>
+          <input name="channel" type="text" placeholder="Music/Lounge  ·  /5" autocomplete="off" spellcheck="false"></label>
+        <p class="hint" data-i18n="sChannelHint">Path like "Music/Lounge" or an id like "/5". Empty = default channel.</p>
+        <label class="field"><span data-i18n="sChannelPw">Channel password</span>
+          <input name="channelPassword" type="password" autocomplete="new-password"></label>
+        <label class="check" data-has="hasChannelPassword"><input type="checkbox" name="channelPasswordRemove"><span data-i18n="removePw">Remove password</span></label>
+        <label class="field"><span data-i18n="sNick">Nickname</span>
+          <input name="nickname" type="text" minlength="3" maxlength="30" required></label>
+      </fieldset>
+
+      <fieldset class="group">
+        <legend>🤖 <span data-i18n="sBot">Bot</span></legend>
+        <div class="row2">
+          <label class="field"><span data-i18n="sLang">Chat language</span>
+            <select name="language"><option value="en">English</option><option value="tr">Türkçe</option></select></label>
+          <label class="field"><span data-i18n="sPrefix">Command prefix</span>
+            <input name="commandPrefix" type="text" maxlength="3" required></label>
+        </div>
+        <label class="switch"><input type="checkbox" name="announce"><span class="track" aria-hidden="true"></span><span data-i18n="sAnnounce">Announce songs in chat</span></label>
+        <label class="switch"><input type="checkbox" name="showSongInDescription"><span class="track" aria-hidden="true"></span><span data-i18n="sDesc">Show song in bot description</span></label>
+        <div class="row2">
+          <label class="field"><span data-i18n="sMaxQueue">Max queue length</span>
+            <input name="maxQueueLength" type="number" min="1" max="1000" required></label>
+          <label class="field"><span data-i18n="sMaxDur">Max song length (min)</span>
+            <input name="maxDurationMinutes" type="number" min="0" max="1440" required></label>
+        </div>
+        <p class="hint" data-i18n="sMaxDurHint">0 = unlimited.</p>
+        <label class="field"><span data-i18n="sUsers">Allowed users</span>
+          <textarea name="allowedUsers" rows="3" spellcheck="false" placeholder="abc123XYZ+/=…"></textarea></label>
+        <p class="hint" data-i18n="sUsersHint">One TeamSpeak unique ID per line. Empty = everyone.</p>
+        <label class="field"><span data-i18n="sGroups">Allowed server groups</span>
+          <input name="allowedServerGroups" type="text" inputmode="numeric" pattern="[0-9,; ]*" placeholder="6, 7" autocomplete="off"></label>
+        <p class="hint" data-i18n="sGroupsHint">Comma-separated group ids. Empty = no group restriction.</p>
+      </fieldset>
+      <div class="save-row">
+        <button id="set-save" class="btn primary" type="submit"><svg class="ic"><use href="#i-check"/></svg><span data-i18n="save">Save</span></button>
+        <button id="set-reconnect" class="btn ghost" type="button"><svg class="ic"><use href="#i-refresh"/></svg><span data-i18n="reconnect">Reconnect bot</span></button>
+      </div>
+    </form>
+
+    <section class="group">
+      <h3 class="legend">🍪 <span data-i18n="sCookies">YouTube cookies</span> <span id="cookie-status" class="chip"></span></h3>
+      <p class="hint" data-i18n="sCookiesHelp">If YouTube says "confirm you're not a bot": open a private/incognito window, log in to YouTube, export cookies with a "cookies.txt" browser extension, paste them here, then close that window.</p>
+      <textarea id="cookie-text" rows="4" spellcheck="false" placeholder="# Netscape HTTP Cookie File" aria-label="cookies.txt"></textarea>
+      <div class="save-row">
+        <label class="btn ghost file-btn"><svg class="ic"><use href="#i-upload"/></svg><span data-i18n="chooseFile">Choose file</span><input id="cookie-file" type="file" accept=".txt,text/plain"></label>
+        <button id="cookie-save" class="btn primary" type="button"><span data-i18n="saveCookies">Save cookies</span></button>
+        <button id="cookie-remove" class="btn ghost danger" type="button"><span data-i18n="removeCookies">Remove cookies</span></button>
+      </div>
+    </section>
+
+    <form id="pw-form" class="group">
+      <h3 class="legend">🔑 <span data-i18n="sPanelPw">Panel password</span></h3>
+      <input type="text" name="username" value="admin" autocomplete="username" hidden>
+      <div class="row2">
+        <label class="field"><span data-i18n="pwCurrent">Current password</span><input name="current" type="password" autocomplete="current-password" required></label>
+        <label class="field"><span data-i18n="pwNew">New password</span><input name="new" type="password" minlength="6" autocomplete="new-password" required></label>
+      </div>
+      <div class="save-row"><button class="btn primary" type="submit"><span data-i18n="pwChange">Change password</span></button></div>
+    </form>
+
+    <footer class="sheet-foot">
+      <img src="img/avatar.png" alt="" width="28" height="28">
+      <span>Panda <span id="version"></span></span>
+      <a href="https://github.com/KaanBahaSever/panda" target="_blank" rel="noopener noreferrer">GitHub <svg class="ic sm"><use href="#i-ext"/></svg></a>
+    </footer>
+  </div>
+</dialog>
+
+<!-- ============ Confirm ============ -->
+<dialog id="confirm" class="confirm" aria-labelledby="confirm-msg">
+  <form method="dialog">
+    <p id="confirm-msg"></p>
+    <div class="save-row end">
+      <button class="btn ghost" value="no" data-i18n="cancel">Cancel</button>
+      <button class="btn primary" value="yes" data-i18n="ok">OK</button>
+    </div>
+  </form>
+</dialog>
+
+<div id="toasts" class="toasts" aria-live="polite"></div>
+</body>
+</html>
