@@ -161,3 +161,6 @@ Opus'a çevrilir.
 
 Panda, üzerine kurulduğu TSLib gibi [Open Software License 3.0](LICENSE) ile lisanslanmıştır.
 Panda'nın TeamSpeak veya YouTube ile bir bağlantısı yoktur.
+
+Panda, bir yapay zekâ asistanı olan [Claude](https://claude.ai)'un yardımıyla geliştirildi ve gerçek bir
+TeamSpeak 6 sunucusunda test edildi.
