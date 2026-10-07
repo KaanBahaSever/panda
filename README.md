@@ -22,22 +22,39 @@ in the chat, or use the web panel. No plugins, no scripts, no TeamSpeak client r
 Panda talks to the server directly, so it stays light: the bot itself uses about 130 MB of RAM, and
 `yt-dlp` + `ffmpeg` only run while a song is playing.
 
+![Panda's web panel playing a song](docs/now-playing.png)
+
 ## Features
 
 - 🎵 **YouTube only, done well** — search by name or paste any link: `youtube.com`, `youtu.be`,
-  **YouTube Music**, Shorts. A link from inside a playlist plays just that song.
+  **YouTube Music**, Shorts. Playlist and album links add just one song (the one in the link,
+  or the first one of the list) instead of loading the whole list.
+- 📚 **Song library** — every song you request is saved on disk. Songs you play again start instantly
+  and never touch YouTube again; when the library is full, the least played songs make room.
+- ⚡ **No waiting between songs** — the next songs in the queue are downloaded ahead of time.
 - 🐼 **Made for TeamSpeak 6** (TS3 servers work too).
-- 🌐 **Web panel** — now playing, queue with drag & drop, search, history, volume, loop, seek,
-  light/dark theme, English/Turkish.
+- 🌐 **Web panel** — now playing, queue with drag & drop, search, library, history, volume, loop,
+  seek, light/dark theme, English/Turkish.
 - 💬 **Chat commands** in English and Turkish.
 - 🍪 **YouTube bot check?** Paste your cookies in the panel and you're done.
 - 🔁 Reconnects by itself, keeps its identity (so permissions stick), shows the song in its description.
 - 📦 One file, one command to install. Runs on Linux (x64/ARM), Windows, macOS and Docker.
+- 🔑 **No YouTube API key needed.**
 
-<p align="center">
-  <img src="docs/panel-light.jpg" width="49%" alt="Panel">
-  <img src="docs/panel-dark-settings.jpg" width="49%" alt="Panel settings in dark mode">
-</p>
+## Song library
+
+Every song that is requested is saved in the library folder (`/var/lib/panda/library`), up to a size
+limit you choose (5 GB by default). When the limit is reached, Panda deletes the songs that were played
+the least, so your favourites stay. While a song is in the library:
+
+- it starts immediately (no YouTube request at all),
+- `!play` finds it by name too — `!play bohemian` plays your saved *Bohemian Rhapsody*,
+- it shows up in the panel's **Library**, where you can play, queue or delete it.
+
+Saving can be turned off in **Settings → Library**; Panda then only downloads the next song ahead of
+time and deletes it after playing.
+
+![The library in dark mode](docs/library.png)
 
 ## Install (Linux)
 
@@ -79,6 +96,8 @@ in a `data` folder next to where you start it.
 3. Change the panel password under **Settings**.
 4. In TeamSpeak, write `!play never gonna give you up` in the bot's channel. 🎶
 
+![Settings](docs/settings.png)
+
 ## Chat commands
 
 Write them in the bot's channel or in a private message to the bot.
@@ -113,6 +132,12 @@ YouTube sometimes blocks server IPs. Fix it with cookies from a YouTube account:
 
 Using a secondary account is a good idea.
 
+## Do I need a YouTube API key?
+
+No. Panda searches and plays through [yt-dlp](https://github.com/yt-dlp/yt-dlp), which reads YouTube
+the way a browser does, so there is no API key, no Google project and no daily quota. The only thing
+YouTube may ask for is the bot check above, which cookies solve.
+
 ## Configuration
 
 Everything is editable in the panel; the file is `/var/lib/panda/config.json` (or `data/config.json`).
@@ -126,7 +151,8 @@ Everything is editable in the panel; the file is `/var/lib/panda/config.json` (o
     "allowedUsers": [], "allowedServerGroups": [], "maxQueueLength": 100
   },
   "panel": { "listen": "0.0.0.0", "port": 8080 },
-  "youTube": { "ytDlpPath": "yt-dlp", "ffmpegPath": "ffmpeg", "cookiesFile": "", "maxDurationMinutes": 60 }
+  "youTube": { "ytDlpPath": "yt-dlp", "ffmpegPath": "ffmpeg", "cookiesFile": "", "maxDurationMinutes": 60 },
+  "library": { "enabled": true, "maxSizeMb": 5120, "path": "" }   // 0 MB = no limit; empty path = data/library
 }
 ```
 

@@ -49,6 +49,7 @@
     <symbol id="i-ext" viewBox="0 0 24 24"><path d="M14 3h7v7"/><path d="M10 14L21 3"/><path d="M20 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h5"/></symbol>
     <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></symbol>
     <symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M12 7.5v5.5M12 16.5v.01"/></symbol>
+    <symbol id="i-lib" viewBox="0 0 24 24"><path d="M4 4v16M8.5 4v16"/><path d="M13 5.2l3.9-1 4.1 15.6-3.9 1z"/><path d="M3 20.5h18"/></symbol>
     <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M12 7v5l3 2"/></symbol>
   </defs>
 </svg>
@@ -142,6 +143,9 @@
             <h3 class="eyebrow" data-i18n="results">Results</h3>
             <button id="results-close" class="icon-btn sm" type="button" data-i18n-aria="close"><svg class="ic"><use href="#i-x"/></svg></button>
           </div>
+          <h4 id="lib-res-h" class="eyebrow sub" data-i18n="fromLibrary">From your library</h4>
+          <ul id="lib-results" class="tracks"></ul>
+          <h4 id="yt-res-h" class="eyebrow sub" data-i18n="fromYouTube">From YouTube</h4>
           <ul id="results" class="tracks"></ul>
         </div>
       </section>
@@ -155,6 +159,24 @@
         <ol id="queue" class="tracks queue"></ol>
         <p id="queue-empty" class="empty muted" data-i18n="queueEmpty">The queue is empty. Search for something above!</p>
       </section>
+
+      <!-- Library -->
+      <details class="card history lib" id="lib-box" hidden>
+        <summary><svg class="ic"><use href="#i-lib"/></svg><span data-i18n="library">Library</span> <span id="lib-sum" class="muted sum"></span><svg class="ic chev"><use href="#i-down"/></svg></summary>
+        <div class="lib-usage">
+          <div id="lib-meter" class="meter" hidden><span></span></div>
+          <span id="lib-usage" class="muted"></span>
+        </div>
+        <p id="lib-off" class="hint lib-off" hidden data-i18n="libOff">Saving is off.</p>
+        <label class="lib-filter">
+          <svg class="ic" aria-hidden="true"><use href="#i-search"/></svg>
+          <input id="lib-q" type="search" autocomplete="off" data-i18n-ph="libFilter" data-i18n-aria="libFilter">
+        </label>
+        <ul id="lib-list" class="tracks"></ul>
+        <p id="lib-empty" class="empty muted" hidden></p>
+        <p id="lib-capped" class="hint center" hidden data-i18n="libCapped"></p>
+        <button id="lib-more" class="btn ghost sm more" type="button" hidden data-i18n="showMore">Show more</button>
+      </details>
 
       <!-- History -->
       <details class="card history" id="history-box">
@@ -215,6 +237,14 @@
         <label class="field"><span data-i18n="sGroups">Allowed server groups</span>
           <input name="allowedServerGroups" type="text" inputmode="numeric" pattern="[0-9,; ]*" placeholder="6, 7" autocomplete="off"></label>
         <p class="hint" data-i18n="sGroupsHint">Comma-separated group ids. Empty = no group restriction.</p>
+      </fieldset>
+      <fieldset class="group">
+        <legend>📚 <span data-i18n="sLib">Library</span></legend>
+        <label class="switch"><input type="checkbox" name="libraryEnabled"><span class="track" aria-hidden="true"></span><span data-i18n="sLibOn">Save every requested song</span></label>
+        <p class="hint" data-i18n="sLibOnHint"></p>
+        <label class="field"><span data-i18n="sLibMax">Size limit (GB)</span>
+          <input name="libraryMaxGb" type="number" min="0" max="976" step="any" inputmode="decimal" required></label>
+        <p class="hint" data-i18n="sLibMaxHint"></p>
       </fieldset>
       <div class="save-row">
         <button id="set-save" class="btn primary" type="submit"><svg class="ic"><use href="#i-check"/></svg><span data-i18n="save">Save</span></button>

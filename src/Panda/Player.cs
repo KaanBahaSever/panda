@@ -28,6 +28,7 @@ public sealed class Player : IDisposable
 	const int HistorySize = 30;
 
 	readonly YouTube youtube;
+	readonly Library library;
 	readonly PandaConfig config;
 	readonly ILogger<Player> log;
 
@@ -53,9 +54,10 @@ public sealed class Player : IDisposable
 	public event Action<Track>? TrackStarted;
 	public event Action<Track, string>? TrackFailed;
 
-	public Player(YouTube youtube, PandaConfig config, ILogger<Player> log)
+	public Player(YouTube youtube, Library library, PandaConfig config, ILogger<Player> log)
 	{
 		this.youtube = youtube;
+		this.library = library;
 		this.config = config;
 		this.log = log;
 
@@ -165,7 +167,7 @@ public sealed class Player : IDisposable
 		{
 			if (current is null || current.IsLive) return false;
 			seconds = Math.Clamp(seconds, 0, Math.Max(0, current.Duration - 1));
-			StartLocked(current, seconds);
+			StartLocked(current, seconds, seeking: true);
 		}
 		RaiseChanged();
 		return true;
@@ -271,7 +273,8 @@ public sealed class Player : IDisposable
 		}
 	}
 
-	void StartLocked(Track track, int startSeconds)
+	// "seeking" restarts the same song elsewhere: no announcement, no extra play count.
+	void StartLocked(Track track, int startSeconds, bool seeking = false)
 	{
 		StopSourceLocked();
 		var gen = ++generation;
@@ -280,9 +283,20 @@ public sealed class Player : IDisposable
 		paused = false;
 
 		AudioStream audio;
+		var file = library.GetFile(track.Id);
 		try
 		{
-			audio = youtube.OpenAudio(track, startSeconds);
+			if (file != null)
+			{
+				audio = youtube.OpenFile(file, startSeconds);
+			}
+			else
+			{
+				// Not on disk yet: stream it from YouTube and save it on the way.
+				var tee = seeking ? null : library.BeginTee(track);
+				audio = youtube.OpenAudio(track, startSeconds, tee,
+					tee is null ? null : complete => library.EndTee(track, tee, complete));
+			}
 		}
 		catch (YouTubeException ex)
 		{
@@ -291,12 +305,15 @@ public sealed class Player : IDisposable
 			return;
 		}
 
-		source = new TrackSource(audio, gen, OnSourceEnded);
+		source = new TrackSource(audio, gen, file != null, OnSourceEnded);
 		timePipe.InStream = source;
 		timePipe.Paused = false;
-		if (startSeconds == 0)
+		if (!seeking)
+		{
+			library.MarkPlayed(track);
 			_ = Task.Run(() => TrackStarted?.Invoke(track));
-		log.LogInformation("Playing {Title} ({Id}) for {User}", track.Title, track.Id, track.RequestedBy);
+		}
+		log.LogInformation("Playing {Title} ({Id}) for {User}{From}", track.Title, track.Id, track.RequestedBy, file != null ? " from the library" : "");
 	}
 
 	void StopSourceLocked()
@@ -325,6 +342,8 @@ public sealed class Player : IDisposable
 				var reason = YouTube.FriendlyError(ended.Errors);
 				var failed = current;
 				log.LogWarning("Could not play {Id}: {Reason}", failed.Id, ended.Errors.Trim());
+				// A saved file that can't be played is broken; drop it so it's downloaded again next time.
+				if (ended.FromFile) library.Delete(failed.Id);
 				AdvanceAfterFailureLocked();
 				_ = Task.Run(() => TrackFailed?.Invoke(failed, reason));
 			}
@@ -359,6 +378,15 @@ public sealed class Player : IDisposable
 
 	void RaiseChanged()
 	{
+		Track[] upcoming;
+		bool idle;
+		lock (gate)
+		{
+			upcoming = queue.ToArray();
+			idle = current is null;
+		}
+		if (idle) library.ClearNowPlaying();
+		library.Want(upcoming);
 		try { Changed?.Invoke(); }
 		catch (Exception ex) { log.LogError(ex, "Changed handler failed"); }
 	}
@@ -370,8 +398,9 @@ public sealed class Player : IDisposable
 	}
 
 	/// <summary>Feeds ffmpeg's PCM into the timer pipe and notices when the song is over.</summary>
-	sealed class TrackSource(AudioStream audio, int generation, Action<TrackSource> ended) : IAudioPassiveProducer
+	sealed class TrackSource(AudioStream audio, int generation, bool fromFile, Action<TrackSource> ended) : IAudioPassiveProducer
 	{
+		public bool FromFile => fromFile;
 		public long BytesRead;
 		public int Generation => generation;
 		public string Errors => audio.Errors;

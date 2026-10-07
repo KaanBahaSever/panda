@@ -10,6 +10,7 @@ public sealed class PandaConfig
 	public BotSettings Bot { get; set; } = new();
 	public PanelSettings Panel { get; set; } = new();
 	public YouTubeSettings YouTube { get; set; } = new();
+	public LibrarySettings Library { get; set; } = new();
 
 	[JsonIgnore] public string Path { get; private set; } = "";
 
@@ -122,4 +123,14 @@ public static class PasswordHasher
 
 	public static string Generate() =>
 		Convert.ToBase64String(RandomNumberGenerator.GetBytes(12)).Replace('+', 'x').Replace('/', 'y').TrimEnd('=');
+}
+
+public sealed class LibrarySettings
+{
+	/// <summary>Save every requested song on disk. When off, only the next song is downloaded ahead of time.</summary>
+	public bool Enabled { get; set; } = true;
+	/// <summary>When the library is bigger than this, the least played songs are deleted. 0 = no limit.</summary>
+	public int MaxSizeMb { get; set; } = 5120;
+	/// <summary>Folder for the songs; empty = "library" inside the data folder.</summary>
+	public string Path { get; set; } = "";
 }

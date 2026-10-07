@@ -26,7 +26,7 @@ public sealed class TsBot : BackgroundService
 {
 	readonly PandaConfig config;
 	readonly Player player;
-	readonly YouTube youtube;
+	readonly Library library;
 	readonly ILogger<TsBot> log;
 	readonly string identityPath;
 	readonly DedicatedTaskScheduler scheduler = new(Id.Null);
@@ -42,11 +42,11 @@ public sealed class TsBot : BackgroundService
 	string Lang => config.Bot.Language;
 	string Prefix => config.Bot.CommandPrefix;
 
-	public TsBot(PandaConfig config, Player player, YouTube youtube, DataPaths paths, ILogger<TsBot> log)
+	public TsBot(PandaConfig config, Player player, Library library, DataPaths paths, ILogger<TsBot> log)
 	{
 		this.config = config;
 		this.player = player;
-		this.youtube = youtube;
+		this.library = library;
 		this.log = log;
 		identityPath = Path.Combine(paths.Data, "identity.json");
 
@@ -140,7 +140,15 @@ public sealed class TsBot : BackgroundService
 			defaultChannelPassword: s.ChannelPassword.Length > 0 ? Password.FromPlain(s.ChannelPassword) : (Password?)null);
 
 		log.LogInformation("Connecting to {Address} as {Nickname}", s.Address, config.Bot.Nickname);
-		var result = await c.Connect(data);
+		// TSLib waits forever when the server never answers (for example while our previous connection
+		// is still lingering there after a crash), so give up after a while and let the loop retry.
+		var connect = c.Connect(data);
+		if (await Task.WhenAny(connect, Task.Delay(TimeSpan.FromSeconds(20))) != connect)
+		{
+			_ = c.Disconnect();
+			return "the server did not answer";
+		}
+		var result = await connect;
 		if (!result.Ok)
 			return result.Error.ErrorFormat();
 
@@ -262,7 +270,7 @@ public sealed class TsBot : BackgroundService
 			if (arg.Length == 0) return Strings.Get(Lang, "usage-play", Prefix);
 			try
 			{
-				var track = await youtube.ResolveAsync(arg, who);
+				var track = await library.ResolveAsync(arg, who);
 				if (command == "playnow")
 				{
 					player.PlayNow(track);

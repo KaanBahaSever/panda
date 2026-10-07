@@ -28,12 +28,18 @@ const I18N = {
     confirmStop: 'Stop playback and clear the queue?', confirmClear: 'Clear the whole queue?', confirmCookies: 'Remove the saved YouTube cookies?',
     nothing: 'Nothing to do right now', invalid: 'Please check the highlighted fields', netError: 'Network error — is Panda running?',
     'err.not-found': 'No song found for that search.', 'err.empty': 'Type a song name or paste a link.',
-    'err.playlist': 'Playlists aren\'t supported — send a single song link.', 'err.not-youtube': 'Only YouTube links work.',
+    'err.playlist-empty': 'That playlist is empty.', 'err.not-youtube': 'Only YouTube links work.',
     'err.too-long': 'That song is too long.', 'err.bot-check': 'YouTube wants a bot check — add cookies in Settings.',
     'err.unavailable': 'That video is unavailable.', 'err.age': 'That video is age-restricted — add cookies in Settings.',
     'err.queue-full': 'The queue is full.', 'err.wrong-password': 'Wrong password.', 'err.too-many-attempts': 'Too many attempts — wait a few minutes.',
     'err.password-too-short': 'The new password needs at least 6 characters.', 'err.cookies-invalid': 'That doesn\'t look like a YouTube cookies.txt.',
     'err.too-large': 'That file is too large.', 'err.missing': 'Missing tool on the server: ',
+    library: 'Library', saved: 'saved', fromLibrary: 'From your library', fromYouTube: 'From YouTube', libFilter: 'Filter saved songs',
+    usage: (a, b) => `${a} of ${b}`, libOff: 'Saving is off — turn it on in Settings.', libEmpty: 'No saved songs yet. Songs are saved as they are requested.',
+    libNoMatch: 'No saved songs match.', libCapped: 'Showing the 500 most played songs — use the filter to find others.', showMore: 'Show more',
+    plays: n => n === 1 ? '1 play' : `${n} plays`, delete: 'Delete', deleted: 'Deleted', confirmLibDelete: x => `Delete "${x}" from the library?`,
+    sLib: 'Library', sLibOn: 'Save every requested song', sLibOnHint: 'When off, only the next song is downloaded ahead of time.',
+    sLibMax: 'Size limit (GB)', sLibMaxHint: 'When full, the least played songs are deleted first. 0 = no limit.', sLibMaxBad: 'Use 0 (no limit) or at least 0.1 GB.',
   },
   tr: {
     loginHint: 'Sevimli TeamSpeak DJ\'in', password: 'Şifre', login: 'Giriş yap', language: 'Dil: Türkçe (English\'e geç)',
@@ -60,12 +66,18 @@ const I18N = {
     confirmStop: 'Çalma durdurulsun ve sıra temizlensin mi?', confirmClear: 'Tüm sıra temizlensin mi?', confirmCookies: 'Kayıtlı YouTube çerezleri kaldırılsın mı?',
     nothing: 'Şu an yapılacak bir şey yok', invalid: 'Lütfen işaretli alanları kontrol edin', netError: 'Ağ hatası — Panda çalışıyor mu?',
     'err.not-found': 'Bu arama için şarkı bulunamadı.', 'err.empty': 'Bir şarkı adı yazın ya da link yapıştırın.',
-    'err.playlist': 'Çalma listeleri desteklenmiyor — tek bir şarkı linki gönderin.', 'err.not-youtube': 'Sadece YouTube linkleri çalışır.',
+    'err.playlist-empty': 'Bu çalma listesi boş.', 'err.not-youtube': 'Sadece YouTube linkleri çalışır.',
     'err.too-long': 'Bu şarkı çok uzun.', 'err.bot-check': 'YouTube bot doğrulaması istiyor — Ayarlar\'dan çerez ekleyin.',
     'err.unavailable': 'Bu video kullanılamıyor.', 'err.age': 'Bu video yaş sınırlı — Ayarlar\'dan çerez ekleyin.',
     'err.queue-full': 'Sıra dolu.', 'err.wrong-password': 'Şifre yanlış.', 'err.too-many-attempts': 'Çok fazla deneme — birkaç dakika bekleyin.',
     'err.password-too-short': 'Yeni şifre en az 6 karakter olmalı.', 'err.cookies-invalid': 'Bu bir YouTube cookies.txt dosyasına benzemiyor.',
     'err.too-large': 'Dosya çok büyük.', 'err.missing': 'Sunucuda eksik araç: ',
+    library: 'Kütüphane', saved: 'kayıtlı', fromLibrary: 'Kütüphanenden', fromYouTube: 'YouTube\'dan', libFilter: 'Kayıtlı şarkılarda ara',
+    usage: (a, b) => `${a} / ${b}`, libOff: 'Kaydetme kapalı — Ayarlar\'dan açabilirsin.', libEmpty: 'Henüz kayıtlı şarkı yok. Şarkılar istendikçe kaydedilir.',
+    libNoMatch: 'Eşleşen kayıtlı şarkı yok.', libCapped: 'En çok dinlenen 500 şarkı gösteriliyor — diğerleri için aramayı kullan.', showMore: 'Daha fazla göster',
+    plays: n => `${n} dinlenme`, delete: 'Sil', deleted: 'Silindi', confirmLibDelete: x => `"${x}" kütüphaneden silinsin mi?`,
+    sLib: 'Kütüphane', sLibOn: 'İstenen her şarkıyı kaydet', sLibOnHint: 'Kapalıyken sadece sıradaki şarkı önceden indirilir.',
+    sLibMax: 'Boyut sınırı (GB)', sLibMaxHint: 'Dolduğunda en az dinlenen şarkılar önce silinir. 0 = sınırsız.', sLibMaxBad: '0 (sınırsız) ya da en az 0,1 GB girin.',
   },
 };
 
@@ -168,7 +180,12 @@ function confirmBox(msg) {
   $('confirm-msg').textContent = msg;
   d.returnValue = '';
   d.showModal();
-  return new Promise(res => d.addEventListener('close', () => res(d.returnValue === 'yes'), { once: true }));
+  // Resolve on the button's submit (synchronous) or on close (Esc); the first one wins.
+  return new Promise(res => {
+    const ac = new AbortController(), done = v => { ac.abort(); res(v); };
+    d.querySelector('form').addEventListener('submit', e => done(e.submitter?.value === 'yes'), { signal: ac.signal });
+    d.addEventListener('close', () => done(d.returnValue === 'yes'), { signal: ac.signal });
+  });
 }
 
 /* ---------------- theme & language ---------------- */
@@ -187,7 +204,7 @@ function applyLang() {
   document.querySelectorAll('[data-i18n-aria]').forEach(e => setLabel(e, t(e.dataset.i18nAria)));
   document.querySelectorAll('.js-lang-label').forEach(e => { e.textContent = lang.toUpperCase(); });
   lastQueueSig = lastHistorySig = '';
-  if (S) render();
+  if (S) { render(); if (libBox.open) loadLib(); }
   if (settings) fillSettings(settings);
 }
 
@@ -248,7 +265,7 @@ async function boot() {
 }
 
 /* ---------------- rendering ---------------- */
-function render() { renderBot(); renderNow(); renderQueue(); renderHistory(); }
+function render() { renderBot(); renderNow(); renderQueue(); renderHistory(); renderLib(); }
 
 function renderBot() {
   const b = S.bot, st = $('status');
@@ -381,25 +398,41 @@ $('add-form').addEventListener('submit', async e => {
       return;
     }
     const seq = ++searchSeq;
+    showResults(null);
+    // Saved songs answer instantly; YouTube takes a few seconds.
+    const saved = api('GET', '/api/library?q=' + encodeURIComponent(q)).then(r => r.items.slice(0, 5)).catch(() => []);
+    saved.then(items => { if (seq === searchSeq && items.length) showResults(items); });
     const list = await act(() => api('GET', '/api/search?q=' + encodeURIComponent(q)));
-    if (list && seq === searchSeq) showResults(list.slice(0, 10));
+    if (seq === searchSeq) showResults(await saved, list ? list.slice(0, 10) : []);
   });
 });
-$('results-close').addEventListener('click', closeResults);
-function closeResults() { $('results-wrap').hidden = true; $('results').replaceChildren(); }
+$('results-close').addEventListener('click', () => { searchSeq++; showResults(null); });
 
-function showResults(list) {
-  const ul = $('results');
-  ul.replaceChildren();
-  if (!list.length) ul.append(el('li', { class: 'empty muted', text: t('noResults') }));
-  for (const tr of list) {
-    const add = el('button', { class: 'btn soft sm', type: 'button', title: t('add'), 'aria-label': `${t('add')}: ${tr.title}` }, icon('plus'), el('span', { class: 'lbl', text: t('add') }));
-    const now = el('button', { class: 'icon-btn sm', type: 'button', title: t('playNow'), 'aria-label': `${t('playNow')}: ${tr.title}` }, icon('play'));
-    add.addEventListener('click', () => addTrack(add, tr, false));
-    now.addEventListener('click', () => addTrack(now, tr, true));
-    ul.append(el('li', { class: 'track' }, thumb(tr), trackText(tr, false), el('div', { class: 'acts' }, add, now)));
-  }
-  $('results-wrap').hidden = false;
+/** saved: library hits (shown first, null = reset), yt: YouTube results (undefined = still loading). */
+function showResults(saved, yt) {
+  $('results-wrap').hidden = !saved;
+  if (!saved) { $('lib-results').replaceChildren(); $('results').replaceChildren(); return; }
+  const ids = new Set(saved.map(x => x.id));
+  $('lib-results').replaceChildren(...saved.map(tr => resultRow(tr, true)));
+  $('lib-res-h').hidden = !saved.length;
+  $('yt-res-h').hidden = yt === undefined || !saved.length;
+  if (yt === undefined) return;
+  const rest = yt.filter(x => !ids.has(x.id));
+  $('results').replaceChildren(...rest.map(tr => resultRow(tr, false)));
+  if (!rest.length && !saved.length) $('results').append(el('li', { class: 'empty muted', text: t('noResults') }));
+}
+function resultRow(tr, saved) {
+  const extra = saved ? [el('span', { class: 'badge saved sm', text: t('saved') })] : [];
+  return el('li', { class: 'track' }, thumb(tr), trackText(tr, { req: false, extra }), playButtons(tr, true));
+}
+/** "Add" and "Play now" buttons (plus extra buttons) for anything with a url. */
+function playButtons(tr, labelled, ...more) {
+  const add = el('button', { class: labelled ? 'btn soft sm' : 'icon-btn sm', type: 'button', title: t('add'), 'aria-label': `${t('add')}: ${tr.title}` },
+    icon('plus'), labelled && el('span', { class: 'lbl', text: t('add') }));
+  const now = el('button', { class: 'icon-btn sm', type: 'button', title: t('playNow'), 'aria-label': `${t('playNow')}: ${tr.title}` }, icon('play'));
+  add.addEventListener('click', () => addTrack(add, tr, false));
+  now.addEventListener('click', () => addTrack(now, tr, true));
+  return el('div', { class: 'acts' }, add, now, ...more);
 }
 async function addTrack(btn, tr, now) {
   await busy(btn, async () => {
@@ -408,15 +441,82 @@ async function addTrack(btn, tr, now) {
   });
 }
 
-/** Title (linked), channel · duration · requester. */
-function trackText(tr, withReq = true) {
+/** Title (linked), channel · duration · requester · extra nodes. */
+function trackText(tr, { req = true, extra = [] } = {}) {
   const href = safeUrl(tr.url);
   const title = el(href ? 'a' : 'span', { class: 'tt', text: tr.title, title: tr.title, href, target: href && '_blank', rel: href && 'noopener noreferrer' });
   const meta = el('span', { class: 'tm' }, el('span', { text: tr.channel }),
-    el('span', { class: tr.isLive ? 'badge live sm' : '', text: tr.isLive ? t('live') : fmt(tr.duration) }));
-  if (withReq && tr.requestedBy) meta.append(el('span', { class: 'req' }, icon('user', 'ic sm'), document.createTextNode(tr.requestedBy)));
+    el('span', { class: tr.isLive ? 'badge live sm' : '', text: tr.isLive ? t('live') : fmt(tr.duration) }), ...extra);
+  if (req && tr.requestedBy) meta.append(el('span', { class: 'req' }, icon('user', 'ic sm'), document.createTextNode(tr.requestedBy)));
   return el('div', { class: 'tx' }, title, meta);
 }
+
+/* ---------------- library ---------------- */
+const LIB_PAGE = 100;
+let libItems = [], libShown = 0, libSeq = 0, libKey = '';
+const libBox = $('lib-box');
+
+function fmtBytes(n) {
+  const u = ['B', 'KB', 'MB', 'GB', 'TB']; let i = 0;
+  while (n >= 1024 && i < u.length - 1) { n /= 1024; i++; }
+  return `${n.toLocaleString(lang, { maximumFractionDigits: n < 10 && i > 1 ? 1 : 0 })} ${u[i]}`;
+}
+/** Count, usage bar and hints come straight from state.library; the list reloads when it changed. */
+function renderLib() {
+  const L = S.library;
+  libBox.hidden = !L;
+  if (!L) return;
+  $('lib-sum').textContent = `(${L.count})`;
+  const limited = L.limitBytes > 0, pct = limited ? Math.min(100, L.usedBytes / L.limitBytes * 100) : 0;
+  $('lib-usage').textContent = limited ? t('usage', fmtBytes(L.usedBytes), fmtBytes(L.limitBytes)) : fmtBytes(L.usedBytes);
+  $('lib-meter').hidden = !limited;
+  $('lib-meter').firstElementChild.style.width = pct + '%';
+  $('lib-meter').classList.toggle('full', pct >= 90);
+  $('lib-off').hidden = L.enabled;
+  const key = `${L.count}|${L.usedBytes}`;
+  if (key !== libKey) { libKey = key; if (libBox.open) reloadLib(); }
+}
+
+async function loadLib() {
+  const seq = ++libSeq, q = $('lib-q').value.trim();
+  const r = await act(() => api('GET', '/api/library?q=' + encodeURIComponent(q)));
+  if (!r || seq !== libSeq) return;
+  libItems = r.items; libShown = 0;
+  $('lib-list').replaceChildren();
+  renderLibPage();
+  $('lib-empty').hidden = libItems.length > 0;
+  $('lib-empty').textContent = t(q ? 'libNoMatch' : 'libEmpty');
+  $('lib-capped').hidden = !!q || libItems.length >= r.count;   // the API returns at most 500 songs
+}
+const reloadLib = debounce(loadLib, 300);
+
+/** Renders the next page of rows; keeps the DOM small with big libraries. */
+function renderLibPage() {
+  const frag = document.createDocumentFragment();
+  for (const it of libItems.slice(libShown, libShown + LIB_PAGE)) frag.append(libRow(it));
+  libShown = Math.min(libItems.length, libShown + LIB_PAGE);
+  $('lib-list').append(frag);
+  $('lib-more').hidden = libShown >= libItems.length;
+}
+function libRow(it) {
+  const del = el('button', { class: 'icon-btn sm del', type: 'button', title: t('delete'), 'aria-label': `${t('delete')}: ${it.title}` }, icon('trash'));
+  const li = el('li', { class: 'track' }, thumb(it),
+    trackText(it, { req: false, extra: [el('span', { text: t('plays', it.plays) }), el('span', { text: fmtBytes(it.size) })] }),
+    playButtons(it, false, del));
+  del.addEventListener('click', async () => {
+    if (!(await confirmBox(t('confirmLibDelete', it.title)))) return;
+    busy(del, async () => {
+      const ok = await act(() => api('DELETE', '/api/library/' + encodeURIComponent(it.id)).then(() => true), `${t('deleted')}: ${it.title}`);
+      if (ok) { li.remove(); libItems.splice(libItems.indexOf(it), 1); libShown--; }
+    });
+  });
+  return li;
+}
+
+libBox.open = store.get('panda.libOpen') !== '0';
+libBox.addEventListener('toggle', () => { store.set('panda.libOpen', libBox.open ? '1' : '0'); if (libBox.open && S) loadLib(); });
+$('lib-q').addEventListener('input', reloadLib);
+$('lib-more').addEventListener('click', renderLibPage);
 
 /* ---------------- queue ---------------- */
 let lastQueueSig = '', lastHistorySig = '', dragFrom = -1;
@@ -512,6 +612,8 @@ function fillSettings(s) {
   f.announce.checked = !!s.announce; f.showSongInDescription.checked = !!s.showSongInDescription;
   f.allowedUsers.value = (s.allowedUsers || []).join('\n');
   f.allowedServerGroups.value = (s.allowedServerGroups || []).join(', ');
+  f.libraryEnabled.checked = !!s.libraryEnabled;
+  f.libraryMaxGb.value = Math.round((s.libraryMaxSizeMb || 0) / 1024 * 100) / 100;
   for (const k of ['serverPassword', 'channelPassword']) {
     const has = s['has' + k[0].toUpperCase() + k.slice(1)];
     f[k].value = ''; f[k].disabled = false; f[k].placeholder = has ? t('unchanged') : '';
@@ -537,6 +639,8 @@ $('set-form').addEventListener('submit', async e => {
   e.preventDefault();
   const form = $('set-form'), f = form.elements;
   if (!settings) return;
+  const gb = +f.libraryMaxGb.value;
+  f.libraryMaxGb.setCustomValidity(gb === 0 || gb >= 0.1 ? '' : t('sLibMaxBad'));
   if (!form.checkValidity()) { form.reportValidity(); return toast(t('invalid'), 'err'); }
   const body = {
     ...settings,
@@ -546,6 +650,7 @@ $('set-form').addEventListener('submit', async e => {
     announce: f.announce.checked, showSongInDescription: f.showSongInDescription.checked,
     maxQueueLength: +f.maxQueueLength.value, maxDurationMinutes: +f.maxDurationMinutes.value,
     allowedUsers: f.allowedUsers.value.split(/\r?\n/).map(x => x.trim()).filter(Boolean),
+    libraryEnabled: f.libraryEnabled.checked, libraryMaxSizeMb: Math.round(gb * 1024),
     allowedServerGroups: f.allowedServerGroups.value.split(/[,\s;]+/).map(x => x.trim()).filter(x => /^\d+$/.test(x)).map(Number),
   };
   const old = settings;

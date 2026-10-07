@@ -92,7 +92,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 
 /* ---------- fields ---------- */
 .field { display: grid; gap: 6px; text-align: left; font-size: 13.5px; font-weight: 700; color: var(--muted); }
-input[type=text], input[type=password], input[type=number], select, textarea {
+input[type=text], input[type=search], input[type=password], input[type=number], select, textarea {
   width: 100%; min-height: 44px; padding: 10px 14px; border: 1.5px solid var(--border); border-radius: var(--radius-sm);
   background: var(--surface); color: var(--text); font-size: 15px; font-weight: 500; transition: border-color .15s, box-shadow .15s;
 }
@@ -254,13 +254,13 @@ dialog { color: var(--text); }
 dialog::backdrop { background: rgba(22,22,30,.45); backdrop-filter: blur(2px); }
 .sheet {
   margin: 0 0 0 auto; padding: 0; border: 0; width: min(520px, 100vw); max-width: 100vw; height: 100dvh; max-height: 100dvh;
-  background: var(--bg); box-shadow: -10px 0 40px rgba(0,0,0,.2); display: none; flex-direction: column;
+  background: var(--bg); box-shadow: -10px 0 40px rgba(0,0,0,.2); display: none; flex-direction: column; overflow: hidden;
 }
 .sheet[open] { display: flex; animation: slide-in .25s ease-out; }
 @keyframes slide-in { from { transform: translateX(40px); opacity: 0; } }
 .sheet-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; background: var(--surface); border-bottom: 1px solid var(--border); }
 .sheet-head h2 { font-size: 20px; font-weight: 800; }
-.sheet-body { flex: 1; overflow-y: auto; padding: 16px; display: grid; gap: 16px; align-content: start; }
+.sheet-body { flex: 1; min-height: 0; overflow-y: auto; padding: 16px; display: grid; gap: 16px; align-content: start; }
 #set-form { display: grid; gap: 16px; }
 .group { display: grid; gap: 12px; margin: 0; padding: 16px; border: 0; border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow); min-width: 0; }
 .group legend, .legend { float: left; width: 100%; padding: 0; font-size: 16px; font-weight: 800; }
@@ -296,3 +296,20 @@ dialog::backdrop { background: rgba(22,22,30,.45); backdrop-filter: blur(2px); }
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
   .spin { animation-duration: 1.5s !important; animation-iteration-count: infinite !important; }
 }
+
+/* ---------- library ---------- */
+.eyebrow.sub { margin: 10px 0 4px; font-size: 11px; }
+.badge.saved { background: var(--soft); color: var(--soft-text); text-transform: uppercase; }
+.lib-usage { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 650; font-variant-numeric: tabular-nums; }
+.meter { flex: 1; height: 8px; border-radius: 999px; background: var(--track); overflow: hidden; }
+.meter span { display: block; height: 100%; border-radius: inherit; background: var(--green); transition: width .4s; }
+.meter.full span { background: var(--warn); }
+.lib-off { margin: 8px 0 0; }
+.lib-filter { position: relative; display: block; margin: 12px 0 6px; }
+.lib-filter .ic { position: absolute; left: 12px; top: 12px; color: var(--muted); pointer-events: none; }
+.lib-filter input { padding-left: 38px; min-height: 44px; border-radius: 999px; }
+.lib .tm { column-gap: 8px; }
+.icon-btn.del:hover:not(:disabled) { color: var(--danger); }
+.hint.center { text-align: center; margin-top: 8px; }
+.btn.more { display: flex; margin: 8px auto 0; }
+.btn.more[hidden] { display: none; }

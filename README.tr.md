@@ -16,22 +16,39 @@ yazman yeterli; istersen web panelini kullan. Eklenti yok, script yok, arkada ç
 programı yok: Panda sunucuyla doğrudan konuşur, bu yüzden hafiftir (bot ~130 MB RAM kullanır,
 `yt-dlp` ve `ffmpeg` sadece şarkı çalarken çalışır).
 
+![Panda'nın web paneli şarkı çalarken](docs/now-playing.png)
+
 ## Özellikler
 
 - 🎵 **Sadece YouTube, ama hakkıyla** — adıyla ara ya da link yapıştır: `youtube.com`, `youtu.be`,
-  **YouTube Music**, Shorts. Bir çalma listesinin içinden gelen link sadece o şarkıyı çalar.
+  **YouTube Music**, Shorts. Çalma listesi ve albüm linkleri tüm listeyi açmak yerine tek şarkı ekler
+  (linkteki şarkıyı ya da listenin ilk şarkısını).
+- 📚 **Şarkı kütüphanesi** — istenen her şarkı diske kaydedilir. Tekrar çalınan şarkılar anında başlar
+  ve YouTube'a hiç gitmez; kütüphane dolunca en az dinlenen şarkılar yer açar.
+- ⚡ **Şarkılar arası bekleme yok** — sıradaki şarkılar önceden indirilir.
 - 🐼 **TeamSpeak 6 için yapıldı** (TS3 sunucularında da çalışır).
-- 🌐 **Web paneli** — şimdi çalan, sürükle-bırak sıra, arama, geçmiş, ses, tekrar, ileri/geri sarma,
-  açık/koyu tema, Türkçe/İngilizce.
+- 🌐 **Web paneli** — şimdi çalan, sürükle-bırak sıra, arama, kütüphane, geçmiş, ses, tekrar,
+  ileri/geri sarma, açık/koyu tema, Türkçe/İngilizce.
 - 💬 Türkçe ve İngilizce **sohbet komutları**.
 - 🍪 **YouTube bot kontrolü mü?** Cookies'i panele yapıştır, bitti.
 - 🔁 Kendi kendine yeniden bağlanır, kimliğini korur (yetkiler kalıcı olur), çalan şarkıyı açıklamasında gösterir.
 - 📦 Tek dosya, tek komutla kurulum. Linux (x64/ARM), Windows, macOS ve Docker'da çalışır.
+- 🔑 **YouTube API anahtarı gerekmez.**
 
-<p align="center">
-  <img src="docs/panel-light.jpg" width="49%" alt="Panel">
-  <img src="docs/panel-dark-settings.jpg" width="49%" alt="Koyu temada panel ayarları">
-</p>
+## Şarkı kütüphanesi
+
+İstenen her şarkı kütüphane klasörüne (`/var/lib/panda/library`) kaydedilir; sınırı sen belirlersin
+(varsayılan 5 GB). Sınır dolunca Panda en az dinlenen şarkıları siler, böylece en sevdiklerin kalır.
+Bir şarkı kütüphanedeyken:
+
+- hemen başlar (YouTube'a hiç istek gitmez),
+- `!çal` onu adıyla da bulur — `!çal şımarık` kayıtlı *Şımarık*'ı çalar,
+- panelin **Kütüphane** bölümünde görünür; oradan çalabilir, sıraya ekleyebilir ya da silebilirsin.
+
+Kaydetme **Ayarlar → Kütüphane** kısmından kapatılabilir; o zaman Panda sadece sıradaki şarkıyı önceden
+indirir ve çaldıktan sonra siler.
+
+![Koyu temada kütüphane](docs/library.png)
 
 ## Kurulum (Linux)
 
@@ -74,6 +91,8 @@ yerdeki `data` klasöründe tutulur.
 3. Panel şifresini **Ayarlar**'dan değiştir.
 4. TeamSpeak'te botun kanalına `!çal tarkan şımarık` yaz. 🎶
 
+![Ayarlar](docs/settings.png)
+
 ## Sohbet komutları
 
 Botun kanalına ya da bota özel mesaj olarak yaz. İngilizce karşılıkları da çalışır.
@@ -107,6 +126,12 @@ YouTube bazen sunucu IP'lerini engeller. Bir YouTube hesabının cookies'iyle ç
 4. Dosyayı **Ayarlar → YouTube cookies** kısmına yapıştır.
 
 Bunun için yan bir hesap kullanmak iyi fikir.
+
+## YouTube API anahtarı gerekiyor mu?
+
+Hayır. Panda arama ve çalmayı [yt-dlp](https://github.com/yt-dlp/yt-dlp) ile yapar; yt-dlp YouTube'u bir
+tarayıcı gibi okur. Yani API anahtarı, Google projesi ya da günlük kota yok. YouTube'un isteyebileceği
+tek şey yukarıdaki bot kontrolü, onu da cookies çözer.
 
 ## Ayarlar dosyası
 

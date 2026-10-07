@@ -71,6 +71,7 @@ builder.Services.ConfigureHttpJsonOptions(o =>
 builder.Services.AddSingleton(config);
 builder.Services.AddSingleton(new DataPaths(dataDir));
 builder.Services.AddSingleton<YouTube>();
+builder.Services.AddSingleton<Library>();
 builder.Services.AddSingleton<Player>();
 builder.Services.AddSingleton<TsBot>();
 builder.Services.AddHostedService(sp => sp.GetRequiredService<TsBot>());

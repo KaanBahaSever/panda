@@ -24,7 +24,7 @@ public static class PanelApi
 		});
 		api.MapGet("/version", () => new { version = Version });
 
-		authed.MapGet("/state", async (Player player, TsBot bot) => await Snapshot(player, bot));
+		authed.MapGet("/state", async (Player player, TsBot bot, Library library) => await Snapshot(player, bot, library));
 		authed.MapGet("/events", Events);
 
 		authed.MapGet("/search", async (string q, YouTube yt, HttpContext ctx) =>
@@ -33,11 +33,11 @@ public static class PanelApi
 			catch (YouTubeException ex) { return Problem(ex.Message); }
 		});
 
-		authed.MapPost("/play", async (PlayRequest req, YouTube yt, Player player, PandaConfig config) =>
+		authed.MapPost("/play", async (PlayRequest req, Library library, Player player) =>
 		{
 			try
 			{
-				var track = await yt.ResolveAsync(req.Query ?? "", req.RequestedBy is { Length: > 0 } by ? by : PanelUser);
+				var track = await library.ResolveAsync(req.Query ?? "", req.RequestedBy is { Length: > 0 } by ? by : PanelUser);
 				if (req.Now) player.PlayNow(track);
 				else player.Enqueue(track);
 				return Results.Ok(track);
@@ -65,15 +65,19 @@ public static class PanelApi
 		authed.MapPost("/queue/move", (MoveRequest req, Player player) => Done(player.Move(req.From, req.To)));
 
 		authed.MapGet("/settings", (PandaConfig config) => SettingsDto.From(config));
-		authed.MapPut("/settings", (SettingsDto dto, PandaConfig config, TsBot bot) =>
+		authed.MapPut("/settings", (SettingsDto dto, PandaConfig config, TsBot bot, Library library) =>
 		{
 			var reconnect = dto.Apply(config);
 			config.Save();
+			library.SettingsChanged();
 			if (reconnect) bot.Reconnect();
 			return Results.Ok(SettingsDto.From(config));
 		});
 
 		authed.MapPost("/reconnect", (TsBot bot) => Done(Run(bot.Reconnect)));
+
+		authed.MapGet("/library", (string? q, Library library) => library.GetInfo(q));
+		authed.MapDelete("/library/{id}", (string id, Library library) => Done(library.Delete(id)));
 
 		authed.MapPost("/cookies", async (HttpContext ctx, PandaConfig config, DataPaths paths) =>
 		{
@@ -145,16 +149,23 @@ public static class PanelApi
 
 	// --- live updates (Server-Sent Events) ---
 
-	static async Task<object> Snapshot(Player player, TsBot bot) => new
+	static async Task<object> Snapshot(Player player, TsBot bot, Library library) => new
 	{
 		player = player.GetState(),
 		bot = await bot.GetStatusAsync(),
+		library = LibrarySummary(library),
 		serverTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
 	};
 
+	static object LibrarySummary(Library library)
+	{
+		var info = library.GetInfo(max: 0);
+		return new { info.Enabled, info.UsedBytes, info.LimitBytes, info.Count };
+	}
+
 	static readonly JsonSerializerOptions SseJson = new(JsonSerializerDefaults.Web);
 
-	static async Task Events(HttpContext ctx, Player player, TsBot bot)
+	static async Task Events(HttpContext ctx, Player player, TsBot bot, Library library)
 	{
 		ctx.Response.Headers.ContentType = "text/event-stream";
 		ctx.Response.Headers.CacheControl = "no-cache";
@@ -163,6 +174,7 @@ public static class PanelApi
 		var signal = new SemaphoreSlim(1);
 		void Poke() { if (signal.CurrentCount == 0) signal.Release(); }
 		player.Changed += Poke;
+		library.Changed += Poke;
 		bot.StatusChanged += Poke;
 		var ct = ctx.RequestAborted;
 		try
@@ -172,7 +184,7 @@ public static class PanelApi
 				// Wait for a change, but send at least every 15 s so proxies keep the stream open.
 				await signal.WaitAsync(TimeSpan.FromSeconds(15), ct);
 				await Task.Delay(100, ct); // coalesce bursts of changes
-				var json = JsonSerializer.Serialize(await Snapshot(player, bot), SseJson);
+				var json = JsonSerializer.Serialize(await Snapshot(player, bot, library), SseJson);
 				await ctx.Response.WriteAsync($"data: {json}\n\n", ct);
 				await ctx.Response.Body.FlushAsync(ct);
 			}
@@ -181,6 +193,7 @@ public static class PanelApi
 		finally
 		{
 			player.Changed -= Poke;
+			library.Changed -= Poke;
 			bot.StatusChanged -= Poke;
 		}
 	}
@@ -212,6 +225,8 @@ public sealed class SettingsDto
 	public List<ulong> AllowedServerGroups { get; set; } = [];
 	public int MaxQueueLength { get; set; }
 	public int MaxDurationMinutes { get; set; }
+	public bool LibraryEnabled { get; set; }
+	public int LibraryMaxSizeMb { get; set; }
 	public bool HasCookies { get; set; }
 
 	public static SettingsDto From(PandaConfig c) => new()
@@ -229,6 +244,8 @@ public sealed class SettingsDto
 		AllowedServerGroups = c.Bot.AllowedServerGroups,
 		MaxQueueLength = c.Bot.MaxQueueLength,
 		MaxDurationMinutes = c.YouTube.MaxDurationMinutes,
+		LibraryEnabled = c.Library.Enabled,
+		LibraryMaxSizeMb = c.Library.MaxSizeMb,
 		HasCookies = c.YouTube.CookiesFile.Length > 0 && File.Exists(c.YouTube.CookiesFile),
 	};
 
@@ -255,6 +272,8 @@ public sealed class SettingsDto
 		c.Bot.AllowedServerGroups = AllowedServerGroups.Distinct().ToList();
 		if (MaxQueueLength is >= 1 and <= 1000) c.Bot.MaxQueueLength = MaxQueueLength;
 		if (MaxDurationMinutes is >= 0 and <= 1440) c.YouTube.MaxDurationMinutes = MaxDurationMinutes;
+		c.Library.Enabled = LibraryEnabled;
+		if (LibraryMaxSizeMb is 0 or (>= 100 and <= 1_000_000)) c.Library.MaxSizeMb = LibraryMaxSizeMb;
 		return reconnect;
 	}
 }
