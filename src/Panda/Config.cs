@@ -31,19 +31,43 @@ public sealed class PandaConfig
 		else
 			cfg = new();
 		cfg.Path = path;
+		cfg.knownHash = cfg.Panel.PasswordHash;
 		return cfg;
 	}
 
 	readonly object saveLock = new();
+	// The password hash as last read from or written to the file. `panda set-password` changes the
+	// file while the bot is running; comparing against this tells such a change from our own.
+	string knownHash = "";
 
 	public void Save()
 	{
 		lock (saveLock)
 		{
+			AdoptPasswordFromFileLocked();
 			var tmp = Path + ".tmp";
 			WritePrivate(tmp, JsonSerializer.Serialize(this, JsonOptions));
 			File.Move(tmp, Path, overwrite: true);
+			knownHash = Panel.PasswordHash;
 		}
+	}
+
+	/// <summary>Picks up a password set with `panda set-password` while the bot is running.</summary>
+	public void ReloadPassword()
+	{
+		lock (saveLock) AdoptPasswordFromFileLocked();
+	}
+
+	void AdoptPasswordFromFileLocked()
+	{
+		if (Panel.PasswordHash != knownHash) return; // changed here (e.g. in the panel): ours wins
+		try
+		{
+			var onDisk = JsonSerializer.Deserialize<PandaConfig>(File.ReadAllText(Path), JsonOptions)?.Panel.PasswordHash;
+			if (!string.IsNullOrEmpty(onDisk) && onDisk != knownHash)
+				Panel.PasswordHash = knownHash = onDisk;
+		}
+		catch (Exception ex) when (ex is IOException or JsonException) { }
 	}
 
 	/// <summary>Writes a file only its owner can read (it holds passwords and keys).</summary>

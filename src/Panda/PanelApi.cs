@@ -133,7 +133,14 @@ public static class PanelApi
 		if (Failures.TryGetValue(ip, out var f) && f.Fails >= 5 && f.Until > DateTime.UtcNow)
 			return Results.Json(new { error = "too-many-attempts" }, statusCode: 429);
 
-		if (!PasswordHasher.Verify(req.Password ?? "", config.Panel.PasswordHash))
+		var ok = PasswordHasher.Verify(req.Password ?? "", config.Panel.PasswordHash);
+		if (!ok)
+		{
+			// The password may have just been reset with `panda set-password`.
+			config.ReloadPassword();
+			ok = PasswordHasher.Verify(req.Password ?? "", config.Panel.PasswordHash);
+		}
+		if (!ok)
 		{
 			Failures.AddOrUpdate(ip, (1, DateTime.UtcNow.AddMinutes(10)), (_, old) => (old.Fails + 1, DateTime.UtcNow.AddMinutes(10)));
 			await Task.Delay(700);
