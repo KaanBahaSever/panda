@@ -11,10 +11,12 @@ namespace Panda;
 /// one-click updates; running the installer once more enables them. "docker" or "manual": only told.
 /// </param>
 /// <param name="Error">"unreachable" when GitHub could not be asked; the newest versions are then null.</param>
+/// <param name="Upgrading">Panda's update is running (the panel was maybe reloaded or reopened since).</param>
+/// <param name="YtDlpUpdating">yt-dlp's update is running.</param>
 public sealed record UpdateInfo(
 	string Current, string? Latest, bool Newer, string? Notes, string? Url, DateTimeOffset? Published,
 	string? YtDlp, string? YtDlpLatest, bool YtDlpNewer,
-	string Install, DateTimeOffset? CheckedAt, string? Error);
+	string Install, DateTimeOffset? CheckedAt, string? Error, bool Upgrading, bool YtDlpUpdating);
 
 /// <param name="Result">
 /// "updated", "current" (was already the newest), "pending" (systemd hasn't finished yet), "installed"
@@ -82,12 +84,13 @@ public sealed class Updates(PandaConfig config, DataPaths paths, SystemInfo syst
 				{
 					log.LogWarning("Could not check for updates: {Error}", ex.Message);
 					return new UpdateInfo(PanelApi.Version, null, false, null, null, null,
-						ytDlp, null, false, InstallKind(), null, "unreachable");
+						ytDlp, null, false, InstallKind(), null, "unreachable", await UpgradingAsync(), await YtDlpUpdatingAsync());
 				}
 			}
 			var l = latest;
 			return new UpdateInfo(PanelApi.Version, l.Panda, IsNewer(l.Panda, PanelApi.Version), l.Notes, l.Url, l.Published,
-				ytDlp, l.YtDlp, IsNewer(l.YtDlp, ytDlp), InstallKind(), new DateTimeOffset(checkedAt, TimeSpan.Zero), null);
+				ytDlp, l.YtDlp, IsNewer(l.YtDlp, ytDlp), InstallKind(), new DateTimeOffset(checkedAt, TimeSpan.Zero), null,
+				await UpgradingAsync(), await YtDlpUpdatingAsync());
 		}
 		finally { checking.Release(); }
 	}
@@ -107,9 +110,10 @@ public sealed class Updates(PandaConfig config, DataPaths paths, SystemInfo syst
 	/// Asks systemd to run the installer, which downloads the latest release and restarts Panda.
 	/// Only on installs made by install.sh; false elsewhere.
 	/// </summary>
-	public bool StartUpgrade()
+	public async Task<bool> StartUpgradeAsync()
 	{
 		if (InstallKind() != "systemd") return false;
+		if (await UpgradingAsync()) return true; // already on its way: a second click changes nothing
 		log.LogInformation("Updating Panda: the installer runs now and restarts Panda");
 		File.WriteAllText(UpgradeTrigger, DateTimeOffset.UtcNow.ToString("o"));
 		return true;
@@ -120,7 +124,32 @@ public sealed class Updates(PandaConfig config, DataPaths paths, SystemInfo syst
 	/// program belongs to root); otherwise yt-dlp updates itself, and if it can't (no write access, or a
 	/// package manager's copy) Panda downloads its own copy into the data folder and uses that from then on.
 	/// </summary>
-	public async Task<YtDlpUpdate> UpdateYtDlpAsync()
+	public Task<YtDlpUpdate> UpdateYtDlpAsync()
+	{
+		// A second click (another tab, or the panel reopened) waits for the update that is running.
+		lock (ytDlpGate)
+		{
+			if (ytDlpRun is { IsCompleted: false }) return ytDlpRun;
+			return ytDlpRun = Task.Run(RunYtDlpUpdateAsync);
+		}
+	}
+
+	readonly object ytDlpGate = new();
+	Task<YtDlpUpdate>? ytDlpRun;
+
+	async Task<bool> UpgradingAsync() =>
+		InstallKind() == "systemd" && (File.Exists(UpgradeTrigger) || await ServiceRunningAsync("panda-upgrade.service"));
+
+	async Task<bool> YtDlpUpdatingAsync()
+	{
+		lock (ytDlpGate) if (ytDlpRun is { IsCompleted: false }) return true;
+		return InstallKind() == "systemd" && (File.Exists(YtDlpTrigger) || await ServiceRunningAsync("panda-update.service"));
+	}
+
+	static async Task<bool> ServiceRunningAsync(string unit) =>
+		(await RunAsync("systemctl", "is-active " + unit)).Output.Trim() is "activating" or "active" or "reloading";
+
+	async Task<YtDlpUpdate> RunYtDlpUpdateAsync()
 	{
 		var before = (await system.ToolsAsync(fresh: true)).YtDlp;
 		switch (InstallKind())
@@ -191,13 +220,8 @@ public sealed class Updates(PandaConfig config, DataPaths paths, SystemInfo syst
 			await Task.Delay(1500);
 			// The service deletes the trigger as its first step, then runs "yt-dlp -U".
 			if (File.Exists(YtDlpTrigger)) continue;
-			var (_, output) = await RunAsync("systemctl", "is-active panda-update.service");
-			switch (output.Trim())
-			{
-			case "activating" or "active" or "reloading": continue;
-			case "failed": return "failed";
-			default: return "done";
-			}
+			if (await ServiceRunningAsync("panda-update.service")) continue;
+			return (await RunAsync("systemctl", "is-active panda-update.service")).Output.Trim() == "failed" ? "failed" : "done";
 		}
 		return "pending";
 	}

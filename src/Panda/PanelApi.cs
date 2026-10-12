@@ -187,8 +187,8 @@ public static class PanelApi
 		// --- updates ---
 
 		admin.MapGet("/update", async (bool? fresh, Updates updates) => await updates.CheckAsync(fresh == true));
-		admin.MapPost("/update", (Updates updates) =>
-			updates.StartUpgrade() ? Results.Accepted() : Problem("cannot-update"));
+		admin.MapPost("/update", async (Updates updates) =>
+			await updates.StartUpgradeAsync() ? Results.Accepted() : Problem("cannot-update"));
 		admin.MapPost("/update/yt-dlp", async (Updates updates) =>
 		{
 			try

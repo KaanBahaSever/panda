@@ -259,8 +259,15 @@ function toast(msg, kind = 'ok') {
     icon(kind === 'err' ? 'alert' : 'check'), el('span', { text: msg }));
   box.addEventListener('click', () => box.remove());
   $('toasts').append(box);
+  raiseToasts();
   while ($('toasts').children.length > 3) $('toasts').firstElementChild.remove();   // keep the stack short
   setTimeout(() => { box.classList.add('out'); setTimeout(() => box.remove(), 300); }, kind === 'err' ? 6000 : 3200);
+}
+/** A modal sheet sits in the top layer, above everything else; showing the toasts as a popover again puts them above it. */
+function raiseToasts() {
+  const box = $('toasts');
+  if (!box.showPopover) return;
+  try { if (box.matches(':popover-open')) box.hidePopover(); box.showPopover(); } catch {}
 }
 function confirmBox(msg) {
   const d = $('confirm');
@@ -1148,15 +1155,22 @@ function showSysTab(name) {
 
 /* Updates: one row for Panda, one for yt-dlp, each with what is installed, what is newest and what
    an update did. GitHub is asked at most hourly by the server; "Check" asks right away. */
-let updateInfo = null, updChecking = false;
+let updateInfo = null, updChecking = false, upgradeWatch = false;
 const updMsg = { panda: null, yt: null };   // { kind: 'busy' | 'ok' | 'err', text }
 
 async function checkUpdate(fresh) {
-  if (fresh) { updChecking = true; updMsg.panda = updMsg.yt = null; renderUpdate(); }
+  if (fresh) {
+    updChecking = true;
+    for (const k of ['panda', 'yt']) if (updMsg[k]?.kind !== 'busy') updMsg[k] = null;   // a running update stays
+    renderUpdate();
+  }
   const u = await api('GET', '/api/update' + (fresh ? '?fresh=true' : '')).catch(() => null);
   updChecking = false;
   if (u) { updateInfo = u; $('open-system').classList.toggle('badge-dot', !!u.newer); }
   renderUpdate();
+  // An update started earlier (before a reload, or from another tab) is still running: follow it.
+  if (u?.upgrading) waitForUpgrade(u.current);
+  if (u?.ytDlpUpdating && updMsg.yt?.kind !== 'busy') updateYtDlp();
 }
 
 function renderUpdate() {
@@ -1205,23 +1219,33 @@ function renderUpdate() {
 }
 
 async function startUpgrade() {
-  const from = updateInfo?.current;
+  if (upgradeWatch) return;
   updMsg.panda = { kind: 'busy', text: t('updStarted') }; renderUpdate();
   try { await api('POST', '/api/update'); }
   catch (e) { updMsg.panda = { kind: 'err', text: errText(e) }; return renderUpdate(); }
-  // The installer replaces Panda and restarts it; wait for the new version, then load the new panel.
-  for (let i = 0; i < 60; i++) {
-    await new Promise(r => setTimeout(r, 5000));
-    const v = await api('GET', '/api/version').catch(() => null);
-    if (v && v.version !== from) {
-      updMsg.panda = { kind: 'ok', text: t('updDone', v.version) }; renderUpdate();
-      setTimeout(() => location.reload(), 2000); return;
+  await waitForUpgrade(updateInfo?.current);
+}
+
+/** The installer replaces Panda and restarts it; waits for the new version, then loads the new panel. */
+async function waitForUpgrade(from) {
+  if (upgradeWatch) return;
+  upgradeWatch = true;
+  updMsg.panda = { kind: 'busy', text: t('updStarted') }; renderUpdate();
+  try {
+    for (let i = 0; i < 60; i++) {
+      await new Promise(r => setTimeout(r, 5000));
+      const v = await api('GET', '/api/version').catch(() => null);
+      if (v && v.version !== from) {
+        updMsg.panda = { kind: 'ok', text: t('updDone', v.version) }; renderUpdate();
+        setTimeout(() => location.reload(), 2000); return;
+      }
     }
-  }
-  updMsg.panda = { kind: 'err', text: t('updSlow') }; renderUpdate();
+    updMsg.panda = { kind: 'err', text: t('updSlow') }; renderUpdate();
+  } finally { upgradeWatch = false; }
 }
 
 async function updateYtDlp() {
+  if (updMsg.yt?.kind === 'busy') return;
   updMsg.yt = { kind: 'busy', text: t('ytBusy') }; renderUpdate();
   try {
     const r = await api('POST', '/api/update/yt-dlp');

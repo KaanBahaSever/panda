@@ -107,8 +107,30 @@ builder.Services.AddAuthorizationBuilder()
 var app = builder.Build();
 
 var panelFiles = new ManifestEmbeddedFileProvider(typeof(PanelApi).Assembly, "wwwroot");
-app.UseDefaultFiles(new DefaultFilesOptions { FileProvider = panelFiles });
-app.UseStaticFiles(new StaticFileOptions { FileProvider = panelFiles });
+// The page asks for its script and styles by version, so a browser holding an older panel gets the
+// new one right after an update.
+string indexHtml;
+using (var reader = new StreamReader(panelFiles.GetFileInfo("index.html").CreateReadStream()))
+	indexHtml = reader.ReadToEnd()
+		.Replace("href=\"style.css\"", $"href=\"style.css?v={PanelApi.Version}\"")
+		.Replace("src=\"app.js\"", $"src=\"app.js?v={PanelApi.Version}\"");
+app.Use(async (ctx, next) =>
+{
+	if (ctx.Request.Path.Value is "/" or "/index.html" && (HttpMethods.IsGet(ctx.Request.Method) || HttpMethods.IsHead(ctx.Request.Method)))
+	{
+		ctx.Response.ContentType = "text/html; charset=utf-8";
+		ctx.Response.Headers.CacheControl = "no-cache";
+		await ctx.Response.WriteAsync(indexHtml);
+		return;
+	}
+	await next();
+});
+// Always asked again (answered "not modified" when unchanged), so an updated Panda shows its new panel.
+app.UseStaticFiles(new StaticFileOptions
+{
+	FileProvider = panelFiles,
+	OnPrepareResponse = c => c.Context.Response.Headers.CacheControl = "no-cache",
+});
 app.UseAuthentication();
 app.UseAuthorization();
 PanelApi.Map(app);
