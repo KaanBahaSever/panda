@@ -193,12 +193,15 @@ public sealed class Player : IDisposable
 		RaiseChanged();
 	}
 
-	public Track? Remove(int index)
+	/// <param name="expectedId">When given, only removes the song if it is still at that position
+	/// (the queue may have moved on since the panel showed it).</param>
+	public Track? Remove(int index, string? expectedId = null)
 	{
 		Track removed;
 		lock (gate)
 		{
 			if (index < 0 || index >= queue.Count) return null;
+			if (expectedId != null && queue[index].Id != expectedId) return null;
 			removed = queue[index];
 			queue.RemoveAt(index);
 		}
@@ -206,11 +209,12 @@ public sealed class Player : IDisposable
 		return removed;
 	}
 
-	public bool Move(int from, int to)
+	public bool Move(int from, int to, string? expectedId = null)
 	{
 		lock (gate)
 		{
 			if (from < 0 || from >= queue.Count || to < 0 || to >= queue.Count) return false;
+			if (expectedId != null && queue[from].Id != expectedId) return false;
 			var t = queue[from];
 			queue.RemoveAt(from);
 			queue.Insert(to, t);
@@ -284,6 +288,7 @@ public sealed class Player : IDisposable
 
 		AudioStream audio;
 		var file = library.GetFile(track.Id);
+		string? tee = null;
 		try
 		{
 			if (file != null)
@@ -293,13 +298,15 @@ public sealed class Player : IDisposable
 			else
 			{
 				// Not on disk yet: stream it from YouTube and save it on the way.
-				var tee = seeking ? null : library.BeginTee(track);
+				tee = seeking ? null : library.BeginTee(track);
 				audio = youtube.OpenAudio(track, startSeconds, tee,
 					tee is null ? null : complete => library.EndTee(track, tee, complete));
 			}
 		}
 		catch (YouTubeException ex)
 		{
+			// The library holds the song as "being saved" until EndTee; release it.
+			if (tee != null) library.EndTee(track, tee, complete: false);
 			// Report and move on without blocking the caller.
 			_ = Task.Run(() => OnFailed(gen, track, ex.Message));
 			return;
@@ -336,8 +343,10 @@ public sealed class Player : IDisposable
 		{
 			if (ended.Generation != generation || current is null)
 				return;
-			// Less than a second of audio means yt-dlp/ffmpeg failed rather than the song ending.
-			if (Interlocked.Read(ref ended.BytesRead) < BytesPerSecond && !current.IsLive)
+			// Less than a second of audio means yt-dlp/ffmpeg failed rather than the song ending,
+			// unless it was started (seeked) right before its end.
+			var remaining = current.IsLive ? int.MaxValue : current.Duration - startOffset;
+			if (Interlocked.Read(ref ended.BytesRead) < BytesPerSecond && remaining > 3)
 			{
 				var reason = YouTube.FriendlyError(ended.Errors);
 				var failed = current;

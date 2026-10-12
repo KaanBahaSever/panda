@@ -86,6 +86,15 @@ index 8def056..1626bd4 100644
      <LangVersion>8.0</LangVersion>
      <RootNamespace>TSLib</RootNamespace>
      <AssemblyName>TSLib</AssemblyName>
+@@ -34,7 +34,7 @@
+
+   <ItemGroup>
+     <PackageReference Include="NLog" Version="4.7.3" />
+-    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
++    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+     <PackageReference Include="Heijden.Dns.Portable" Version="2.0.19" />
+     <PackageReference Include="Nullable" Version="1.2.1">
+       <PrivateAssets>all</PrivateAssets>
 @@ -43,7 +43,6 @@
      <PackageReference Include="Portable.BouncyCastle" Version="1.8.6.7" />
      <PackageReference Include="Splamy.Ed25519.Toolkit" Version="1.0.3" />

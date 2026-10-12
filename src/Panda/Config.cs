@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -45,9 +46,7 @@ public sealed class PandaConfig
 		lock (saveLock)
 		{
 			AdoptPasswordFromFileLocked();
-			var tmp = Path + ".tmp";
-			WritePrivate(tmp, JsonSerializer.Serialize(this, JsonOptions));
-			File.Move(tmp, Path, overwrite: true);
+			SafeFile.Write(Path, JsonSerializer.Serialize(this, JsonOptions), ownerOnly: true);
 			knownHash = Panel.PasswordHash;
 		}
 	}
@@ -69,13 +68,32 @@ public sealed class PandaConfig
 		}
 		catch (Exception ex) when (ex is IOException or JsonException) { }
 	}
+}
 
-	/// <summary>Writes a file only its owner can read (it holds passwords and keys).</summary>
-	public static void WritePrivate(string path, string text)
+public static class SafeFile
+{
+	const UnixFileMode OwnerOnly = UnixFileMode.UserRead | UnixFileMode.UserWrite;
+
+	/// <summary>
+	/// Writes a temporary file, flushes it to disk and renames it over the target, so a crash or a
+	/// power cut leaves either the old or the new file, never an empty or half-written one.
+	/// </summary>
+	/// <param name="ownerOnly">Only the owner may read it (passwords, keys). The file never exists with wider rights.</param>
+	public static void Write(string path, string text, bool ownerOnly = false)
 	{
-		File.WriteAllText(path, text);
-		if (!OperatingSystem.IsWindows())
-			File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite);
+		var tmp = path + ".tmp";
+		var options = new FileStreamOptions { Mode = FileMode.Create, Access = FileAccess.Write };
+		if (ownerOnly && !OperatingSystem.IsWindows())
+			options.UnixCreateMode = OwnerOnly;
+		using (var fs = new FileStream(tmp, options))
+		{
+			fs.Write(Encoding.UTF8.GetBytes(text));
+			fs.Flush(flushToDisk: true);
+		}
+		// UnixCreateMode only applies to new files; a leftover temp file keeps its old rights.
+		if (ownerOnly && !OperatingSystem.IsWindows())
+			File.SetUnixFileMode(tmp, OwnerOnly);
+		File.Move(tmp, path, overwrite: true);
 	}
 }
 
@@ -137,10 +155,16 @@ public static class PasswordHasher
 	public static bool Verify(string password, string stored)
 	{
 		var parts = stored.Split('$');
-		if (parts.Length != 4 || parts[0] != "pbkdf2" || !int.TryParse(parts[1], out var iterations))
+		if (parts.Length != 4 || parts[0] != "pbkdf2" || !int.TryParse(parts[1], out var iterations) || iterations <= 0)
 			return false;
-		var salt = Convert.FromBase64String(parts[2]);
-		var expected = Convert.FromBase64String(parts[3]);
+		byte[] salt, expected;
+		try
+		{
+			salt = Convert.FromBase64String(parts[2]);
+			expected = Convert.FromBase64String(parts[3]);
+		}
+		catch (FormatException) { return false; } // a hand-edited config.json
+		if (expected.Length == 0) return false;
 		var actual = Rfc2898DeriveBytes.Pbkdf2(password, salt, iterations, HashAlgorithmName.SHA256, expected.Length);
 		return CryptographicOperations.FixedTimeEquals(actual, expected);
 	}

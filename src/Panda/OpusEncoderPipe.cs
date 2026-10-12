@@ -21,6 +21,8 @@ public sealed class OpusEncoderPipe : IAudioPipe, ISampleInfo
 	int pendingLength;
 	readonly short[] pcm = new short[FrameSamples * 2];
 	readonly byte[] packet = new byte[MaxPacket];
+	// Reused for every packet (50 a second); the pipes after this one fill it in synchronously.
+	readonly Meta musicMeta = new() { Codec = Codec.OpusMusic };
 
 	public int SampleRate => 48000;
 	public int Channels => 2;
@@ -48,7 +50,7 @@ public sealed class OpusEncoderPipe : IAudioPipe, ISampleInfo
 			MemoryMarshal.Cast<byte, short>(pending).CopyTo(pcm);
 			pendingLength = 0;
 			var len = encoder.Encode(pcm, FrameSamples, packet, MaxPacket);
-			meta ??= new Meta();
+			meta ??= musicMeta;
 			meta.Codec = Codec.OpusMusic;
 			OutStream?.Write(packet.AsSpan(0, len), meta);
 		}

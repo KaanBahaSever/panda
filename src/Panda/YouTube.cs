@@ -146,16 +146,31 @@ public sealed partial class YouTube(PandaConfig config, ILogger<YouTube> log)
 		psi.ArgumentList.Add("-J");
 		foreach (var a in extra) psi.ArgumentList.Add(a);
 
+		// yt-dlp can hang on a stalled connection; a chat command must not wait forever.
+		using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
+		timeout.CancelAfter(MetadataTimeout);
 		using var proc = StartProcess(psi);
-		using var reg = ct.Register(() => Kill(proc));
-		var stdout = proc.StandardOutput.ReadToEndAsync(ct);
-		var stderr = proc.StandardError.ReadToEndAsync(ct);
-		await proc.WaitForExitAsync(ct);
-		var output = await stdout;
+		using var reg = timeout.Token.Register(() => Kill(proc));
+		string output;
+		Task<string> stderr;
+		try
+		{
+			var stdout = proc.StandardOutput.ReadToEndAsync(timeout.Token);
+			stderr = proc.StandardError.ReadToEndAsync(timeout.Token);
+			await proc.WaitForExitAsync(timeout.Token);
+			output = await stdout;
+		}
+		catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+		{
+			throw new YouTubeException("timeout");
+		}
 		if (proc.ExitCode != 0 || output.Length == 0)
 			throw new YouTubeException(FriendlyError(await stderr));
-		return JsonDocument.Parse(output).RootElement.Clone();
+		using var doc = JsonDocument.Parse(output);
+		return doc.RootElement.Clone();
 	}
+
+	static readonly TimeSpan MetadataTimeout = TimeSpan.FromSeconds(60);
 
 	/// <summary>
 	/// Starts yt-dlp (download to stdout) piped into ffmpeg (decode to 48 kHz stereo s16le PCM).
@@ -180,7 +195,7 @@ public sealed partial class YouTube(PandaConfig config, ILogger<YouTube> log)
 		var ytProc = StartProcess(yt);
 		Process ffProc;
 		try { ffProc = StartProcess(ff); }
-		catch { Kill(ytProc); throw; }
+		catch { Kill(ytProc); ytProc.Dispose(); throw; }
 		return new AudioStream(ytProc, ffProc, log, teePath, teeDone);
 	}
 

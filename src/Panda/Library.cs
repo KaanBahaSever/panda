@@ -14,6 +14,8 @@ public sealed record LibraryItem(
 
 public sealed record LibraryInfo(bool Enabled, long UsedBytes, long LimitBytes, int Count, IReadOnlyList<LibraryItem> Items);
 
+public sealed record LibrarySummary(bool Enabled, long UsedBytes, long LimitBytes, int Count);
+
 /// <summary>
 /// Songs saved on disk. Every requested song is downloaded in the background (the next ones in the
 /// queue first), so songs start instantly and favourites never hit YouTube again. When the folder
@@ -23,6 +25,7 @@ public sealed record LibraryInfo(bool Enabled, long UsedBytes, long LimitBytes, 
 public sealed class Library : IDisposable
 {
 	const int PrefetchWhenDisabled = 2;
+	static readonly TimeSpan RetryFailedAfter = TimeSpan.FromMinutes(10);
 
 	readonly PandaConfig config;
 	readonly YouTube youtube;
@@ -35,11 +38,15 @@ public sealed class Library : IDisposable
 	List<Track> wanted = [];
 	string? nowPlaying;
 	readonly HashSet<string> busy = []; // ids being downloaded right now
+	// Failed downloads wait before the next try, so a broken song (or a YouTube bot check)
+	// doesn't make the loop hammer YouTube.
+	readonly Dictionary<string, DateTime> retryAfter = new();
 	readonly SemaphoreSlim wake = new(0);
 	readonly CancellationTokenSource stop = new();
 	CancellationTokenSource? currentDownload;
 	string? currentDownloadId;
 	Timer? saveTimer;
+	readonly object saveLock = new();
 
 	public event Action? Changed;
 
@@ -122,9 +129,17 @@ public sealed class Library : IDisposable
 				.Take(max)
 				.Select(ToItem)
 				.ToList();
-			return new LibraryInfo(Enabled, UsedLocked(), config.Library.MaxSizeMb <= 0 ? 0 : LimitBytes, songs.Count, items);
+			return new LibraryInfo(Enabled, UsedLocked(), ShownLimit, songs.Count, items);
 		}
 	}
+
+	/// <summary>Counts only, for the live panel updates (no sorting).</summary>
+	public LibrarySummary GetSummary()
+	{
+		lock (gate) return new(Enabled, UsedLocked(), ShownLimit, songs.Count);
+	}
+
+	long ShownLimit => config.Library.MaxSizeMb <= 0 ? 0 : LimitBytes;
 
 	LibraryItem ToItem(Song s)
 	{
@@ -159,6 +174,7 @@ public sealed class Library : IDisposable
 	{
 		lock (gate)
 		{
+			TryDelete(PrefetchPath(id));
 			if (!songs.Remove(id)) return false;
 			TryDelete(SongPath(id));
 		}
@@ -213,9 +229,11 @@ public sealed class Library : IDisposable
 		lock (gate)
 		{
 			var max = config.YouTube.MaxDurationMinutes;
+			var now = DateTime.UtcNow;
 			return wanted.FirstOrDefault(t =>
 				!busy.Contains(t.Id)
 				&& !(max > 0 && t.Duration > max * 60)
+				&& !(retryAfter.TryGetValue(t.Id, out var until) && until > now)
 				&& !songs.ContainsKey(t.Id)
 				&& !File.Exists(PrefetchPath(t.Id)));
 		}
@@ -232,17 +250,21 @@ public sealed class Library : IDisposable
 		}
 		// Not ".part": yt-dlp treats that suffix specially and drops it.
 		var part = Path.Combine(TempDir, track.Id + ".dl");
+		var failed = false;
 		try
 		{
-			var ok = await youtube.DownloadAsync(track, part, cts.Token);
-			if (ok && File.Exists(part))
+			if (await youtube.DownloadAsync(track, part, cts.Token) && File.Exists(part))
 				Store(track, part);
 			else
+			{
+				failed = true;
 				TryDelete(part);
+			}
 		}
 		catch (OperationCanceledException) { TryDelete(part); }
 		catch (Exception ex)
 		{
+			failed = true;
 			log.LogWarning("Download of {Id} failed: {Error}", track.Id, ex.Message);
 			TryDelete(part);
 		}
@@ -253,6 +275,9 @@ public sealed class Library : IDisposable
 				busy.Remove(track.Id);
 				currentDownload = null;
 				currentDownloadId = null;
+				foreach (var id in retryAfter.Where(r => r.Value < DateTime.UtcNow).Select(r => r.Key).ToList())
+					retryAfter.Remove(id);
+				if (failed) retryAfter[track.Id] = DateTime.UtcNow + RetryFailedAfter;
 			}
 		}
 	}
@@ -277,6 +302,11 @@ public sealed class Library : IDisposable
 		{
 			if (complete && File.Exists(path) && new FileInfo(path).Length > 0) Store(track, path);
 			else TryDelete(path);
+		}
+		catch (Exception ex)
+		{
+			log.LogWarning("Could not save {Id}: {Error}", track.Id, ex.Message);
+			TryDelete(path);
 		}
 		finally
 		{
@@ -355,6 +385,7 @@ public sealed class Library : IDisposable
 	void Load()
 	{
 		foreach (var f in Directory.EnumerateFiles(TempDir)) TryDelete(f);
+		var indexRead = true;
 		if (File.Exists(IndexPath))
 		{
 			try
@@ -362,21 +393,25 @@ public sealed class Library : IDisposable
 				var idx = JsonSerializer.Deserialize<IndexFile>(File.ReadAllText(IndexPath), JsonOpts);
 				if (idx != null)
 				{
-					songs = idx.Songs.ToDictionary(s => s.Id);
+					songs = idx.Songs.DistinctBy(s => s.Id).ToDictionary(s => s.Id);
 					stats = idx.Stats;
 				}
 			}
 			catch (Exception ex)
 			{
-				log.LogWarning("Could not read {Path}: {Error}", IndexPath, ex.Message);
+				// Keep the broken index and the songs: deleting "unknown" files now would wipe the library.
+				indexRead = false;
+				log.LogWarning("Could not read {Path}: {Error}. A copy is kept as library.json.bad", IndexPath, ex.Message);
+				try { File.Copy(IndexPath, IndexPath + ".bad", overwrite: true); } catch { }
 			}
 		}
 		// Forget entries whose file is gone and files nobody knows about.
 		foreach (var id in songs.Keys.Where(id => !File.Exists(SongPath(id))).ToList())
 			songs.Remove(id);
-		foreach (var f in Directory.EnumerateFiles(Dir, "*.audio"))
-			if (!songs.ContainsKey(Path.GetFileNameWithoutExtension(f)))
-				TryDelete(f);
+		if (indexRead)
+			foreach (var f in Directory.EnumerateFiles(Dir, "*.audio"))
+				if (!songs.ContainsKey(Path.GetFileNameWithoutExtension(f)))
+					TryDelete(f);
 	}
 
 	void SaveSoon()
@@ -390,18 +425,19 @@ public sealed class Library : IDisposable
 
 	void Save()
 	{
-		try
+		lock (saveLock) // the timer and Dispose may save at the same time
 		{
-			string json;
-			lock (gate)
-				json = JsonSerializer.Serialize(new IndexFile { Songs = songs.Values.ToList(), Stats = stats }, JsonOpts);
-			var tmp = IndexPath + ".tmp";
-			File.WriteAllText(tmp, json);
-			File.Move(tmp, IndexPath, overwrite: true);
-		}
-		catch (Exception ex)
-		{
-			log.LogWarning("Could not save the library index: {Error}", ex.Message);
+			try
+			{
+				string json;
+				lock (gate)
+					json = JsonSerializer.Serialize(new IndexFile { Songs = songs.Values.ToList(), Stats = stats }, JsonOpts);
+				SafeFile.Write(IndexPath, json);
+			}
+			catch (Exception ex)
+			{
+				log.LogWarning("Could not save the library index: {Error}", ex.Message);
+			}
 		}
 	}
 

@@ -34,7 +34,8 @@ const I18N = {
     'err.queue-full': 'The queue is full.', 'err.wrong-password': 'Wrong password.', 'err.too-many-attempts': 'Too many attempts — wait a few minutes.',
     'err.password-too-short': 'The new password needs at least 6 characters.', 'err.cookies-invalid': 'That doesn\'t look like a YouTube cookies.txt.',
     'err.too-large': 'That file is too large.', 'err.missing': 'Missing tool on the server: ',
-    library: 'Library', saved: 'saved', fromLibrary: 'From your library', fromYouTube: 'From YouTube', libFilter: 'Filter saved songs',
+    'err.timeout': 'YouTube didn\'t answer in time — try again.',
+    library: 'Library', savedBadge: 'saved', fromLibrary: 'From your library', fromYouTube: 'From YouTube', libFilter: 'Filter saved songs',
     usage: (a, b) => `${a} of ${b}`, libOff: 'Saving is off — turn it on in Settings.', libEmpty: 'No saved songs yet. Songs are saved as they are requested.',
     libNoMatch: 'No saved songs match.', libCapped: 'Showing the 500 most played songs — use the filter to find others.', showMore: 'Show more',
     plays: n => n === 1 ? '1 play' : `${n} plays`, delete: 'Delete', deleted: 'Deleted', confirmLibDelete: x => `Delete "${x}" from the library?`,
@@ -72,7 +73,8 @@ const I18N = {
     'err.queue-full': 'Sıra dolu.', 'err.wrong-password': 'Şifre yanlış.', 'err.too-many-attempts': 'Çok fazla deneme — birkaç dakika bekleyin.',
     'err.password-too-short': 'Yeni şifre en az 6 karakter olmalı.', 'err.cookies-invalid': 'Bu bir YouTube cookies.txt dosyasına benzemiyor.',
     'err.too-large': 'Dosya çok büyük.', 'err.missing': 'Sunucuda eksik araç: ',
-    library: 'Kütüphane', saved: 'kayıtlı', fromLibrary: 'Kütüphanenden', fromYouTube: 'YouTube\'dan', libFilter: 'Kayıtlı şarkılarda ara',
+    'err.timeout': 'YouTube zamanında cevap vermedi — tekrar dene.',
+    library: 'Kütüphane', savedBadge: 'kayıtlı', fromLibrary: 'Kütüphanenden', fromYouTube: 'YouTube\'dan', libFilter: 'Kayıtlı şarkılarda ara',
     usage: (a, b) => `${a} / ${b}`, libOff: 'Kaydetme kapalı — Ayarlar\'dan açabilirsin.', libEmpty: 'Henüz kayıtlı şarkı yok. Şarkılar istendikçe kaydedilir.',
     libNoMatch: 'Eşleşen kayıtlı şarkı yok.', libCapped: 'En çok dinlenen 500 şarkı gösteriliyor — diğerleri için aramayı kullan.', showMore: 'Daha fazla göster',
     plays: n => `${n} dinlenme`, delete: 'Sil', deleted: 'Silindi', confirmLibDelete: x => `"${x}" kütüphaneden silinsin mi?`,
@@ -422,7 +424,7 @@ function showResults(saved, yt) {
   if (!rest.length && !saved.length) $('results').append(el('li', { class: 'empty muted', text: t('noResults') }));
 }
 function resultRow(tr, saved) {
-  const extra = saved ? [el('span', { class: 'badge saved sm', text: t('saved') })] : [];
+  const extra = saved ? [el('span', { class: 'badge saved sm', text: t('savedBadge') })] : [];
   return el('li', { class: 'track' }, thumb(tr), trackText(tr, { req: false, extra }), playButtons(tr, true));
 }
 /** "Add" and "Play now" buttons (plus extra buttons) for anything with a url. */
@@ -551,7 +553,7 @@ function queueItem(tr, i, n) {
     el('div', { class: 'acts' },
       btn('up', t('moveUp'), () => move(i, i - 1), i === 0),
       btn('down', t('moveDown'), () => move(i, i + 1), i === n - 1),
-      btn('x', t('remove'), () => remove(i))));
+      btn('x', t('remove'), () => remove(i, tr.id))));
   li.dataset.index = i;
   li.addEventListener('dragstart', e => { dragFrom = i; li.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', String(i)); });
   li.addEventListener('dragend', () => { dragFrom = -1; li.classList.remove('dragging'); clearDropMarks(); renderQueue(); });
@@ -568,12 +570,21 @@ function clearDropMarks() { document.querySelectorAll('.drop-before,.drop-after'
 function move(from, to) {
   const q = S.player.queue;
   if (to < 0 || to >= q.length) return;
+  const id = q[from].id;
   q.splice(to, 0, q.splice(from, 1)[0]); renderQueue();   // optimistic
-  act(() => api('POST', '/api/queue/move', { from, to }));
+  queueEdit(() => api('POST', '/api/queue/move', { from, to, id }));
 }
-function remove(i) {
+function remove(i, id) {
   S.player.queue.splice(i, 1); renderQueue();              // optimistic
-  act(() => api('DELETE', '/api/queue/' + i));
+  queueEdit(() => api('DELETE', `/api/queue/${i}?id=${encodeURIComponent(id)}`));
+}
+/** The server refuses (409) when the queue moved on in the meantime; then show its real state. */
+async function queueEdit(fn) {
+  try { await fn(); }
+  catch (e) {
+    if (e.status === 409) { const s = await api('GET', '/api/state').catch(() => null); if (s) setState(s); }
+    else if (e.status !== 401) toast(errText(e), 'err');
+  }
 }
 
 /* ---------------- history ---------------- */

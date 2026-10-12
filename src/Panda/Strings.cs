@@ -40,6 +40,7 @@ public static class Strings
 		["err-bot-check"] = ("YouTube wants to check I'm not a bot. Add fresh cookies in the panel.", "YouTube bot kontrolü istiyor. Panelden yeni cookies ekleyin."),
 		["err-unavailable"] = ("That video isn't available.", "Bu video kullanılamıyor."),
 		["err-age"] = ("That video is age-restricted. Add cookies of an adult account in the panel.", "Bu video yaş sınırlı. Panelden yetişkin bir hesabın cookies'ini ekleyin."),
+		["err-timeout"] = ("YouTube didn't answer in time. Try again.", "YouTube zamanında cevap vermedi. Tekrar dene."),
 		["err-other"] = ("Couldn't play that: {0}", "Çalamadım: {0}"),
 		["play-failed"] = ("Couldn't play [b]{0}[/b]: {1}", "[b]{0}[/b] çalınamadı: {1}"),
 		["live"] = ("LIVE", "CANLI"),
@@ -88,12 +89,13 @@ public static class Strings
 		"bot-check" => Get(lang, "err-bot-check"),
 		"unavailable" => Get(lang, "err-unavailable"),
 		"age" => Get(lang, "err-age"),
+		"timeout" => Get(lang, "err-timeout"),
 		_ => Get(lang, "err-other", reason),
 	};
 
 	/// <summary>The reason without the "Couldn't play that:" wrapper, for "Couldn't play X: reason".</summary>
 	public static string ShortError(string lang, string reason) =>
-		reason is "not-found" or "empty" or "playlist-empty" or "not-youtube" or "too-long" or "bot-check" or "unavailable" or "age"
+		reason is "not-found" or "empty" or "playlist-empty" or "not-youtube" or "too-long" or "bot-check" or "unavailable" or "age" or "timeout"
 			? Error(lang, reason)
 			: reason;
 }

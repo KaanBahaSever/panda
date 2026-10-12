@@ -81,6 +81,7 @@ public sealed class TsBot : BackgroundService
 	{
 		identity = LoadOrCreateIdentity();
 		var delay = TimeSpan.FromSeconds(3);
+		var stopped = Task.Delay(Timeout.Infinite, ct);
 		while (!ct.IsCancellationRequested)
 		{
 			var disconnected = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -92,7 +93,6 @@ public sealed class TsBot : BackgroundService
 			{
 				delay = TimeSpan.FromSeconds(3);
 				SetState("connected", null);
-				var stopped = Task.Delay(Timeout.Infinite, ct);
 				var done = await Task.WhenAny(disconnected.Task, reconnect.Task, stopped);
 				player.AttachOutput(null);
 				if (done == disconnected.Task)
@@ -274,7 +274,7 @@ public sealed class TsBot : BackgroundService
 				if (command == "playnow")
 				{
 					player.PlayNow(track);
-					return null;
+					return config.Bot.Announce ? null : Strings.Get(Lang, "now-playing", Link(track), Strings.Duration(Lang, track));
 				}
 				var pos = player.Enqueue(track);
 				// Position 0 started playing; the "now playing" announcement covers it.
@@ -398,7 +398,7 @@ public sealed class TsBot : BackgroundService
 		}
 		log.LogInformation("Creating a new TeamSpeak identity");
 		var id = TsCrypt.GenerateNewIdentity(8);
-		PandaConfig.WritePrivate(identityPath, JsonSerializer.Serialize(new SavedIdentity(id.PrivateKeyString, id.ValidKeyOffset)));
+		SafeFile.Write(identityPath, JsonSerializer.Serialize(new SavedIdentity(id.PrivateKeyString, id.ValidKeyOffset)), ownerOnly: true);
 		return id;
 	}
 

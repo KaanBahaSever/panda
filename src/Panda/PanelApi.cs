@@ -61,8 +61,9 @@ public static class PanelApi
 		authed.MapPost("/seek", (SeekRequest req, Player player) => Done(player.Seek((int)Math.Round(req.Seconds))));
 		authed.MapPost("/volume", (VolumeRequest req, Player player) => Done(Run(() => player.SetVolume(req.Volume))));
 		authed.MapPost("/loop", (LoopRequest req, Player player) => Done(Run(() => player.SetLoop(req.Mode))));
-		authed.MapDelete("/queue/{index:int}", (int index, Player player) => Done(player.Remove(index) != null));
-		authed.MapPost("/queue/move", (MoveRequest req, Player player) => Done(player.Move(req.From, req.To)));
+		// The song id guards against the queue having moved on since the panel showed it.
+		authed.MapDelete("/queue/{index:int}", (int index, string? id, Player player) => Done(player.Remove(index, id) != null));
+		authed.MapPost("/queue/move", (MoveRequest req, Player player) => Done(player.Move(req.From, req.To, req.Id)));
 
 		authed.MapGet("/settings", (PandaConfig config) => SettingsDto.From(config));
 		authed.MapPut("/settings", (SettingsDto dto, PandaConfig config, TsBot bot, Library library) =>
@@ -81,6 +82,7 @@ public static class PanelApi
 
 		authed.MapPost("/cookies", async (HttpContext ctx, PandaConfig config, DataPaths paths) =>
 		{
+			if (ctx.Request.ContentLength > 2_000_000) return Problem("too-large");
 			using var reader = new StreamReader(ctx.Request.Body);
 			var text = await reader.ReadToEndAsync();
 			if (text.Length > 2_000_000) return Problem("too-large");
@@ -93,9 +95,7 @@ public static class PanelApi
 			else
 			{
 				if (!text.Contains("youtube.com")) return Problem("cookies-invalid");
-				await File.WriteAllTextAsync(path, text.ReplaceLineEndings("\n"));
-				if (!OperatingSystem.IsWindows())
-					File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite);
+				SafeFile.Write(path, text.ReplaceLineEndings("\n"), ownerOnly: true);
 				config.YouTube.CookiesFile = path;
 			}
 			config.Save();
@@ -142,6 +142,9 @@ public static class PanelApi
 		}
 		if (!ok)
 		{
+			if (Failures.Count > 1000) // forget old entries so a flood of addresses can't grow this forever
+				foreach (var (key, old) in Failures)
+					if (old.Until < DateTime.UtcNow) Failures.TryRemove(key, out _);
 			Failures.AddOrUpdate(ip, (1, DateTime.UtcNow.AddMinutes(10)), (_, old) => (old.Fails + 1, DateTime.UtcNow.AddMinutes(10)));
 			await Task.Delay(700);
 			return Results.Json(new { error = "wrong-password" }, statusCode: 401);
@@ -160,15 +163,9 @@ public static class PanelApi
 	{
 		player = player.GetState(),
 		bot = await bot.GetStatusAsync(),
-		library = LibrarySummary(library),
+		library = library.GetSummary(),
 		serverTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
 	};
-
-	static object LibrarySummary(Library library)
-	{
-		var info = library.GetInfo(max: 0);
-		return new { info.Enabled, info.UsedBytes, info.LimitBytes, info.Count };
-	}
 
 	static readonly JsonSerializerOptions SseJson = new(JsonSerializerDefaults.Web);
 
@@ -210,7 +207,7 @@ public static class PanelApi
 	public sealed record SeekRequest(double Seconds);
 	public sealed record VolumeRequest(int Volume);
 	public sealed record LoopRequest(LoopMode Mode);
-	public sealed record MoveRequest(int From, int To);
+	public sealed record MoveRequest(int From, int To, string? Id = null);
 	public sealed record PasswordRequest(string? Current, string? New);
 }
 
