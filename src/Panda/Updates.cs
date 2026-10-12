@@ -116,8 +116,30 @@ public sealed class Updates(PandaConfig config, DataPaths paths, SystemInfo syst
 		if (await UpgradingAsync()) return true; // already on its way: a second click changes nothing
 		log.LogInformation("Updating Panda: the installer runs now and restarts Panda");
 		File.WriteAllText(UpgradeTrigger, DateTimeOffset.UtcNow.ToString("o"));
+		upgradeFailLogged = false;
 		return true;
 	}
+
+	/// <summary>
+	/// How the update started with <see cref="StartUpgradeAsync"/> is going: "running", "failed" (the
+	/// installer stopped with an error, e.g. a download failed; this Panda keeps running), or "idle".
+	/// A successful update restarts Panda, so the panel sees the new version instead.
+	/// </summary>
+	public async Task<string> UpgradeStateAsync()
+	{
+		if (await UpgradingAsync()) return "running";
+		if (InstallKind() != "systemd") return "idle";
+		var (_, result) = await RunAsync("systemctl", "show -p Result --value panda-upgrade.service");
+		if (result.Trim() is "" or "success") return "idle";
+		if (!upgradeFailLogged)
+		{
+			upgradeFailLogged = true;
+			log.LogWarning("The update failed ({Result}); Panda keeps running. Details: journalctl -u panda-upgrade", result.Trim());
+		}
+		return "failed";
+	}
+
+	bool upgradeFailLogged;
 
 	/// <summary>
 	/// Updates yt-dlp and waits for the result. On installs made by install.sh systemd does it (the

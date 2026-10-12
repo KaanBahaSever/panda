@@ -116,7 +116,7 @@ if [ -n "$FILE" ]; then
 	cp "$FILE" "$TMP/panda.tar.gz"
 else
 	info "Downloading Panda ($RID)…"
-	curl -fsSL "$URL" -o "$TMP/panda.tar.gz" || die "download failed: $URL"
+	curl -fsSL --retry 3 --retry-delay 5 "$URL" -o "$TMP/panda.tar.gz" || die "download failed: $URL"
 fi
 tar -xzf "$TMP/panda.tar.gz" -C "$TMP"
 install -m 755 "$TMP/panda" "$APP_DIR/panda"
@@ -125,9 +125,9 @@ install -m 755 "$TMP/panda" "$APP_DIR/panda"
 
 # yt-dlp talks to YouTube; deno lets it solve YouTube's JavaScript challenges.
 info "Downloading yt-dlp and deno…"
-curl -fsSL "https://github.com/yt-dlp/yt-dlp/releases/latest/download/$YTDLP" -o "$TMP/yt-dlp"
+curl -fsSL --retry 3 --retry-delay 5 "https://github.com/yt-dlp/yt-dlp/releases/latest/download/$YTDLP" -o "$TMP/yt-dlp"
 install -m 755 "$TMP/yt-dlp" "$APP_DIR/bin/yt-dlp"
-curl -fsSL "https://github.com/denoland/deno/releases/latest/download/$DENO" -o "$TMP/deno.zip"
+curl -fsSL --retry 3 --retry-delay 5 "https://github.com/denoland/deno/releases/latest/download/$DENO" -o "$TMP/deno.zip"
 unzip -o -q "$TMP/deno.zip" -d "$TMP"
 install -m 755 "$TMP/deno" "$APP_DIR/bin/deno"
 

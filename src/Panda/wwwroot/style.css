@@ -402,7 +402,9 @@ dialog::backdrop { background: rgba(22,22,30,.45); backdrop-filter: blur(2px); }
   font: 12.5px/1.5 ui-monospace, SFMono-Regular, Consolas, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
 .update details summary { cursor: pointer; font-weight: 700; font-size: 13.5px; color: var(--accent-text); }
 .update .new { color: var(--accent-text); }
-.upd-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.upd-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; }
+.upd-check { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+.upd-check .hint { margin: 0; font-size: 12.5px; }
 .update .hint.bad { color: var(--danger); }
 .upd-item { display: grid; gap: 6px; padding: 12px 14px; border-radius: 14px; background: var(--surface-2); min-width: 0; }
 .upd-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
