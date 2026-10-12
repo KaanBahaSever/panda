@@ -72,10 +72,8 @@ builder.Services.AddSingleton(config);
 builder.Services.AddSingleton(new DataPaths(dataDir));
 builder.Services.AddSingleton<YouTube>();
 builder.Services.AddSingleton<Library>();
-builder.Services.AddSingleton<PlayHistory>();
-builder.Services.AddSingleton<Player>();
-builder.Services.AddSingleton<TsBot>();
-builder.Services.AddHostedService(sp => sp.GetRequiredService<TsBot>());
+builder.Services.AddSingleton<BotManager>();
+builder.Services.AddHostedService(sp => sp.GetRequiredService<BotManager>());
 
 builder.Services.AddDataProtection()
 	.PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(dataDir, "keys")))

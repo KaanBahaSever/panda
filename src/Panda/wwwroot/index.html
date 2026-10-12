@@ -80,8 +80,15 @@
       <img id="logo" class="logo" src="img/logo.svg" alt="" width="40" height="40">
       <span class="wordmark">Panda</span>
     </div>
-    <div id="status" class="status" role="status">
-      <span class="dot"></span><span id="status-text"></span>
+    <div class="bot-pick">
+      <button id="status" class="status" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="bot-menu">
+        <span class="dot"></span><b id="status-name" hidden></b><span id="status-text" aria-live="polite"></span><svg class="ic sm chev" aria-hidden="true"><use href="#i-down"/></svg>
+      </button>
+      <div id="bot-menu" class="menu" hidden>
+        <h3 class="eyebrow" data-i18n="bots">Bots</h3>
+        <ul id="bot-list"></ul>
+        <button id="bot-add" class="menu-item add" type="button"><svg class="ic"><use href="#i-plus"/></svg><span data-i18n="addBot">Add a bot</span></button>
+      </div>
     </div>
     <nav class="tools">
       <button class="icon-btn js-lang" type="button" data-i18n-aria="language"><svg class="ic"><use href="#i-globe"/></svg><span class="js-lang-label">EN</span></button>
@@ -191,7 +198,7 @@
 <!-- ============ Settings ============ -->
 <dialog id="settings" class="sheet" aria-labelledby="set-title">
   <div class="sheet-head">
-    <h2 id="set-title" data-i18n="settings">Settings</h2>
+    <h2 id="set-title"><span data-i18n="settings">Settings</span> <span id="set-bot" class="muted sum"></span></h2>
     <button class="icon-btn" type="button" data-close data-i18n-aria="close"><svg class="ic"><use href="#i-x"/></svg></button>
   </div>
   <div class="sheet-body">
@@ -222,6 +229,7 @@
           <label class="field"><span data-i18n="sPrefix">Command prefix</span>
             <input name="commandPrefix" type="text" maxlength="3" required></label>
         </div>
+        <p class="hint js-many" hidden data-i18n="sPrefixHint">Bots in the same channel need different prefixes.</p>
         <label class="switch"><input type="checkbox" name="announce"><span class="track" aria-hidden="true"></span><span data-i18n="sAnnounce">Announce songs in chat</span></label>
         <label class="switch"><input type="checkbox" name="showSongInDescription"><span class="track" aria-hidden="true"></span><span data-i18n="sDesc">Show song in bot description</span></label>
         <div class="row2">
@@ -240,6 +248,7 @@
       </fieldset>
       <fieldset class="group">
         <legend>📚 <span data-i18n="sLib">Library</span></legend>
+        <p class="hint js-many" hidden data-i18n="sShared">Shared by all bots.</p>
         <label class="switch"><input type="checkbox" name="libraryEnabled"><span class="track" aria-hidden="true"></span><span data-i18n="sLibOn">Save every requested song</span></label>
         <p class="hint" data-i18n="sLibOnHint"></p>
         <label class="field"><span data-i18n="sLibMax">Size limit (GB)</span>
@@ -272,6 +281,12 @@
       </div>
       <div class="save-row"><button class="btn primary" type="submit"><span data-i18n="pwChange">Change password</span></button></div>
     </form>
+
+    <section class="group js-many" hidden>
+      <h3 class="legend">🗑️ <span data-i18n="sRemoveBot">Remove this bot</span></h3>
+      <p class="hint" data-i18n="sRemoveBotHint">Disconnects it and deletes its TeamSpeak identity and play history.</p>
+      <div class="save-row"><button id="bot-remove" class="btn ghost danger" type="button"><svg class="ic"><use href="#i-trash"/></svg><span data-i18n="removeBot">Remove bot</span></button></div>
+    </section>
 
     <footer class="sheet-foot">
       <img src="img/avatar.png" alt="" width="28" height="28">

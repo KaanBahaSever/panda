@@ -129,7 +129,7 @@ if [ "$FIRST_INSTALL" = 1 ]; then
 	case "$SERVER" in *[\"\\]*) die "invalid server address" ;; esac
 	cat > "$DATA_DIR/config.json" <<-EOF
 	{
-	  "server": { "address": "$SERVER" },
+	  "bots": [ { "id": "1", "server": { "address": "$SERVER" } } ],
 	  "panel": { "port": $PORT },
 	  "youTube": { "ytDlpPath": "$APP_DIR/bin/yt-dlp" }
 	}

@@ -30,10 +30,11 @@ public sealed class PlayHistory
 	readonly object gate = new();
 	readonly List<PlayedTrack> recent = []; // newest first
 
-	public PlayHistory(DataPaths paths, ILogger<PlayHistory> log)
+	/// <param name="dir">The bot's folder.</param>
+	public PlayHistory(string dir, ILogger<PlayHistory> log)
 	{
 		this.log = log;
-		path = Path.Combine(paths.Data, "history.jsonl");
+		path = Path.Combine(dir, "history.jsonl");
 		var all = ReadAll();
 		for (int i = all.Count - 1; i >= 0 && recent.Count < RecentSize; i--)
 			recent.Add(all[i]);

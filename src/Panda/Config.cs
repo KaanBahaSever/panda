@@ -7,11 +7,17 @@ namespace Panda;
 
 public sealed class PandaConfig
 {
-	public ServerSettings Server { get; set; } = new();
-	public BotSettings Bot { get; set; } = new();
+	/// <summary>Each bot has its own connection, queue and chat settings; everything else is shared.</summary>
+	public List<BotConfig> Bots { get; set; } = [];
 	public PanelSettings Panel { get; set; } = new();
 	public YouTubeSettings YouTube { get; set; } = new();
 	public LibrarySettings Library { get; set; } = new();
+
+	// Up to 0.2 there was one bot, set up by these two at the top level. Load moves them into Bots.
+	[JsonPropertyName("server"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+	public ServerSettings? OldServer { get; set; }
+	[JsonPropertyName("bot"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+	public BotSettings? OldBot { get; set; }
 
 	[JsonIgnore] public string Path { get; private set; } = "";
 
@@ -33,7 +39,55 @@ public sealed class PandaConfig
 			cfg = new();
 		cfg.Path = path;
 		cfg.knownHash = cfg.Panel.PasswordHash;
+
+		if (cfg.Bots.Count == 0)
+			cfg.Bots.Add(new BotConfig { Id = "1", Server = cfg.OldServer ?? new(), Bot = cfg.OldBot ?? new() });
+		cfg.OldServer = null;
+		cfg.OldBot = null;
+		// Hand-edited files: every bot needs a unique id that is safe as a folder name.
+		var seen = new HashSet<string>();
+		foreach (var b in cfg.Bots)
+			if (!BotConfig.IsValidId(b.Id) || !seen.Add(b.Id))
+				seen.Add(b.Id = cfg.NextBotId(seen));
 		return cfg;
+	}
+
+	string NextBotId(IEnumerable<string> taken)
+	{
+		var used = taken.Concat(Bots.Select(b => b.Id)).ToHashSet();
+		var n = 1;
+		while (used.Contains(n.ToString())) n++;
+		return n.ToString();
+	}
+
+	/// <summary>Adds a bot with default settings (connection copied from <paramref name="like"/>) and saves.</summary>
+	public BotConfig AddBot(BotConfig? like)
+	{
+		BotConfig bot;
+		lock (saveLock)
+		{
+			var id = NextBotId([]);
+			bot = new BotConfig
+			{
+				Id = id,
+				Server = new ServerSettings { Address = like?.Server.Address ?? new ServerSettings().Address, Password = like?.Server.Password ?? "" },
+				Bot = new BotSettings { Nickname = $"Panda {id} 🐼", Language = like?.Bot.Language ?? "en" },
+			};
+			Bots = [.. Bots, bot];
+		}
+		Save();
+		return bot;
+	}
+
+	public bool RemoveBot(string id)
+	{
+		lock (saveLock)
+		{
+			if (Bots.Count <= 1 || Bots.All(b => b.Id != id)) return false;
+			Bots = Bots.Where(b => b.Id != id).ToList();
+		}
+		Save();
+		return true;
 	}
 
 	readonly object saveLock = new();
@@ -95,6 +149,17 @@ public static class SafeFile
 			File.SetUnixFileMode(tmp, OwnerOnly);
 		File.Move(tmp, path, overwrite: true);
 	}
+}
+
+public sealed class BotConfig
+{
+	/// <summary>Short and stable; also the name of the bot's folder (identity, history).</summary>
+	public string Id { get; set; } = "";
+	public ServerSettings Server { get; set; } = new();
+	public BotSettings Bot { get; set; } = new();
+
+	public static bool IsValidId(string id) =>
+		id.Length is > 0 and <= 32 && id.All(c => char.IsAsciiLetterOrDigit(c) || c is '-' or '_');
 }
 
 public sealed class ServerSettings

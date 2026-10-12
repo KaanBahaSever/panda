@@ -24,31 +24,37 @@ public sealed record BotStatus(
 /// </summary>
 public sealed class TsBot : BackgroundService
 {
-	readonly PandaConfig config;
+	readonly BotConfig settings;
 	readonly Player player;
 	readonly Library library;
-	readonly ILogger<TsBot> log;
+	readonly ILogger log;
 	readonly string identityPath;
 	readonly DedicatedTaskScheduler scheduler = new(Id.Null);
 
 	TsFullClient? client;
 	IdentityData? identity;
-	string state = "connecting";
+	volatile string state = "connecting";
 	string? lastError;
 	TaskCompletionSource reconnect = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
 	public event Action? StatusChanged;
 
-	string Lang => config.Bot.Language;
-	string Prefix => config.Bot.CommandPrefix;
+	/// <summary>"connecting", "connected" or "disconnected".</summary>
+	public string State => state;
 
-	public TsBot(PandaConfig config, Player player, Library library, DataPaths paths, ILogger<TsBot> log)
+	BotSettings Bot => settings.Bot;
+	ServerSettings Server => settings.Server;
+	string Lang => Bot.Language;
+	string Prefix => Bot.CommandPrefix;
+
+	/// <param name="dir">The bot's folder, where its identity is kept.</param>
+	public TsBot(BotConfig settings, Player player, Library library, string dir, ILogger log)
 	{
-		this.config = config;
+		this.settings = settings;
 		this.player = player;
 		this.library = library;
 		this.log = log;
-		identityPath = Path.Combine(paths.Data, "identity.json");
+		identityPath = Path.Combine(dir, "identity.json");
 
 		player.TrackStarted += t => _ = scheduler.InvokeAsync(() => OnTrackStarted(t));
 		player.TrackFailed += (t, reason) => _ = scheduler.InvokeAsync(() => OnTrackFailed(t, reason));
@@ -74,7 +80,7 @@ public sealed class TsBot : BackgroundService
 			listeners = book.Clients.Values.Count(c =>
 				c.Channel == self.Channel && c.Id != self.Id && c.ClientType == ClientType.Full);
 		}
-		return new BotStatus(state, lastError, book?.Server?.Name, channelName, self?.Name ?? config.Bot.Nickname, listeners);
+		return new BotStatus(state, lastError, book?.Server?.Name, channelName, self?.Name ?? Bot.Nickname, listeners);
 	});
 
 	protected override async Task ExecuteAsync(CancellationToken ct)
@@ -88,7 +94,8 @@ public sealed class TsBot : BackgroundService
 			reconnect = new(TaskCreationOptions.RunContinuationsAsynchronously);
 			SetState("connecting", null);
 
-			var error = await scheduler.InvokeAsync(() => ConnectAsync(disconnected));
+			var error = await scheduler.InvokeAsync(() => ConnectAsync(disconnected, ct));
+			if (error != null && ct.IsCancellationRequested) break;
 			if (error is null)
 			{
 				delay = TimeSpan.FromSeconds(3);
@@ -109,7 +116,7 @@ public sealed class TsBot : BackgroundService
 			}
 			else
 			{
-				log.LogWarning("Could not connect to {Address}: {Error}", config.Server.Address, error);
+				log.LogWarning("Could not connect to {Address}: {Error}", Server.Address, error);
 				SetState("disconnected", error);
 			}
 
@@ -120,7 +127,7 @@ public sealed class TsBot : BackgroundService
 		}
 	}
 
-	async Task<string?> ConnectAsync(TaskCompletionSource<string> disconnected)
+	async Task<string?> ConnectAsync(TaskCompletionSource<string> disconnected, CancellationToken ct)
 	{
 		client?.Dispose();
 		var c = new TsFullClient(scheduler);
@@ -131,19 +138,20 @@ public sealed class TsBot : BackgroundService
 		c.OnEachClientEnterView += (_, _) => StatusChanged?.Invoke();
 		c.OnEachClientLeftView += (_, _) => StatusChanged?.Invoke();
 
-		var s = config.Server;
+		var s = Server;
 		var data = new ConnectionDataFull(
 			s.Address, identity!,
-			username: config.Bot.Nickname,
+			username: Bot.Nickname,
 			serverPassword: s.Password.Length > 0 ? Password.FromPlain(s.Password) : (Password?)null,
 			defaultChannel: s.Channel,
 			defaultChannelPassword: s.ChannelPassword.Length > 0 ? Password.FromPlain(s.ChannelPassword) : (Password?)null);
 
-		log.LogInformation("Connecting to {Address} as {Nickname}", s.Address, config.Bot.Nickname);
+		log.LogInformation("Connecting to {Address} as {Nickname}", s.Address, Bot.Nickname);
 		// TSLib waits forever when the server never answers (for example while our previous connection
 		// is still lingering there after a crash), so give up after a while and let the loop retry.
+		// Stopping (shutdown, bot removed) also gives up right away.
 		var connect = c.Connect(data);
-		if (await Task.WhenAny(connect, Task.Delay(TimeSpan.FromSeconds(20))) != connect)
+		if (await Task.WhenAny(connect, Task.Delay(TimeSpan.FromSeconds(20), ct)) != connect)
 		{
 			_ = c.Disconnect();
 			return "the server did not answer";
@@ -182,7 +190,7 @@ public sealed class TsBot : BackgroundService
 
 	async Task SetDescription(string text)
 	{
-		if (!config.Bot.ShowSongInDescription || client is not { Connected: true } c) return;
+		if (!Bot.ShowSongInDescription || client is not { Connected: true } c) return;
 		if (text.Length > 80) text = text[..79] + "…";
 		if (c.Book.Self()?.Description == text) return;
 		await c.ChangeDescription(text);
@@ -192,7 +200,7 @@ public sealed class TsBot : BackgroundService
 	{
 		if (client is not { Connected: true } c) return;
 		await SetDescription("♪ " + t.Title);
-		if (config.Bot.Announce)
+		if (Bot.Announce)
 			await c.SendChannelMessage(Strings.Get(Lang, "now-playing-by", Link(t), Strings.Duration(Lang, t), t.RequestedBy));
 	}
 
@@ -251,8 +259,8 @@ public sealed class TsBot : BackgroundService
 
 	bool IsAllowed(TsFullClient c, TextMessage msg)
 	{
-		var users = config.Bot.AllowedUsers;
-		var groups = config.Bot.AllowedServerGroups;
+		var users = Bot.AllowedUsers;
+		var groups = Bot.AllowedServerGroups;
 		if (users.Count == 0 && groups.Count == 0) return true;
 		if (msg.InvokerUid is { } uid && users.Contains(uid.Value)) return true;
 		if (c.Book.Clients.TryGetValue(msg.InvokerId, out var who))
@@ -274,11 +282,11 @@ public sealed class TsBot : BackgroundService
 				if (command == "playnow")
 				{
 					player.PlayNow(track);
-					return config.Bot.Announce ? null : Strings.Get(Lang, "now-playing", Link(track), Strings.Duration(Lang, track));
+					return Bot.Announce ? null : Strings.Get(Lang, "now-playing", Link(track), Strings.Duration(Lang, track));
 				}
 				var pos = player.Enqueue(track);
 				// Position 0 started playing; the "now playing" announcement covers it.
-				return pos == 0 && config.Bot.Announce ? null
+				return pos == 0 && Bot.Announce ? null
 					: pos == 0 ? Strings.Get(Lang, "now-playing", Link(track), Strings.Duration(Lang, track))
 					: Strings.Get(Lang, "added", Link(track), pos, Strings.Duration(Lang, track));
 			}

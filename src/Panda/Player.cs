@@ -26,11 +26,12 @@ public sealed class Player : IDisposable
 {
 	const int BytesPerSecond = 48000 * 2 * 2;
 
+	readonly BotConfig settings;
+	readonly PandaConfig config;
 	readonly YouTube youtube;
 	readonly Library library;
 	readonly PlayHistory history;
-	readonly PandaConfig config;
-	readonly ILogger<Player> log;
+	readonly ILogger log;
 
 	readonly PreciseTimedPipe timePipe;
 	readonly VolumePipe volumePipe;
@@ -57,12 +58,13 @@ public sealed class Player : IDisposable
 	public event Action<Track>? TrackStarted;
 	public event Action<Track, string>? TrackFailed;
 
-	public Player(YouTube youtube, Library library, PlayHistory history, PandaConfig config, ILogger<Player> log)
+	public Player(BotConfig settings, PandaConfig config, YouTube youtube, Library library, PlayHistory history, ILogger log)
 	{
+		this.settings = settings;
+		this.config = config;
 		this.youtube = youtube;
 		this.library = library;
 		this.history = history;
-		this.config = config;
 		this.log = log;
 
 		encoder = new OpusEncoderPipe(bitrate: 96_000);
@@ -71,7 +73,7 @@ public sealed class Player : IDisposable
 		target = new StaticMetaPipe();
 		target.SetVoice();
 		timePipe.Chain(volumePipe).Chain(encoder).Chain(target);
-		SetVolume(config.Bot.Volume, save: false);
+		SetVolume(settings.Bot.Volume, save: false);
 	}
 
 	/// <summary>Where encoded audio goes (the connected TeamSpeak client), or null while offline.</summary>
@@ -99,7 +101,7 @@ public sealed class Player : IDisposable
 		int position;
 		lock (gate)
 		{
-			if (queue.Count >= config.Bot.MaxQueueLength)
+			if (queue.Count >= settings.Bot.MaxQueueLength)
 				throw new QueueFullException();
 			if (current is null)
 			{
@@ -185,7 +187,7 @@ public sealed class Player : IDisposable
 		volumePipe.Volume = (float)Math.Pow(value / 100.0, 2);
 		if (save)
 		{
-			config.Bot.Volume = value;
+			settings.Bot.Volume = value;
 			config.Save();
 		}
 		RaiseChanged();
@@ -327,7 +329,7 @@ public sealed class Player : IDisposable
 		timePipe.Paused = false;
 		if (!seeking)
 		{
-			library.MarkPlayed(track);
+			library.MarkPlayed(settings.Id, track);
 			_ = Task.Run(() => TrackStarted?.Invoke(track));
 		}
 		log.LogInformation("Playing {Title} ({Id}) for {User}{From}", track.Title, track.Id, track.RequestedBy, file != null ? " from the library" : "");
@@ -408,8 +410,8 @@ public sealed class Player : IDisposable
 			upcoming = queue.ToArray();
 			idle = current is null;
 		}
-		if (idle) library.ClearNowPlaying();
-		library.Want(upcoming);
+		if (idle) library.ClearNowPlaying(settings.Id);
+		library.Want(settings.Id, upcoming);
 		try { Changed?.Invoke(); }
 		catch (Exception ex) { log.LogError(ex, "Changed handler failed"); }
 	}

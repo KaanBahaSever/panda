@@ -41,6 +41,10 @@ const I18N = {
     plays: n => n === 1 ? '1 play' : `${n} plays`, delete: 'Delete', deleted: 'Deleted', confirmLibDelete: x => `Delete "${x}" from the library?`,
     sLib: 'Library', sLibOn: 'Save every requested song', sLibOnHint: 'When off, only the next song is downloaded ahead of time.',
     sLibMax: 'Size limit (GB)', sLibMaxHint: 'When full, the least played songs are deleted first. 0 = no limit.', sLibMaxBad: 'Use 0 (no limit) or at least 0.1 GB.',
+    bots: 'Bots', addBot: 'Add a bot', botAdded: 'Bot added — now set its channel', idle: 'Idle',
+    sPrefixHint: 'Bots in the same channel need different prefixes, or they all answer.', sShared: 'Shared by all bots.',
+    sRemoveBot: 'Remove this bot', sRemoveBotHint: 'Disconnects it and deletes its TeamSpeak identity and play history.', removeBot: 'Remove bot',
+    confirmBotRemove: x => `Remove "${x}"? Its identity and play history are deleted.`, botRemoved: 'Bot removed',
   },
   tr: {
     loginHint: 'Sevimli TeamSpeak DJ\'in', password: 'Şifre', login: 'Giriş yap', language: 'Dil: Türkçe (English\'e geç)',
@@ -80,6 +84,10 @@ const I18N = {
     plays: n => `${n} dinlenme`, delete: 'Sil', deleted: 'Silindi', confirmLibDelete: x => `"${x}" kütüphaneden silinsin mi?`,
     sLib: 'Kütüphane', sLibOn: 'İstenen her şarkıyı kaydet', sLibOnHint: 'Kapalıyken sadece sıradaki şarkı önceden indirilir.',
     sLibMax: 'Boyut sınırı (GB)', sLibMaxHint: 'Dolduğunda en az dinlenen şarkılar önce silinir. 0 = sınırsız.', sLibMaxBad: '0 (sınırsız) ya da en az 0,1 GB girin.',
+    bots: 'Botlar', addBot: 'Bot ekle', botAdded: 'Bot eklendi — şimdi kanalını ayarla', idle: 'Boşta',
+    sPrefixHint: 'Aynı kanaldaki botların önekleri farklı olmalı, yoksa hepsi cevap verir.', sShared: 'Tüm botlar için geçerli.',
+    sRemoveBot: 'Bu botu kaldır', sRemoveBotHint: 'Bağlantısını keser, TeamSpeak kimliğini ve çalma geçmişini siler.', removeBot: 'Botu kaldır',
+    confirmBotRemove: x => `"${x}" kaldırılsın mı? Kimliği ve çalma geçmişi silinir.`, botRemoved: 'Bot kaldırıldı',
   },
 };
 
@@ -131,6 +139,10 @@ function thumb(track, cls = 'thumb') {
 function debounce(fn, ms) { let h; return (...a) => { clearTimeout(h); h = setTimeout(() => fn(...a), ms); }; }
 
 /* ---------------- API ---------------- */
+let botId = store.get('panda.bot') || '';
+/** URL of an endpoint of the bot shown in the panel. */
+const B = path => `/api/bots/${encodeURIComponent(botId)}${path}`;
+
 class ApiError extends Error { constructor(code, status) { super(code); this.code = code; this.status = status; } }
 
 async function api(method, path, body) {
@@ -248,38 +260,95 @@ function setState(s) { S = s; recvAt = Date.now(); lastMsg = recvAt; $('offline'
 
 function startStream() {
   stopStream();
-  es = new EventSource('/api/events');
+  es = new EventSource(B('/events'));
   es.onmessage = ev => { backoff = 1000; try { setState(JSON.parse(ev.data)); } catch {} };
   es.onerror = () => { stopStream(); retryTimer = setTimeout(recover, backoff); backoff = Math.min(backoff * 2, 30000); };
 }
 function stopStream() { if (es) { es.close(); es = null; } clearTimeout(retryTimer); }
+
+/** Keeps the chosen bot when it still exists, otherwise takes the first one. */
+async function pickBot() {
+  const list = await api('GET', '/api/bots');
+  if (!list.some(b => b.id === botId)) botId = list[0]?.id || '';
+  store.set('panda.bot', botId);
+}
+/** Loads the chosen bot's state and follows its live updates. */
+async function loadBot() {
+  try { setState(await api('GET', B('/state'))); }
+  catch (e) { if (e.status !== 404) throw e; await pickBot(); setState(await api('GET', B('/state'))); }   // it was removed
+  startStream();
+}
 /** After a stream error: check the session (401 → login), then reopen the stream. */
 async function recover() {
-  try { setState(await api('GET', '/api/state')); startStream(); }
+  try { await loadBot(); }
   catch (e) { if (e.status !== 401) { $('offline').hidden = false; retryTimer = setTimeout(recover, backoff); backoff = Math.min(backoff * 2, 30000); } }
 }
 // Watchdog: the server sends at least every 15 s; reconnect if it has gone quiet.
 setInterval(() => { if (es && Date.now() - lastMsg > 40000) { lastMsg = Date.now(); stopStream(); recover(); } }, 5000);
 
 async function boot() {
-  try { setState(await api('GET', '/api/state')); showApp(); startStream(); }
+  try { await pickBot(); await loadBot(); showApp(); }
   catch (e) { if (e.status !== 401) { showApp(); $('offline').hidden = false; retryTimer = setTimeout(recover, backoff); } }
+}
+
+function selectBot(id) {
+  closeBotMenu();
+  if (id === botId) return;
+  botId = id; store.set('panda.bot', id);
+  lastQueueSig = lastHistorySig = ''; shownTrackId = null;
+  stopStream(); backoff = 1000; recover();
 }
 
 /* ---------------- rendering ---------------- */
 function render() { renderBot(); renderNow(); renderQueue(); renderHistory(); renderLib(); }
+
+const stateText = st => t(st === 'connected' ? 'connected' : st === 'connecting' ? 'connecting' : 'disconnected');
+const manyBots = () => !!S && S.bots.length > 1;
+const botName = () => S?.bots.find(x => x.id === botId)?.nickname || '';
 
 function renderBot() {
   const b = S.bot, st = $('status');
   st.dataset.state = b.state;
   let text;
   if (b.state === 'connected') text = [b.serverName, b.channelName, t('listeners', b.listeners)].filter(Boolean).join(' · ');
-  else text = t(b.state === 'connecting' ? 'connecting' : 'disconnected');
+  else text = stateText(b.state);
+  // With several bots the pill also says which one is shown.
+  $('status-name').hidden = !manyBots();
+  $('status-name').textContent = botName();
   $('status-text').textContent = text;
   st.title = b.error || text;
   $('status-err').hidden = !(b.error && b.state !== 'connected');
   $('status-err').textContent = b.error || '';
+  document.querySelectorAll('.js-many').forEach(x => { x.hidden = !manyBots(); });
+  renderBotMenu();
 }
+
+/* ---------------- bot picker ---------------- */
+let lastBotsSig = '';
+function renderBotMenu() {
+  const s = lang + botId + JSON.stringify(S.bots);
+  if (s === lastBotsSig) return;
+  lastBotsSig = s;
+  $('bot-list').replaceChildren(...S.bots.map(b => {
+    const item = el('button', { class: 'menu-item', type: 'button', 'data-state': b.state, 'aria-current': String(b.id === botId) },
+      el('span', { class: 'dot' }),
+      el('span', { class: 'tx' }, el('span', { class: 'nm', text: b.nickname }),
+        el('span', { class: 'song', text: b.song ? '♪ ' + b.song : b.state === 'connected' ? t('idle') : stateText(b.state) })));
+    item.addEventListener('click', () => selectBot(b.id));
+    return el('li', {}, item);
+  }));
+}
+function openBotMenu() { $('bot-menu').hidden = false; $('status').setAttribute('aria-expanded', 'true'); }
+function closeBotMenu() { $('bot-menu').hidden = true; $('status').setAttribute('aria-expanded', 'false'); }
+$('status').addEventListener('click', () => $('bot-menu').hidden ? openBotMenu() : closeBotMenu());
+document.addEventListener('click', e => { if (!e.target.closest('.bot-pick')) closeBotMenu(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('bot-menu').hidden) { closeBotMenu(); $('status').focus(); } });
+$('bot-add').addEventListener('click', e => busy(e.currentTarget, async () => {
+  const b = await act(() => api('POST', '/api/bots', { like: botId }), t('botAdded'));
+  if (!b) return;
+  selectBot(b.id);
+  openSettings();
+}));
 
 let shownTrackId = null;
 function renderNow() {
@@ -343,7 +412,7 @@ function tick() {
 (function loop() { tick(); setTimeout(() => requestAnimationFrame(loop), 200); })();
 
 /* ---------------- controls ---------------- */
-const ctl = (name, msg) => act(() => api('POST', '/api/control/' + name), msg);
+const ctl = (name, msg) => act(() => api('POST', B('/control/' + name)), msg);
 $('btn-toggle').addEventListener('click', () => ctl('toggle'));
 $('btn-skip').addEventListener('click', () => ctl('skip'));
 $('btn-shuffle').addEventListener('click', () => ctl('shuffle', '🔀'));
@@ -352,7 +421,7 @@ $('btn-clear').addEventListener('click', async () => { if (await confirmBox(t('c
 $('btn-loop').addEventListener('click', () => {
   const next = { Off: 'All', All: 'One', One: 'Off' }[S.player.loop] || 'All';
   S.player.loop = next; renderNow();                       // optimistic
-  act(() => api('POST', '/api/loop', { mode: next }));
+  act(() => api('POST', B('/loop'), { mode: next }));
 });
 
 // Seek bar: preview while dragging, commit on change.
@@ -360,7 +429,7 @@ let seekDragging = false, seekPending = false;
 const commitSeek = debounce(async v => {
   const cur = S.player.current;
   if (cur) { cur.position = v; recvAt = Date.now(); }       // optimistic
-  await act(() => api('POST', '/api/seek', { seconds: v }));
+  await act(() => api('POST', B('/seek'), { seconds: v }));
   seekPending = seekDragging = false;
 }, 250);
 const seek = $('seek');
@@ -376,7 +445,7 @@ function showVolume(v) {
   setIcon($('btn-mute'), v == 0 ? 'mute' : 'vol'); setLabel($('btn-mute'), t(v == 0 ? 'unmute' : 'mute'));
   if (v > 0) lastVol = v;
 }
-const sendVolume = debounce(v => act(() => api('POST', '/api/volume', { volume: v })), 200);
+const sendVolume = debounce(v => act(() => api('POST', B('/volume'), { volume: v })), 200);
 function setVolume(v) {
   volDragging = true; clearTimeout(volIdle);
   volIdle = setTimeout(() => { volDragging = false; }, 1200);
@@ -395,7 +464,7 @@ $('add-form').addEventListener('submit', async e => {
   if (!q) return $('add-q').focus();
   await busy($('add-go'), async () => {
     if (looksLikeUrl(q)) {
-      const tr = await act(() => api('POST', '/api/play', { query: q }), r => `${t('added')}: ${r.title}`);
+      const tr = await act(() => api('POST', B('/play'), { query: q }), r => `${t('added')}: ${r.title}`);
       if (tr) $('add-q').value = '';
       return;
     }
@@ -438,7 +507,7 @@ function playButtons(tr, labelled, ...more) {
 }
 async function addTrack(btn, tr, now) {
   await busy(btn, async () => {
-    const r = await act(() => api('POST', '/api/play', { query: tr.url, now }), r => `${now ? t('playNow') : t('added')}: ${r.title}`);
+    const r = await act(() => api('POST', B('/play'), { query: tr.url, now }), r => `${now ? t('playNow') : t('added')}: ${r.title}`);
     if (r) btn.closest('li')?.classList.add('done');
   });
 }
@@ -572,17 +641,17 @@ function move(from, to) {
   if (to < 0 || to >= q.length) return;
   const id = q[from].id;
   q.splice(to, 0, q.splice(from, 1)[0]); renderQueue();   // optimistic
-  queueEdit(() => api('POST', '/api/queue/move', { from, to, id }));
+  queueEdit(() => api('POST', B('/queue/move'), { from, to, id }));
 }
 function remove(i, id) {
   S.player.queue.splice(i, 1); renderQueue();              // optimistic
-  queueEdit(() => api('DELETE', `/api/queue/${i}?id=${encodeURIComponent(id)}`));
+  queueEdit(() => api('DELETE', B(`/queue/${i}?id=${encodeURIComponent(id)}`)));
 }
 /** The server refuses (409) when the queue moved on in the meantime; then show its real state. */
 async function queueEdit(fn) {
   try { await fn(); }
   catch (e) {
-    if (e.status === 409) { const s = await api('GET', '/api/state').catch(() => null); if (s) setState(s); }
+    if (e.status === 409) { const s = await api('GET', B('/state')).catch(() => null); if (s) setState(s); }
     else if (e.status !== 401) toast(errText(e), 'err');
   }
 }
@@ -611,7 +680,7 @@ function renderHistory() {
   lastHistorySig = s;
   $('history').replaceChildren(...h.map(tr => {
     const b = el('button', { class: 'icon-btn sm', type: 'button', title: t('addAgain'), 'aria-label': `${t('addAgain')}: ${tr.title}` }, icon('plus'));
-    b.addEventListener('click', () => busy(b, () => act(() => api('POST', '/api/play', { query: tr.url }), r => `${t('added')}: ${r.title}`)));
+    b.addEventListener('click', () => busy(b, () => act(() => api('POST', B('/play'), { query: tr.url }), r => `${t('added')}: ${r.title}`)));
     const when = el('span', { class: 'when', title: new Date(tr.playedAt).toLocaleString(lang) }, icon('clock', 'ic sm'), document.createTextNode(playedAt(tr.playedAt)));
     return el('li', { class: 'track' }, thumb(tr), trackText(tr, { extra: [when] }), el('div', { class: 'acts' }, b));
   }));
@@ -621,11 +690,26 @@ function renderHistory() {
 let settings = null, pwTouched = {};
 const F = () => $('set-form').elements;
 
-$('open-settings').addEventListener('click', async () => {
-  $('settings').showModal();
-  const [s, v] = await Promise.all([act(() => api('GET', '/api/settings')), api('GET', '/api/version').catch(() => null)]);
+/** Settings of the bot shown in the panel (plus the shared ones). */
+async function openSettings() {
+  if (!$('settings').open) $('settings').showModal();
+  const [s, v] = await Promise.all([act(() => api('GET', B('/settings'))), api('GET', '/api/version').catch(() => null)]);
   if (s) fillSettings(s);
   if (v) $('version').textContent = 'v' + v.version;
+}
+$('open-settings').addEventListener('click', openSettings);
+
+$('bot-remove').addEventListener('click', async e => {
+  const btn = e.currentTarget, name = settings?.nickname || botName();
+  if (!(await confirmBox(t('confirmBotRemove', name)))) return;
+  busy(btn, async () => {
+    const ok = await act(() => api('DELETE', B('')).then(() => true), `${t('botRemoved')}: ${name}`);
+    if (!ok) return;
+    $('settings').close();
+    stopStream(); lastQueueSig = lastHistorySig = ''; shownTrackId = null;
+    await act(pickBot);
+    recover();
+  });
 });
 $('settings').addEventListener('click', e => {
   if (e.target === $('settings') || e.target.closest('[data-close]')) $('settings').close();   // backdrop / close button
@@ -633,6 +717,7 @@ $('settings').addEventListener('click', e => {
 
 function fillSettings(s) {
   settings = s; pwTouched = {};
+  $('set-bot').textContent = s.nickname;
   const f = F();
   for (const k of ['serverAddress', 'channel', 'nickname', 'commandPrefix', 'language', 'maxQueueLength', 'maxDurationMinutes']) f[k].value = s[k] ?? '';
   f.announce.checked = !!s.announce; f.showSongInDescription.checked = !!s.showSongInDescription;
@@ -683,11 +768,11 @@ $('set-form').addEventListener('submit', async e => {
   const reconnects = body.serverAddress !== old.serverAddress || body.channel !== old.channel || body.nickname !== old.nickname ||
     body.serverPassword !== null || body.channelPassword !== null;
   await busy($('set-save'), async () => {
-    const s = await act(() => api('PUT', '/api/settings', body), t(reconnects ? 'reconnecting' : 'saved'));
+    const s = await act(() => api('PUT', B('/settings'), body), t(reconnects ? 'reconnecting' : 'saved'));
     if (s) fillSettings(s);
   });
 });
-$('set-reconnect').addEventListener('click', e => busy(e.currentTarget, () => act(() => api('POST', '/api/reconnect'), t('reconnectSent'))));
+$('set-reconnect').addEventListener('click', e => busy(e.currentTarget, () => act(() => api('POST', B('/reconnect')), t('reconnectSent'))));
 
 // Cookies
 $('cookie-file').addEventListener('change', async e => {

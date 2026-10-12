@@ -35,8 +35,11 @@ public sealed class Library : IDisposable
 	readonly object gate = new();
 	Dictionary<string, Song> songs = new();
 	Dictionary<string, Stat> stats = new();
+	// Per bot: the songs coming up and the one playing. "wanted" merges the queues, each bot's
+	// next song first, then the ones after.
+	readonly Dictionary<string, List<Track>> wantedBy = new();
+	readonly Dictionary<string, string> nowPlayingBy = new();
 	List<Track> wanted = [];
-	string? nowPlaying;
 	readonly HashSet<string> busy = []; // ids being downloaded right now
 	// Failed downloads wait before the next try, so a broken song (or a YouTube bot check)
 	// doesn't make the loop hammer YouTube.
@@ -152,11 +155,11 @@ public sealed class Library : IDisposable
 
 	// ---- play statistics ----
 
-	public void MarkPlayed(Track t)
+	public void MarkPlayed(string bot, Track t)
 	{
 		lock (gate)
 		{
-			nowPlaying = t.Id;
+			nowPlayingBy[bot] = t.Id;
 			if (!stats.TryGetValue(t.Id, out var st)) stats[t.Id] = st = new Stat();
 			st.Plays++;
 			st.LastPlayed = DateTimeOffset.UtcNow;
@@ -164,9 +167,21 @@ public sealed class Library : IDisposable
 		SaveSoon();
 	}
 
-	public void ClearNowPlaying()
+	public void ClearNowPlaying(string bot)
 	{
-		lock (gate) nowPlaying = null;
+		lock (gate) nowPlayingBy.Remove(bot);
+		Signal();
+	}
+
+	/// <summary>A bot was removed: its queue and song no longer count.</summary>
+	public void Forget(string bot)
+	{
+		lock (gate)
+		{
+			nowPlayingBy.Remove(bot);
+			wantedBy.Remove(bot);
+			MergeWantedLocked();
+		}
 		Signal();
 	}
 
@@ -194,18 +209,36 @@ public sealed class Library : IDisposable
 
 	// ---- downloads ----
 
-	/// <summary>The queue changed: download what will be played (all of it when saving is on).</summary>
-	public void Want(IReadOnlyList<Track> queue)
+	/// <summary>A bot's queue changed: download what will be played (all of it when saving is on).</summary>
+	public void Want(string bot, IReadOnlyList<Track> queue)
 	{
 		lock (gate)
 		{
 			var list = queue.Where(t => !t.IsLive);
-			wanted = (Enabled ? list : list.Take(PrefetchWhenDisabled)).ToList();
+			wantedBy[bot] = (Enabled ? list : list.Take(PrefetchWhenDisabled)).ToList();
+			MergeWantedLocked();
 			// A prefetch nobody needs any more is cancelled when songs aren't being saved.
 			if (!Enabled && currentDownloadId != null && wanted.All(t => t.Id != currentDownloadId))
 				currentDownload?.Cancel();
 		}
 		Signal();
+	}
+
+	void MergeWantedLocked()
+	{
+		var lists = wantedBy.Values.ToList();
+		var merged = new List<Track>();
+		for (int i = 0; lists.Any(l => i < l.Count); i++)
+			foreach (var l in lists)
+				if (i < l.Count) merged.Add(l[i]);
+		wanted = merged;
+	}
+
+	HashSet<string> KeepLocked()
+	{
+		var keep = wanted.Select(t => t.Id).ToHashSet();
+		keep.UnionWith(nowPlayingBy.Values);
+		return keep;
 	}
 
 	void Signal() { if (wake.CurrentCount == 0) wake.Release(); }
@@ -348,8 +381,7 @@ public sealed class Library : IDisposable
 		var limit = LimitBytes;
 		var used = UsedLocked();
 		if (used <= limit) return;
-		var keep = wanted.Select(t => t.Id).ToHashSet();
-		if (nowPlaying != null) keep.Add(nowPlaying);
+		var keep = KeepLocked();
 		var victims = songs.Values
 			.Where(s => !keep.Contains(s.Id))
 			.OrderBy(s => PlaysOf(s.Id))
@@ -371,8 +403,7 @@ public sealed class Library : IDisposable
 		HashSet<string> keep;
 		lock (gate)
 		{
-			keep = wanted.Select(t => t.Id).ToHashSet();
-			if (nowPlaying != null) keep.Add(nowPlaying);
+			keep = KeepLocked();
 			keep.UnionWith(busy);
 		}
 		foreach (var f in Directory.EnumerateFiles(TempDir, "*.audio"))
