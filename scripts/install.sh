@@ -46,8 +46,8 @@ done
 command -v systemctl >/dev/null || die "systemd is required"
 
 if [ "$UNINSTALL" = 1 ]; then
-	systemctl disable --now panda.service panda-update.timer 2>/dev/null || true
-	rm -f "$SERVICE" /etc/systemd/system/panda-update.service /etc/systemd/system/panda-update.timer
+	systemctl disable --now panda.service panda-update.timer panda-update.path panda-upgrade.path 2>/dev/null || true
+	rm -f "$SERVICE" /etc/systemd/system/panda-update.{service,timer,path} /etc/systemd/system/panda-upgrade.{service,path}
 	systemctl daemon-reload
 	rm -rf "$APP_DIR"
 	if [ "$PURGE" = 1 ]; then rm -rf "$DATA_DIR"; userdel panda 2>/dev/null || true; fi
@@ -59,7 +59,8 @@ fi
 # Ask only when there is a terminal (curl | bash still has /dev/tty).
 ask() {
 	local prompt="$1" default="$2" answer=""
-	if [ -r /dev/tty ] && [ -w /dev/tty ]; then
+	# A service (the panel's one-click update) has /dev/tty but can't open it.
+	if { : > /dev/tty; } 2>/dev/null; then
 		printf '%s [%s]: ' "$prompt" "$default" > /dev/tty
 		read -r answer < /dev/tty || true
 	fi
@@ -111,6 +112,8 @@ else
 fi
 tar -xzf "$TMP/panda.tar.gz" -C "$TMP"
 install -m 755 "$TMP/panda" "$APP_DIR/panda"
+# Kept for the panel's one-click update (releases from 0.3 on carry it).
+[ -f "$TMP/install.sh" ] && install -m 755 "$TMP/install.sh" "$APP_DIR/install.sh"
 
 # yt-dlp talks to YouTube; deno lets it solve YouTube's JavaScript challenges.
 info "Downloading yt-dlp and deno…"
@@ -144,14 +147,52 @@ info "Setting up the service…"
 install -m 644 "$TMP/panda.service" "$SERVICE"
 
 # Keep yt-dlp fresh: YouTube changes often and old versions stop working.
+# Daily, and when the panel asks (it writes .update-ytdlp; Panda itself can't write to $APP_DIR).
 cat > /etc/systemd/system/panda-update.service <<EOF
 [Unit]
 Description=Update yt-dlp for Panda
 
 [Service]
 Type=oneshot
+ExecStartPre=-/bin/rm -f $DATA_DIR/.update-ytdlp
 ExecStart=$APP_DIR/bin/yt-dlp -U
 EOF
+cat > /etc/systemd/system/panda-update.path <<EOF
+[Unit]
+Description=Watch for yt-dlp update requests from the Panda panel
+
+[Path]
+PathExists=$DATA_DIR/.update-ytdlp
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# One-click update from the panel: Panda runs unprivileged and only drops a file; systemd then
+# runs this installer as root, which installs the latest release and restarts Panda.
+UPGRADE_UNITS=""
+if [ -f "$APP_DIR/install.sh" ]; then
+	cat > /etc/systemd/system/panda-upgrade.service <<EOF
+[Unit]
+Description=Update Panda to the latest release
+
+[Service]
+Type=oneshot
+ExecStartPre=-/bin/rm -f $DATA_DIR/.upgrade
+ExecStart=/bin/bash $APP_DIR/install.sh
+EOF
+	cat > /etc/systemd/system/panda-upgrade.path <<EOF
+[Unit]
+Description=Watch for update requests from the Panda panel
+
+[Path]
+PathExists=$DATA_DIR/.upgrade
+
+[Install]
+WantedBy=multi-user.target
+EOF
+	UPGRADE_UNITS="panda-upgrade.path"
+fi
 cat > /etc/systemd/system/panda-update.timer <<EOF
 [Unit]
 Description=Update yt-dlp for Panda daily
@@ -166,7 +207,7 @@ WantedBy=timers.target
 EOF
 
 systemctl daemon-reload
-systemctl enable --now panda-update.timer >/dev/null 2>&1
+systemctl enable --now panda-update.timer panda-update.path $UPGRADE_UNITS >/dev/null 2>&1
 systemctl enable panda.service >/dev/null 2>&1
 systemctl restart panda.service
 

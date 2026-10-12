@@ -83,6 +83,7 @@ builder.Services.AddSingleton(logBuffer);
 builder.Services.AddSingleton<BotManager>();
 builder.Services.AddSingleton<SystemInfo>();
 builder.Services.AddSingleton<Stats>();
+builder.Services.AddSingleton<Updates>();
 builder.Services.AddHostedService(sp => sp.GetRequiredService<BotManager>());
 
 builder.Services.AddDataProtection()

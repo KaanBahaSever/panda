@@ -174,7 +174,7 @@ public static class PanelApi
 
 		// --- health and logs ---
 
-		admin.MapGet("/system", async (SystemInfo system) => await system.GetAsync());
+		admin.MapGet("/system", async (bool? fresh, SystemInfo system) => await system.GetAsync(fresh == true));
 		admin.MapGet("/system/logs", LogEvents);
 		admin.MapGet("/system/logs.txt", (LogBuffer logs) =>
 		{
@@ -182,6 +182,24 @@ public static class PanelApi
 				$"{e.Time.ToLocalTime():yyyy-MM-dd HH:mm:ss zzz} {e.Level,-5} [{e.Source}] {e.Message}"));
 			return Results.File(System.Text.Encoding.UTF8.GetBytes(text + "\n"), "text/plain; charset=utf-8",
 				$"panda-log-{DateTime.Now:yyyyMMdd-HHmm}.txt");
+		});
+
+		// --- updates ---
+
+		admin.MapGet("/update", async (bool? fresh, Updates updates) => await updates.CheckAsync(fresh == true));
+		admin.MapPost("/update", (Updates updates) =>
+			updates.StartUpgrade() ? Results.Accepted() : Problem("cannot-update"));
+		admin.MapPost("/update/yt-dlp", async (Updates updates, SystemInfo system) =>
+		{
+			try
+			{
+				var result = await updates.UpdateYtDlpAsync();
+				return Results.Ok(new { result, version = (await system.ToolsAsync()).YtDlp });
+			}
+			catch (Exception ex) when (ex is HttpRequestException or IOException or InvalidOperationException or UnauthorizedAccessException)
+			{
+				return Problem("ytdlp-update-failed");
+			}
 		});
 
 		// --- panel users ---

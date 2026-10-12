@@ -26,7 +26,8 @@ public sealed partial class SystemInfo(PandaConfig config, Library library, BotM
 	ToolVersions? tools;
 	DateTime toolsAt;
 
-	public async Task<HealthInfo> GetAsync()
+	/// <param name="freshTools">Ask yt-dlp and ffmpeg for their versions again (after an update).</param>
+	public async Task<HealthInfo> GetAsync(bool freshTools = false)
 	{
 		// CPU use is the difference between two readings; the first time, take two.
 		if (lastCpu is null)
@@ -54,7 +55,7 @@ public sealed partial class SystemInfo(PandaConfig config, Library library, BotM
 			new MachineHealth(Environment.ProcessorCount, sysCpu, memTotal, memUsed),
 			Disk(library.Folder),
 			library.GetSummary(),
-			await ToolsAsync(),
+			await ToolsAsync(freshTools),
 			botHealth);
 	}
 

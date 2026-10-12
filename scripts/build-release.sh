@@ -25,8 +25,8 @@ for rid in "${RIDS[@]}"; do
 		win-*)
 			(cd "$out" && zip -q -9 "../../dist/panda-$rid.zip" panda.exe LICENSE) ;;
 		*)
-			cp deploy/panda.service "$out/"
-			tar -czf "dist/panda-$rid.tar.gz" -C "$out" panda panda.service LICENSE ;;
+			cp deploy/panda.service scripts/install.sh "$out/"
+			tar -czf "dist/panda-$rid.tar.gz" -C "$out" panda panda.service install.sh LICENSE ;;
 	esac
 done
 (cd dist && sha256sum * > SHA256SUMS)

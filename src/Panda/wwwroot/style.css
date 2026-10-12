@@ -379,6 +379,13 @@ dialog::backdrop { background: rgba(22,22,30,.45); backdrop-filter: blur(2px); }
   .tabs { margin-left: 8px; }
 }
 
+/* updates */
+.update .notes { margin: 6px 0 0; max-height: 240px; overflow: auto; padding: 10px 12px; border-radius: 12px; background: var(--surface-2);
+  font: 12.5px/1.5 ui-monospace, SFMono-Regular, Consolas, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
+.update details summary { cursor: pointer; font-weight: 700; font-size: 13.5px; color: var(--accent-text); }
+.update .new { color: var(--accent-text); }
+.icon-btn.badge-dot::after { content: ""; position: absolute; top: 7px; right: 7px; width: 9px; height: 9px; border-radius: 50%; background: var(--pink); box-shadow: 0 0 0 2px var(--bg); }
+
 /* panel users */
 .users { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
 .users li { display: flex; align-items: center; gap: 8px; min-width: 0; padding: 4px 4px 4px 10px; border-radius: 12px; background: var(--surface-2); }
