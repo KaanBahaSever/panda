@@ -138,6 +138,18 @@ public static class PanelApi
 			return Results.Ok(new { hasCookies = config.YouTube.CookiesFile.Length > 0 });
 		});
 
+		// --- health and logs ---
+
+		admin.MapGet("/system", async (SystemInfo system) => await system.GetAsync());
+		admin.MapGet("/system/logs", LogEvents);
+		admin.MapGet("/system/logs.txt", (LogBuffer logs) =>
+		{
+			var text = string.Join("\n", logs.Since(0).Select(e =>
+				$"{e.Time.ToLocalTime():yyyy-MM-dd HH:mm:ss zzz} {e.Level,-5} [{e.Source}] {e.Message}"));
+			return Results.File(System.Text.Encoding.UTF8.GetBytes(text + "\n"), "text/plain; charset=utf-8",
+				$"panda-log-{DateTime.Now:yyyyMMdd-HHmm}.txt");
+		});
+
 		// --- panel users ---
 
 		authed.MapPost("/password", async (PasswordRequest req, PandaConfig config, HttpContext ctx) =>
@@ -289,6 +301,34 @@ public static class PanelApi
 	}
 
 	/// <param name="Name">Empty = "admin" (logins from before there were user names).</param>
+	/// <summary>Log lines as they come: first everything after <paramref name="after"/>, then each new batch.</summary>
+	static async Task LogEvents(HttpContext ctx, LogBuffer logs, long after = 0)
+	{
+		ctx.Response.Headers.ContentType = "text/event-stream";
+		ctx.Response.Headers.CacheControl = "no-cache";
+		ctx.Response.Headers["X-Accel-Buffering"] = "no";
+
+		var signal = new SemaphoreSlim(1);
+		void Poke() { if (signal.CurrentCount == 0) signal.Release(); }
+		logs.Added += Poke;
+		var ct = ctx.RequestAborted;
+		try
+		{
+			while (!ct.IsCancellationRequested)
+			{
+				// An empty batch every 15 s keeps proxies from closing the stream.
+				await signal.WaitAsync(TimeSpan.FromSeconds(15), ct);
+				await Task.Delay(250, ct); // a burst of lines goes out as one batch
+				var batch = logs.Since(after);
+				if (batch.Count > 0) after = batch[^1].Seq;
+				await ctx.Response.WriteAsync($"data: {JsonSerializer.Serialize(batch, SseJson)}\n\n", ct);
+				await ctx.Response.Body.FlushAsync(ct);
+			}
+		}
+		catch (OperationCanceledException) { }
+		finally { logs.Added -= Poke; }
+	}
+
 	public sealed record LoginRequest(string? Name, string? Password);
 	public sealed record UserRequest(string? Name, string? Password, string? Role);
 	/// <param name="Like">Copy the server address from this bot.</param>

@@ -66,6 +66,7 @@ public sealed class Library : IDisposable
 	}
 
 	public bool Enabled => config.Library.Enabled;
+	public string Folder => Dir;
 	string Dir => config.Library.Path.Length > 0 ? config.Library.Path : Path.Combine(dataDir, "library");
 	string TempDir => Path.Combine(Dir, ".tmp");
 	string IndexPath => Path.Combine(Dir, "library.json");

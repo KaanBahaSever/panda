@@ -50,6 +50,8 @@
     <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></symbol>
     <symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M12 7.5v5.5M12 16.5v.01"/></symbol>
     <symbol id="i-lib" viewBox="0 0 24 24"><path d="M4 4v16M8.5 4v16"/><path d="M13 5.2l3.9-1 4.1 15.6-3.9 1z"/><path d="M3 20.5h18"/></symbol>
+    <symbol id="i-pulse" viewBox="0 0 24 24"><path d="M2 12h4l3-8 5 16 3-8h5"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></symbol>
     <symbol id="i-key" viewBox="0 0 24 24"><circle cx="7.5" cy="15.5" r="4.5"/><path d="M10.7 12.3L20 3"/><path d="M16 7l3 3"/><path d="M14 9l2 2"/></symbol>
     <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M12 7v5l3 2"/></symbol>
   </defs>
@@ -98,6 +100,7 @@
     <nav class="tools">
       <button class="icon-btn js-lang" type="button" data-i18n-aria="language"><svg class="ic"><use href="#i-globe"/></svg><span class="js-lang-label">EN</span></button>
       <button class="icon-btn js-theme" type="button" data-i18n-aria="theme"><svg class="ic"><use href="#i-moon"/></svg></button>
+      <button id="open-system" class="icon-btn admin-only" type="button" data-i18n-aria="system"><svg class="ic"><use href="#i-pulse"/></svg></button>
       <button id="open-settings" class="icon-btn" type="button" data-i18n-aria="settings"><svg class="ic"><use href="#i-sliders"/></svg></button>
       <button id="logout" class="icon-btn" type="button" data-i18n-aria="logout"><svg class="ic"><use href="#i-logout"/></svg></button>
     </nav>
@@ -315,6 +318,39 @@
       <span>Panda <span id="version"></span></span>
       <a href="https://github.com/KaanBahaSever/panda" target="_blank" rel="noopener noreferrer">GitHub <svg class="ic sm"><use href="#i-ext"/></svg></a>
     </footer>
+  </div>
+</dialog>
+
+<!-- ============ System: health + logs (admins) ============ -->
+<dialog id="system" class="sheet wide" aria-labelledby="sys-title">
+  <div class="sheet-head">
+    <h2 id="sys-title" data-i18n="system">System</h2>
+    <div class="tabs" role="tablist">
+      <button id="tab-health" type="button" role="tab" aria-selected="true" aria-controls="sys-health" data-i18n="health">Status</button>
+      <button id="tab-logs" type="button" role="tab" aria-selected="false" aria-controls="sys-logs" data-i18n="logs">Logs</button>
+    </div>
+    <button class="icon-btn" type="button" data-close data-i18n-aria="close"><svg class="ic"><use href="#i-x"/></svg></button>
+  </div>
+  <div id="sys-health" class="sheet-body" role="tabpanel" aria-labelledby="tab-health">
+    <div id="health" class="health"></div>
+  </div>
+  <div id="sys-logs" class="sheet-body logs-body" role="tabpanel" aria-labelledby="tab-logs" hidden>
+    <div class="log-tools">
+      <select id="log-level" data-i18n-aria="logLevel">
+        <option value="info" data-i18n="lvlAll">All</option>
+        <option value="warn" data-i18n="lvlWarn">Warnings and errors</option>
+        <option value="error" data-i18n="lvlError">Errors only</option>
+      </select>
+      <label class="lib-filter log-q">
+        <svg class="ic" aria-hidden="true"><use href="#i-search"/></svg>
+        <input id="log-q" type="search" autocomplete="off" data-i18n-ph="logSearch" data-i18n-aria="logSearch">
+      </label>
+      <label class="check"><input id="log-follow" type="checkbox" checked><span data-i18n="logFollow">Follow</span></label>
+      <a id="log-dl" class="btn ghost sm" href="api/system/logs.txt" download><svg class="ic"><use href="#i-download"/></svg><span data-i18n="download">Download</span></a>
+    </div>
+    <p class="hint" data-i18n="logNote">The latest 2000 lines since Panda started.</p>
+    <div id="log-list" class="log" role="log"></div>
+    <p id="log-empty" class="empty muted" hidden data-i18n="logEmpty">No log lines match.</p>
   </div>
 </dialog>
 

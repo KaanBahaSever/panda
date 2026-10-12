@@ -52,6 +52,11 @@ const I18N = {
     forbidden: 'You are not allowed to do that.', 'err.bad-name': 'User names are 2–32 letters, digits, ".", "_" or "-".',
     'err.user-exists': 'That user name is taken.', 'err.bad-role': 'Unknown role.', 'err.last-admin': 'There must be at least one admin.',
     'err.self': 'You can\'t remove yourself.',
+    system: 'System', health: 'Status', logs: 'Logs', logLevel: 'Level', lvlAll: 'All', lvlWarn: 'Warnings and errors', lvlError: 'Errors only',
+    logSearch: 'Search the log', logFollow: 'Follow', download: 'Download', logNote: 'The latest 2000 lines since Panda started.', logEmpty: 'No log lines match.',
+    hPanda: 'Panda', hVersion: 'Version', hUptime: 'Running for', hRuntime: 'Runtime', hOs: 'System', hTs: 'TeamSpeak', hCpu: 'CPU', hRam: 'Memory',
+    hDisk: 'Disk', hTools: 'Tools', hThis: 'Panda', hMachine: 'Whole server', hFree: 'free', hLib: 'Library', missingTool: 'not found',
+    cores: n => n === 1 ? '1 core' : `${n} cores`, uptime: (d, h, m) => d ? `${d}d ${h}h` : h ? `${h}h ${m}m` : `${m}m`,
   },
   tr: {
     loginHint: 'Sevimli TeamSpeak DJ\'in', password: 'Şifre', login: 'Giriş yap', language: 'Dil: Türkçe (English\'e geç)',
@@ -102,6 +107,11 @@ const I18N = {
     forbidden: 'Bunu yapma iznin yok.', 'err.bad-name': 'Kullanıcı adı 2–32 harf, rakam, ".", "_" ya da "-" olmalı.',
     'err.user-exists': 'Bu kullanıcı adı alınmış.', 'err.bad-role': 'Bilinmeyen rol.', 'err.last-admin': 'En az bir yönetici kalmalı.',
     'err.self': 'Kendini silemezsin.',
+    system: 'Sistem', health: 'Durum', logs: 'Kayıtlar', logLevel: 'Seviye', lvlAll: 'Hepsi', lvlWarn: 'Uyarı ve hatalar', lvlError: 'Sadece hatalar',
+    logSearch: 'Kayıtlarda ara', logFollow: 'Canlı takip', download: 'İndir', logNote: 'Panda açıldığından beri son 2000 satır.', logEmpty: 'Eşleşen kayıt yok.',
+    hPanda: 'Panda', hVersion: 'Sürüm', hUptime: 'Çalışma süresi', hRuntime: 'Çalışma ortamı', hOs: 'Sistem', hTs: 'TeamSpeak', hCpu: 'İşlemci', hRam: 'Bellek',
+    hDisk: 'Disk', hTools: 'Araçlar', hThis: 'Panda', hMachine: 'Tüm sunucu', hFree: 'boş', hLib: 'Kütüphane', missingTool: 'bulunamadı',
+    cores: n => `${n} çekirdek`, uptime: (d, h, m) => d ? `${d} gün ${h} sa` : h ? `${h} sa ${m} dk` : `${m} dk`,
   },
 };
 
@@ -262,6 +272,7 @@ function showLogin() {
   stopStream();
   $('app').hidden = true; $('login').hidden = false;
   if ($('settings').open) $('settings').close();
+  if ($('system').open) $('system').close();
   $('login-name').value ||= store.get('panda.user') || '';
   ($('login-name').value ? $('login-pw') : $('login-name')).focus();
 }
@@ -896,6 +907,124 @@ $('pw-form').addEventListener('submit', async e => {
     if (ok) e.target.reset();
   });
 });
+
+/* ---------------- system: health + logs (admins) ---------------- */
+let healthTimer = 0, logEs = null, logLines = [], logLast = 0;
+const LEVELS = { debug: 0, info: 1, warn: 2, error: 3 };
+const pct = n => n == null ? '—' : new Intl.NumberFormat(lang, { style: 'percent', maximumFractionDigits: 1 }).format(n / 100);
+
+$('open-system').addEventListener('click', () => { $('system').showModal(); showSysTab(store.get('panda.sysTab') || 'health'); });
+$('system').addEventListener('click', e => {
+  if (e.target === $('system') || e.target.closest('[data-close]')) $('system').close();
+});
+$('system').addEventListener('close', () => { clearTimeout(healthTimer); stopLogs(); });
+$('tab-health').addEventListener('click', () => showSysTab('health'));
+$('tab-logs').addEventListener('click', () => showSysTab('logs'));
+
+function showSysTab(name) {
+  store.set('panda.sysTab', name);
+  for (const n of ['health', 'logs']) {
+    $('tab-' + n).setAttribute('aria-selected', String(n === name));
+    $('sys-' + n).hidden = n !== name;
+  }
+  clearTimeout(healthTimer);
+  if (name === 'health') { stopLogs(); loadHealth(); } else startLogs();
+}
+
+/** Refreshes every 3 s while the status tab is open. */
+async function loadHealth() {
+  clearTimeout(healthTimer);
+  try { renderHealth(await api('GET', '/api/system')); }
+  catch (e) { if (e.status === 401) return; }
+  if ($('system').open && !$('sys-health').hidden) healthTimer = setTimeout(loadHealth, 3000);
+}
+
+function renderHealth(h) {
+  const kv = (k, v, bad) => el('div', { class: 'kv' }, el('span', { class: 'k', text: k }), el('span', { class: 'v' + (bad ? ' bad' : ''), text: v }));
+  const meter = p => el('div', { class: 'meter' + (p >= 90 ? ' full' : '') }, el('span', { style: `width:${Math.min(100, Math.max(0, p || 0))}%` }));
+  const card = (title, ...kids) => el('section', { class: 'hcard' }, el('h3', { text: title }), ...kids);
+  const up = h.uptimeSeconds, m = h.machine, d = h.disk, L = h.library;
+
+  const bots = h.bots.map(b => el('div', { class: 'hbot', 'data-state': b.state },
+    el('span', { class: 'nm', 'data-state': b.state }, el('span', { class: 'dot' }), document.createTextNode(b.nickname)),
+    el('span', { class: 'muted', text: b.state === 'connected'
+      ? [b.server, b.channel, t('listeners', b.listeners)].filter(Boolean).join(' · ')
+      : `${stateText(b.state)} · ${b.address}` }),
+    b.error && b.state !== 'connected' ? el('span', { class: 'err', text: b.error }) : null));
+
+  $('health').replaceChildren(
+    card(t('hPanda'),
+      kv(t('hVersion'), 'v' + h.version),
+      kv(t('hUptime'), t('uptime', Math.floor(up / 86400), Math.floor(up / 3600) % 24, Math.floor(up / 60) % 60)),
+      kv(t('hRuntime'), h.runtime), kv(t('hOs'), h.os)),
+    card(t('hTs'), ...bots),
+    card(t('hCpu'),
+      kv(t('hThis'), pct(h.process.cpuPercent)), meter(h.process.cpuPercent),
+      kv(`${t('hMachine')} (${t('cores', m.cores)})`, pct(m.cpuPercent)), meter(m.cpuPercent)),
+    card(t('hRam'),
+      kv(t('hThis'), fmtBytes(h.process.memoryBytes)),
+      kv(t('hMachine'), m.memoryTotalBytes ? (m.memoryUsedBytes != null ? t('usage', fmtBytes(m.memoryUsedBytes), fmtBytes(m.memoryTotalBytes)) : fmtBytes(m.memoryTotalBytes)) : '—'),
+      m.memoryUsedBytes != null && m.memoryTotalBytes ? meter(m.memoryUsedBytes / m.memoryTotalBytes * 100) : null),
+    card(t('hDisk'),
+      d ? kv(d.path, `${fmtBytes(d.freeBytes)} ${t('hFree')} / ${fmtBytes(d.totalBytes)}`) : kv(t('hDisk'), '—'),
+      d ? meter((1 - d.freeBytes / d.totalBytes) * 100) : null,
+      kv(t('hLib'), L.limitBytes > 0 ? t('usage', fmtBytes(L.usedBytes), fmtBytes(L.limitBytes)) : fmtBytes(L.usedBytes)),
+      L.limitBytes > 0 ? meter(L.usedBytes / L.limitBytes * 100) : null),
+    card(t('hTools'),
+      kv('yt-dlp', h.tools.ytDlp || t('missingTool'), !h.tools.ytDlp),
+      kv('ffmpeg', h.tools.ffmpeg || t('missingTool'), !h.tools.ffmpeg)));
+}
+
+/* Logs: the server sends what it has, then new lines in batches. */
+function startLogs() {
+  stopLogs();
+  logEs = new EventSource('/api/system/logs?after=' + logLast);
+  logEs.onmessage = ev => { try { addLogs(JSON.parse(ev.data)); } catch {} };
+  renderLogs();
+}
+function stopLogs() { if (logEs) { logEs.close(); logEs = null; } }
+
+function logVisible(e) {
+  const q = $('log-q').value.trim().toLowerCase();
+  return LEVELS[e.level] >= LEVELS[$('log-level').value] && (!q || `${e.source} ${e.message}`.toLowerCase().includes(q));
+}
+function logRow(e) {
+  const d = new Date(e.time);
+  const row = el('div', { class: 'll ' + e.level },
+    el('time', { datetime: e.time, title: d.toLocaleString(lang), text: d.toLocaleTimeString(lang, { hour: '2-digit', minute: '2-digit', second: '2-digit' }) }),
+    // Upper case in code: CSS would make "info" "İNFO" on a Turkish page.
+    el('span', { class: 'lv', text: e.level.toUpperCase() }), el('span', { class: 'src', text: e.source }), el('span', { class: 'msg', text: e.message }));
+  row.dataset.seq = e.seq;
+  return row;
+}
+function addLogs(batch) {
+  const fresh = batch.filter(e => e.seq > logLast);   // a reconnect sends some lines again
+  if (!fresh.length) return;
+  logLast = fresh.at(-1).seq;
+  logLines.push(...fresh);
+  const list = $('log-list');
+  if (logLines.length > 2000) {
+    logLines.splice(0, logLines.length - 2000);
+    while (list.firstElementChild && +list.firstElementChild.dataset.seq < logLines[0].seq) list.firstElementChild.remove();
+  }
+  list.append(...fresh.filter(logVisible).map(logRow));
+  $('log-empty').hidden = list.childElementCount > 0;
+  if ($('log-follow').checked) list.scrollTop = list.scrollHeight;
+}
+function renderLogs() {
+  const list = $('log-list');
+  list.replaceChildren(...logLines.filter(logVisible).map(logRow));
+  $('log-empty').hidden = list.childElementCount > 0 || !logLines.length;
+  if ($('log-follow').checked) list.scrollTop = list.scrollHeight;
+}
+$('log-level').addEventListener('change', renderLogs);
+$('log-q').addEventListener('input', debounce(renderLogs, 200));
+$('log-follow').addEventListener('change', e => { if (e.target.checked) $('log-list').scrollTop = $('log-list').scrollHeight; });
+// Scrolling up to read stops following; scrolling back to the end follows again.
+$('log-list').addEventListener('scroll', () => {
+  const l = $('log-list');
+  $('log-follow').checked = l.scrollHeight - l.scrollTop - l.clientHeight < 30;
+}, { passive: true });
 
 /* ---------------- keyboard nicety & start ---------------- */
 document.addEventListener('keydown', e => {

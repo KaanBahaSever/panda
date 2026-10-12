@@ -59,11 +59,14 @@ if (config.YouTube.CookiesFile.Length == 0 && File.Exists(cookies))
 	config.YouTube.CookiesFile = cookies;
 config.Save();
 
-TSLibLogging.Configure();
+// The latest log lines also stay in memory for the panel's log screen.
+var logBuffer = new LogBuffer();
+TSLibLogging.Configure(logBuffer);
 
 var builder = WebApplication.CreateSlimBuilder(new WebApplicationOptions { Args = [], ContentRootPath = dataDir });
 builder.Logging.ClearProviders();
 builder.Logging.AddSimpleConsole(o => { o.SingleLine = true; o.TimestampFormat = "HH:mm:ss "; });
+builder.Logging.AddProvider(logBuffer);
 builder.Logging.AddFilter("Microsoft", LogLevel.Warning);
 // Keys live in the data folder, which is already private to the panda user.
 builder.Logging.AddFilter("Microsoft.AspNetCore.DataProtection", LogLevel.Error);
@@ -75,7 +78,9 @@ builder.Services.AddSingleton(config);
 builder.Services.AddSingleton(new DataPaths(dataDir));
 builder.Services.AddSingleton<YouTube>();
 builder.Services.AddSingleton<Library>();
+builder.Services.AddSingleton(logBuffer);
 builder.Services.AddSingleton<BotManager>();
+builder.Services.AddSingleton<SystemInfo>();
 builder.Services.AddHostedService(sp => sp.GetRequiredService<BotManager>());
 
 builder.Services.AddDataProtection()
