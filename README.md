@@ -33,10 +33,20 @@ Panda talks to the server directly, so it stays light: the bot itself uses about
 - 📚 **Song library** — every song you request is saved on disk. Songs you play again start instantly
   and never touch YouTube again; when the library is full, the least played songs make room.
 - ⚡ **No waiting between songs** — the next songs in the queue are downloaded ahead of time.
+- 📻 **Radio** — when the queue runs out, Panda keeps playing songs like the last one (YouTube's Mix).
+  Off by default; `!radio` or the radio button turns it on.
+- 🔊 **Equal loudness** — saved songs are measured once and play equally loud.
+- 📃 **Playlists & favorites** — save the queue or single songs into playlists, play them with
+  `!playlist <name>`, star a song with `!fav`.
+- 🤖 **Several bots, one panel** — each bot has its own server, channel, queue and settings; they share
+  one song library.
 - 🐼 **Made for TeamSpeak 6** (TS3 servers work too).
-- 🌐 **Web panel** — now playing, queue with drag & drop, search, library, history, volume, loop,
-  seek, light/dark theme, English/Turkish.
-- 💬 **Chat commands** in English and Turkish.
+- 🌐 **Web panel** — now playing, queue with drag & drop, search, library, playlists, history with
+  times, statistics, volume, loop, seek, light/dark theme, English/Turkish.
+- 👥 **Panel users** — admins can do everything; "can only add songs" users watch and add songs.
+- 🩺 **System screen** — CPU, memory and disk, each bot's connection, live logs with search, and
+  updates (one click on Linux installs).
+- 💬 **Chat commands** in English and Turkish. `!follow` makes the bot follow you between channels.
 - 🍪 **YouTube bot check?** Paste your cookies in the panel and you're done.
 - 🔁 Reconnects by itself, keeps its identity (so permissions stick), shows the song in its description.
 - 📦 One file, one command to install. Runs on Linux (x64/ARM), Windows, macOS and Docker.
@@ -64,7 +74,8 @@ curl -fsSL https://raw.githubusercontent.com/KaanBahaSever/panda/main/scripts/in
 ```
 
 The installer asks for your TeamSpeak server address and the panel port, installs `ffmpeg`, `yt-dlp`
-and `deno`, sets up a systemd service and prints the panel address and password. Run it again to update.
+and `deno`, sets up a systemd service and prints the panel address and login. To update, use
+**System → Updates** in the panel, or run the installer again.
 
 ```bash
 journalctl -u panda -f                    # logs
@@ -72,15 +83,18 @@ sudo systemctl restart panda              # restart
 curl -fsSL https://raw.githubusercontent.com/KaanBahaSever/panda/main/scripts/install.sh | sudo bash -s -- --uninstall
 ```
 
-`yt-dlp` updates itself every day (YouTube changes often and old versions stop working).
+`yt-dlp` updates itself every day (YouTube changes often and old versions stop working); the panel's
+**System** screen can also update it right away.
 
 ### Docker
 
 ```bash
 git clone https://github.com/KaanBahaSever/panda && cd panda
 docker compose up -d
-docker compose logs panda                 # shows the panel password on first start
+docker compose logs panda                 # shows the panel login on first start
 ```
+
+To update: `git pull && docker compose up -d --build`.
 
 ### Windows / macOS
 
@@ -91,10 +105,10 @@ in a `data` folder next to where you start it.
 
 ## First steps
 
-1. Open the panel (`http://your-server:8080`) and log in with the printed password.
+1. Open the panel (`http://your-server:8080`) and log in as `admin` with the printed password.
 2. **Settings → Connection**: server address (`ts.example.com` or `1.2.3.4:9987`), server password,
    channel. The bot reconnects when you save.
-3. Change the panel password under **Settings**.
+3. Change the panel password under **Settings**, and add users for your friends if you like.
 4. In TeamSpeak, write `!play never gonna give you up` in the bot's channel. 🎶
 
 ![Settings](docs/settings.png)
@@ -117,6 +131,11 @@ Write them in the bot's channel or in a private message to the bot.
 | `!shuffle` | `!karıştır` | Shuffle the queue |
 | `!remove <#>` / `!clear` | `!sil` / `!temizle` | Remove a song / clear the queue |
 | `!join` | `!gel` | Come to my channel |
+| `!follow` | `!takip` | Follow me between channels (again to stop) |
+| `!radio <on\|off>` | `!radyo <aç\|kapat>` | Keep playing similar songs when the queue ends |
+| `!playlist <name>` / `!pl` | `!liste <ad>` | Queue a saved playlist |
+| `!playlists` | `!listeler` | List saved playlists |
+| `!fav` | `!fav` | Save the song playing to Favorites |
 | `!help` | `!yardım` | List commands |
 
 By default everyone can use the bot. To limit it, add TeamSpeak UIDs or server group IDs under
@@ -145,19 +164,29 @@ Everything is editable in the panel; the file is `/var/lib/panda/config.json` (o
 
 ```jsonc
 {
-  "server": { "address": "127.0.0.1:9987", "password": "", "channel": "Music", "channelPassword": "" },
-  "bot": {
-    "nickname": "Panda 🐼", "commandPrefix": "!", "language": "en",   // chat replies: "en" or "tr"
-    "volume": 50, "announce": true, "showSongInDescription": true,
-    "allowedUsers": [], "allowedServerGroups": [], "maxQueueLength": 100
-  },
-  "panel": { "listen": "0.0.0.0", "port": 8080 },
+  "bots": [                                  // one entry per bot; add more in the panel
+    {
+      "id": "1",
+      "server": { "address": "127.0.0.1:9987", "password": "", "channel": "Music", "channelPassword": "" },
+      "bot": {
+        "nickname": "Panda 🐼", "commandPrefix": "!", "language": "en",   // chat replies: "en" or "tr"
+        "volume": 50, "announce": true, "showSongInDescription": true, "radio": false,
+        "allowedUsers": [], "allowedServerGroups": [], "maxQueueLength": 100
+      }
+    }
+  ],
+  "panel": { "listen": "0.0.0.0", "port": 8080, "users": [ /* set in the panel */ ] },
   "youTube": { "ytDlpPath": "yt-dlp", "ffmpegPath": "ffmpeg", "cookiesFile": "", "maxDurationMinutes": 60 },
-  "library": { "enabled": true, "maxSizeMb": 5120, "path": "" }   // 0 MB = no limit; empty path = data/library
+  "library": { "enabled": true, "maxSizeMb": 5120, "path": "" },   // 0 MB = no limit; empty path = data/library
+  "audio": { "normalize": true, "targetLufs": -14 }
 }
 ```
 
-Reset the panel password: `sudo -u panda /opt/panda/panda --data /var/lib/panda set-password <new>`.
+Files from versions before 0.3 (one bot, one panel password) are converted on start; the bot keeps
+its TeamSpeak identity and the old password becomes the `admin` user.
+
+Reset a panel password (or create an admin when every password is lost):
+`sudo -u panda /opt/panda/panda --data /var/lib/panda set-password <new> [user]`.
 
 The panel speaks plain HTTP. If it is reachable from the internet, put it behind a reverse proxy with
 HTTPS (Caddy, nginx) or a firewall.

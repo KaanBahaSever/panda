@@ -27,10 +27,21 @@ programı yok: Panda sunucuyla doğrudan konuşur, bu yüzden hafiftir (bot ~130
 - 📚 **Şarkı kütüphanesi** — istenen her şarkı diske kaydedilir. Tekrar çalınan şarkılar anında başlar
   ve YouTube'a hiç gitmez; kütüphane dolunca en az dinlenen şarkılar yer açar.
 - ⚡ **Şarkılar arası bekleme yok** — sıradaki şarkılar önceden indirilir.
+- 📻 **Radyo** — sıra bitince Panda son şarkıya benzer şarkılar çalmaya devam eder (YouTube Mix).
+  Varsayılan olarak kapalı; `!radyo` ya da radyo düğmesiyle açılır.
+- 🔊 **Eşit ses seviyesi** — kaydedilen şarkılar bir kez ölçülür ve hepsi aynı yükseklikte çalar.
+- 📃 **Çalma listeleri ve favoriler** — sırayı ya da tek tek şarkıları listelere kaydet, `!liste <ad>`
+  ile çal, `!fav` ile çalan şarkıyı favorilere ekle.
+- 🤖 **Tek panelden birden fazla bot** — her botun kendi sunucusu, kanalı, sırası ve ayarları olur;
+  şarkı kütüphanesi ortaktır.
 - 🐼 **TeamSpeak 6 için yapıldı** (TS3 sunucularında da çalışır).
-- 🌐 **Web paneli** — şimdi çalan, sürükle-bırak sıra, arama, kütüphane, geçmiş, ses, tekrar,
-  ileri/geri sarma, açık/koyu tema, Türkçe/İngilizce.
-- 💬 Türkçe ve İngilizce **sohbet komutları**.
+- 🌐 **Web paneli** — şimdi çalan, sürükle-bırak sıra, arama, kütüphane, çalma listeleri, saatli geçmiş,
+  istatistikler, ses, tekrar, ileri/geri sarma, açık/koyu tema, Türkçe/İngilizce.
+- 👥 **Panel kullanıcıları** — yöneticiler her şeyi yapar; "sadece şarkı ekler" kullanıcıları izler ve
+  şarkı ekler.
+- 🩺 **Sistem ekranı** — işlemci, bellek ve disk, her botun bağlantısı, aranabilir canlı kayıtlar ve
+  güncellemeler (Linux kurulumunda tek tık).
+- 💬 Türkçe ve İngilizce **sohbet komutları**. `!takip` ile bot seni kanaldan kanala takip eder.
 - 🍪 **YouTube bot kontrolü mü?** Cookies'i panele yapıştır, bitti.
 - 🔁 Kendi kendine yeniden bağlanır, kimliğini korur (yetkiler kalıcı olur), çalan şarkıyı açıklamasında gösterir.
 - 📦 Tek dosya, tek komutla kurulum. Linux (x64/ARM), Windows, macOS ve Docker'da çalışır.
@@ -58,8 +69,8 @@ curl -fsSL https://raw.githubusercontent.com/KaanBahaSever/panda/main/scripts/in
 ```
 
 Kurulum TeamSpeak sunucu adresini ve panel portunu sorar; `ffmpeg`, `yt-dlp` ve `deno`'yu kurar,
-bir systemd servisi oluşturur ve sonunda panel adresiyle şifresini yazar. Güncellemek için aynı komutu
-tekrar çalıştır.
+bir systemd servisi oluşturur ve sonunda panel adresiyle giriş bilgisini yazar. Güncellemek için
+paneldeki **Sistem → Güncellemeler** kısmını kullan ya da aynı komutu tekrar çalıştır.
 
 ```bash
 journalctl -u panda -f                    # loglar
@@ -67,15 +78,18 @@ sudo systemctl restart panda              # yeniden başlat
 curl -fsSL https://raw.githubusercontent.com/KaanBahaSever/panda/main/scripts/install.sh | sudo bash -s -- --uninstall
 ```
 
-`yt-dlp` her gün kendini günceller (YouTube sık değişiyor, eski sürümler çalışmaz hale geliyor).
+`yt-dlp` her gün kendini günceller (YouTube sık değişiyor, eski sürümler çalışmaz hale geliyor); panelin
+**Sistem** ekranından hemen de güncellenebilir.
 
 ### Docker
 
 ```bash
 git clone https://github.com/KaanBahaSever/panda && cd panda
 docker compose up -d
-docker compose logs panda                 # ilk açılışta panel şifresini gösterir
+docker compose logs panda                 # ilk açılışta panel giriş bilgisini gösterir
 ```
+
+Güncellemek için: `git pull && docker compose up -d --build`.
 
 ### Windows / macOS
 
@@ -86,10 +100,10 @@ yerdeki `data` klasöründe tutulur.
 
 ## İlk adımlar
 
-1. Paneli aç (`http://sunucun:8080`) ve kurulumun yazdığı şifreyle giriş yap.
+1. Paneli aç (`http://sunucun:8080`) ve kurulumun yazdığı şifreyle `admin` olarak giriş yap.
 2. **Ayarlar → Bağlantı**: sunucu adresi (`ts.ornek.com` ya da `1.2.3.4:9987`), sunucu şifresi, kanal.
    Kaydedince bot yeniden bağlanır. Sohbet dilini **Ayarlar → Bot** kısmından Türkçe yap.
-3. Panel şifresini **Ayarlar**'dan değiştir.
+3. Panel şifresini **Ayarlar**'dan değiştir; istersen arkadaşların için kullanıcı ekle.
 4. TeamSpeak'te botun kanalına `!çal tarkan şımarık` yaz. 🎶
 
 ![Ayarlar](docs/settings.png)
@@ -112,6 +126,11 @@ Botun kanalına ya da bota özel mesaj olarak yaz. İngilizce karşılıkları d
 | `!karıştır` | `!shuffle` | Sırayı karıştırır |
 | `!sil <#>` / `!temizle` | `!remove` / `!clear` | Şarkı siler / sırayı temizler |
 | `!gel` | `!join` | Kanalıma gel |
+| `!takip` | `!follow` | Beni kanaldan kanala takip et (tekrar yazınca bırakır) |
+| `!radyo <aç\|kapat>` | `!radio <on\|off>` | Sıra bitince benzer şarkılar çalmaya devam et |
+| `!liste <ad>` | `!playlist` / `!pl` | Kayıtlı bir listeyi sıraya ekle |
+| `!listeler` | `!playlists` | Kayıtlı listeleri göster |
+| `!fav` | `!fav` | Çalan şarkıyı Favoriler'e kaydet |
 | `!yardım` | `!help` | Komut listesi |
 
 Varsayılan olarak herkes botu kullanabilir. Sınırlamak için **Ayarlar → Bot** kısmına TeamSpeak
@@ -137,7 +156,12 @@ tek şey yukarıdaki bot kontrolü, onu da cookies çözer.
 ## Ayarlar dosyası
 
 Her şey panelden değiştirilebilir; dosya `/var/lib/panda/config.json` (ya da `data/config.json`).
-Panel şifresini sıfırlamak için: `sudo -u panda /opt/panda/panda --data /var/lib/panda set-password <yeni>`.
+Botlar `bots` listesinde, panel kullanıcıları `panel.users` içinde, ses eşitleme `audio` altında durur.
+0.3'ten önceki dosyalar (tek bot, tek panel şifresi) açılışta dönüştürülür; bot TeamSpeak kimliğini
+korur, eski şifre `admin` kullanıcısının şifresi olur.
+
+Bir panel şifresini sıfırlamak (ya da bütün şifreler unutulduysa yeni bir yönetici açmak) için:
+`sudo -u panda /opt/panda/panda --data /var/lib/panda set-password <yeni> [kullanıcı]`.
 
 Panel düz HTTP konuşur. İnternetten erişilebiliyorsa önüne HTTPS'li bir ters vekil sunucu
 (Caddy, nginx) ya da güvenlik duvarı koy.
