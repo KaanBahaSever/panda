@@ -62,6 +62,23 @@ indirir ve çaldıktan sonra siler.
 
 ![Koyu temada kütüphane](docs/library.png)
 
+## İstatistikler ve Sistem ekranı
+
+**İstatistikler** kartı neyin çalındığını gösterir:
+- çalma sayısı ve dinlenen süre,
+- günlere ve saatlere göre hareketlilik,
+- en çok çalınan şarkılar ve en çok isteyen kişiler.
+
+Yöneticilerin bir de **Sistem** ekranı var. Burada şunlar görünür:
+- işlemci, bellek ve disk,
+- her botun bağlantısı,
+- canlı kayıtlar,
+- güncellemeler.
+
+![İstatistikler](docs/statistics.png)
+
+![Sistem ekranı](docs/system.png)
+
 ## Kurulum (Linux)
 
 ```bash

@@ -35,6 +35,7 @@
       <span class="chip" data-i18n="chip.ts6">Works with TeamSpeak 6</span>
       <span class="chip" data-i18n="chip.oss">Open source</span>
       <span class="chip" data-i18n="chip.key">No API key</span>
+      <span class="chip" data-i18n="chip.bots">Several bots</span>
       <span class="chip" data-i18n="chip.light">~130 MB RAM</span>
     </div>
     <div class="cta">
@@ -56,12 +57,27 @@
       <article class="card"><div class="ico">📚</div><h3 data-i18n="f2.t">A song library</h3><p data-i18n="f2.d">Every requested song is saved. Favourites start instantly and never hit YouTube again; when it's full, the least played songs make room.</p></article>
       <article class="card"><div class="ico">⚡</div><h3 data-i18n="f3.t">No waiting</h3><p data-i18n="f3.d">Upcoming songs are downloaded ahead of time, so the next song starts the moment the last one ends.</p></article>
       <article class="card"><div class="ico">🎵</div><h3 data-i18n="f4.t">Any YouTube link</h3><p data-i18n="f4.d">Song names, youtube.com, youtu.be, YouTube Music, Shorts. Playlist links add just one song instead of loading the whole list.</p></article>
-      <article class="card"><div class="ico">🌐</div><h3 data-i18n="f5.t">A panel you'll like</h3><p data-i18n="f5.d">Now playing, drag &amp; drop queue, search, library, history, volume, loop and seek. Light and dark, English and Turkish, works on phones.</p></article>
+      <article class="card"><div class="ico">📻</div><h3 data-i18n="f9.t">Radio</h3><p data-i18n="f9.d">When the queue runs out, Panda keeps playing songs like the last one, from YouTube's Mix. Off until you turn it on.</p></article>
+      <article class="card"><div class="ico">🤖</div><h3 data-i18n="f10.t">Several bots, one panel</h3><p data-i18n="f10.d">Run a bot per server or channel, each with its own queue and settings, from a single install and a single song library.</p></article>
+      <article class="card"><div class="ico">📃</div><h3 data-i18n="f12.t">Playlists &amp; favorites</h3><p data-i18n="f12.d">Save the queue or single songs into playlists and play them with <code>!playlist</code>. <code>!fav</code> keeps the song you like.</p></article>
+      <article class="card"><div class="ico">🔊</div><h3 data-i18n="f13.t">Equal loudness</h3><p data-i18n="f13.d">Saved songs are measured once and play equally loud, so nobody has to ride the volume slider.</p></article>
+      <article class="card"><div class="ico">🌐</div><h3 data-i18n="f5.t">A panel you'll like</h3><p data-i18n="f5.d">Now playing, drag &amp; drop queue, search, library, playlists, history with times, statistics, volume, loop and seek. Light and dark, English and Turkish, works on phones.</p></article>
+      <article class="card"><div class="ico">👥</div><h3 data-i18n="f11.t">Users and roles</h3><p data-i18n="f11.d">Give friends their own panel login. Admins can do everything; "can only add songs" users watch and add songs.</p></article>
       <article class="card"><div class="ico">💬</div><h3 data-i18n="f6.t">Chat commands</h3><p data-i18n="f6.d"><code>!play</code>, <code>!skip</code>, <code>!queue</code>… in English or Turkish. Limit who can use them with TeamSpeak UIDs or server groups.</p></article>
-      <article class="card"><div class="ico">🍪</div><h3 data-i18n="f7.t">Bot check? Solved.</h3><p data-i18n="f7.d">When YouTube asks to "confirm you're not a bot", paste your cookies in the panel and carry on.</p></article>
-      <article class="card"><div class="ico">📦</div><h3 data-i18n="f8.t">One-line install</h3><p data-i18n="f8.d">One command sets up everything on Linux and keeps yt-dlp up to date. Docker, Windows and macOS builds too.</p></article>
+      <article class="card"><div class="ico">📦</div><h3 data-i18n="f8.t">One-line install</h3><p data-i18n="f8.d">One command sets up everything on Linux and keeps yt-dlp up to date; later updates are one click in the panel. Docker, Windows and macOS builds too.</p></article>
     </div>
   </section>
+
+  <section class="section split">
+    <div>
+      <h2 data-i18n="sys.title">See what's going on</h2>
+      <p data-i18n="sys.p1">The <b>Statistics</b> card shows plays, time listened, the busiest days and hours, the most played songs and who asked for the most.</p>
+      <p data-i18n="sys.p2">The <b>System</b> screen shows CPU, memory and disk, every bot's connection and the live log, and tells you when a new version is out.</p>
+    </div>
+    <figure class="shot small"><img src="img/system.png" alt="The System screen with status cards" width="800" height="500" loading="lazy"></figure>
+  </section>
+
+  <figure class="shot center"><img src="img/statistics.png" alt="Statistics: plays per day and hour, most played songs" width="800" height="500" loading="lazy"></figure>
 
   <section class="section split">
     <div>
@@ -77,7 +93,7 @@
     <p class="lead" data-i18n="install.lead">On a Linux server (Ubuntu, Debian, Fedora, Arch; x64 or ARM):</p>
     <div class="code"><pre><code id="cmd">curl -fsSL https://raw.githubusercontent.com/KaanBahaSever/panda/main/scripts/install.sh | sudo bash</code></pre><button class="copy" type="button" data-copy="cmd" data-i18n="copy">Copy</button></div>
     <ol class="steps">
-      <li data-i18n="install.s1">The installer asks for your TeamSpeak server address and prints the panel address and password.</li>
+      <li data-i18n="install.s1">The installer asks for your TeamSpeak server address and prints the panel address and login (user <code>admin</code>).</li>
       <li data-i18n="install.s2">Open the panel and set the server password and channel under <b>Settings</b>.</li>
       <li data-i18n="install.s3">Write <code>!play</code> and a song in the bot's channel. That's it! 🎶</li>
     </ol>
@@ -108,6 +124,10 @@ docker compose logs panda   # panel password</code></pre><button class="copy" ty
       <div><code>!vol 40</code><code>!ses 40</code><span data-i18n="cmd.vol">Change the volume</span></div>
       <div><code>!loop</code><code>!tekrar</code><span data-i18n="cmd.loop">Repeat one song or the whole queue</span></div>
       <div><code>!join</code><code>!gel</code><span data-i18n="cmd.join">Come to my channel</span></div>
+      <div><code>!follow</code><code>!takip</code><span data-i18n="cmd.follow">Follow me from channel to channel</span></div>
+      <div><code>!radio</code><code>!radyo</code><span data-i18n="cmd.radio">Keep playing similar songs when the queue ends</span></div>
+      <div><code>!playlist rock</code><code>!liste rock</code><span data-i18n="cmd.playlist">Queue a saved playlist</span></div>
+      <div><code>!fav</code><code>!fav</code><span data-i18n="cmd.fav">Save the song playing to Favorites</span></div>
     </div>
   </section>
 
@@ -117,6 +137,7 @@ docker compose logs panda   # panel password</code></pre><button class="copy" ty
     <details class="faq"><summary data-i18n="faq.q2">Why can't SinusBot join my TeamSpeak 6 server?</summary><p data-i18n="faq.a2">TeamSpeak 6 servers only accept TeamSpeak 3 clients from version 3.6.0, and SinusBot runs an older one. Panda speaks the protocol itself and understands the new license data that TeamSpeak 6 sends while connecting.</p></details>
     <details class="faq"><summary data-i18n="faq.q3">YouTube says "confirm you're not a bot"</summary><p data-i18n="faq.a3">That happens on some server IPs. Log in to YouTube in a private window, export the cookies with a cookies.txt extension, close the window and paste them in Settings → YouTube cookies.</p></details>
     <details class="faq"><summary data-i18n="faq.q4">How much does it need?</summary><p data-i18n="faq.a4">Very little: the bot uses about 130 MB of RAM, and yt-dlp and ffmpeg only run while a song plays. A small VPS next to your TeamSpeak server is plenty.</p></details>
+    <details class="faq"><summary data-i18n="faq.q6">How do I update?</summary><p data-i18n="faq.a6">On Linux installs, open <b>System → Updates</b> in the panel and click <b>Update now</b> (or run the installer again). With Docker: <code>git pull &amp;&amp; docker compose up -d --build</code>.</p></details>
     <details class="faq"><summary data-i18n="faq.q5">Is it free?</summary><p data-i18n="faq.a5">Yes, Panda is open source under the Open Software License 3.0. Ideas, bug reports and pull requests are welcome on GitHub.</p></details>
   </section>
 </main>

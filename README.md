@@ -67,6 +67,16 @@ time and deletes it after playing.
 
 ![The library in dark mode](docs/library.png)
 
+## Statistics and the System screen
+
+The **Statistics** card shows what was played: plays, time listened, activity by day and hour, the most
+played songs and who asked for the most. Admins also get a **System** screen with CPU, memory and disk,
+every bot's connection, live logs and updates.
+
+![Statistics](docs/statistics.png)
+
+![The System screen](docs/system.png)
+
 ## Install (Linux)
 
 ```bash

@@ -368,6 +368,7 @@ async function loadBot() {
   try { setState(await api('GET', B('/state'))); }
   catch (e) { if (e.status !== 404) throw e; await pickBot(); setState(await api('GET', B('/state'))); }   // it was removed
   startStream();
+  if (statsBox.open) loadStats();   // open since the last visit: its "toggle" came before there was a state
 }
 /** After a stream error: check the session (401 → login), then reopen the stream. */
 async function recover() {
