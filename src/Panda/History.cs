@@ -66,25 +66,25 @@ public sealed class PlayHistory
 	public List<PlayedTrack> ReadAll()
 	{
 		var list = new List<PlayedTrack>();
-		string[] lines;
 		try
 		{
-			lock (gate) lines = File.Exists(path) ? File.ReadAllLines(path, Encoding.UTF8) : [];
+			if (!File.Exists(path)) return list;
+			// No lock: a play being appended right now is at most a cut-off last line, skipped below.
+			using var reader = new StreamReader(new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite), Encoding.UTF8);
+			while (reader.ReadLine() is { } line)
+			{
+				if (line.Length == 0) continue;
+				try
+				{
+					if (JsonSerializer.Deserialize<PlayedTrack>(line, JsonOpts) is { Id.Length: > 0 } p)
+						list.Add(p);
+				}
+				catch (JsonException) { }
+			}
 		}
-		catch (Exception ex)
+		catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
 		{
 			log.LogWarning("Could not read {Path}: {Error}", path, ex.Message);
-			return list;
-		}
-		foreach (var line in lines)
-		{
-			if (line.Length == 0) continue;
-			try
-			{
-				if (JsonSerializer.Deserialize<PlayedTrack>(line, JsonOpts) is { Id.Length: > 0 } p)
-					list.Add(p);
-			}
-			catch (JsonException) { }
 		}
 		return list;
 	}

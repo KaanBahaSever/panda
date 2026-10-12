@@ -114,6 +114,8 @@ public static class PanelApi
 		});
 
 		authed.MapGet("/library", (string? q, Library library) => library.GetInfo(q));
+		// bot: an id or "all"; days: 0 = everything; tz: the browser's getTimezoneOffset().
+		authed.MapGet("/stats", (string? bot, int? days, int? tz, Stats stats) => stats.Get(bot, days ?? 30, tz ?? 0));
 		admin.MapDelete("/library/{id}", (string id, Library library) => Done(library.Delete(id)));
 
 		admin.MapPost("/cookies", async (HttpContext ctx, PandaConfig config, DataPaths paths) =>

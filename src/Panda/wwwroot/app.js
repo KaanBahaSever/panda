@@ -38,7 +38,7 @@ const I18N = {
     library: 'Library', savedBadge: 'saved', fromLibrary: 'From your library', fromYouTube: 'From YouTube', libFilter: 'Filter saved songs',
     usage: (a, b) => `${a} of ${b}`, libOff: 'Saving is off — turn it on in Settings.', libEmpty: 'No saved songs yet. Songs are saved as they are requested.',
     libNoMatch: 'No saved songs match.', libCapped: 'Showing the 500 most played songs — use the filter to find others.', showMore: 'Show more',
-    plays: n => n === 1 ? '1 play' : `${n} plays`, delete: 'Delete', deleted: 'Deleted', confirmLibDelete: x => `Delete "${x}" from the library?`,
+    plays: n => n === 1 ? '1 play' : `${n} plays`, requests: n => n === 1 ? '1 song' : `${n} songs`, delete: 'Delete', deleted: 'Deleted', confirmLibDelete: x => `Delete "${x}" from the library?`,
     sLib: 'Library', sLibOn: 'Save every requested song', sLibOnHint: 'When off, only the next song is downloaded ahead of time.',
     sLibMax: 'Size limit (GB)', sLibMaxHint: 'When full, the least played songs are deleted first. 0 = no limit.', sLibMaxBad: 'Use 0 (no limit) or at least 0.1 GB.',
     bots: 'Bots', addBot: 'Add a bot', botAdded: 'Bot added — now set its channel', idle: 'Idle',
@@ -57,6 +57,9 @@ const I18N = {
     hPanda: 'Panda', hVersion: 'Version', hUptime: 'Running for', hRuntime: 'Runtime', hOs: 'System', hTs: 'TeamSpeak', hCpu: 'CPU', hRam: 'Memory',
     hDisk: 'Disk', hTools: 'Tools', hThis: 'Panda', hMachine: 'Whole server', hFree: 'free', hLib: 'Library', missingTool: 'not found',
     cores: n => n === 1 ? '1 core' : `${n} cores`, uptime: (d, h, m) => d ? `${d}d ${h}h` : h ? `${h}h ${m}m` : `${m}m`,
+    stats: 'Statistics', statsRange: 'Period', last7: 'Last 7 days', last30: 'Last 30 days', last365: 'Last year', allTime: 'All time',
+    thisBot: 'This bot', allBots: 'All bots', statsEmpty: 'Nothing was played in this period.', sPlays: 'plays', sListened: 'listened',
+    sSongs: 'different songs', sPeople: 'people', topSongs: 'Most played', topPeople: 'Who asked the most', activity: 'Activity', byHour: 'By hour of day',
   },
   tr: {
     loginHint: 'Sevimli TeamSpeak DJ\'in', password: 'Şifre', login: 'Giriş yap', language: 'Dil: Türkçe (English\'e geç)',
@@ -93,7 +96,7 @@ const I18N = {
     library: 'Kütüphane', savedBadge: 'kayıtlı', fromLibrary: 'Kütüphanenden', fromYouTube: 'YouTube\'dan', libFilter: 'Kayıtlı şarkılarda ara',
     usage: (a, b) => `${a} / ${b}`, libOff: 'Kaydetme kapalı — Ayarlar\'dan açabilirsin.', libEmpty: 'Henüz kayıtlı şarkı yok. Şarkılar istendikçe kaydedilir.',
     libNoMatch: 'Eşleşen kayıtlı şarkı yok.', libCapped: 'En çok dinlenen 500 şarkı gösteriliyor — diğerleri için aramayı kullan.', showMore: 'Daha fazla göster',
-    plays: n => `${n} dinlenme`, delete: 'Sil', deleted: 'Silindi', confirmLibDelete: x => `"${x}" kütüphaneden silinsin mi?`,
+    plays: n => `${n} kez çalındı`, requests: n => `${n} şarkı`, delete: 'Sil', deleted: 'Silindi', confirmLibDelete: x => `"${x}" kütüphaneden silinsin mi?`,
     sLib: 'Kütüphane', sLibOn: 'İstenen her şarkıyı kaydet', sLibOnHint: 'Kapalıyken sadece sıradaki şarkı önceden indirilir.',
     sLibMax: 'Boyut sınırı (GB)', sLibMaxHint: 'Dolduğunda en az dinlenen şarkılar önce silinir. 0 = sınırsız.', sLibMaxBad: '0 (sınırsız) ya da en az 0,1 GB girin.',
     bots: 'Botlar', addBot: 'Bot ekle', botAdded: 'Bot eklendi — şimdi kanalını ayarla', idle: 'Boşta',
@@ -112,6 +115,9 @@ const I18N = {
     hPanda: 'Panda', hVersion: 'Sürüm', hUptime: 'Çalışma süresi', hRuntime: 'Çalışma ortamı', hOs: 'Sistem', hTs: 'TeamSpeak', hCpu: 'İşlemci', hRam: 'Bellek',
     hDisk: 'Disk', hTools: 'Araçlar', hThis: 'Panda', hMachine: 'Tüm sunucu', hFree: 'boş', hLib: 'Kütüphane', missingTool: 'bulunamadı',
     cores: n => `${n} çekirdek`, uptime: (d, h, m) => d ? `${d} gün ${h} sa` : h ? `${h} sa ${m} dk` : `${m} dk`,
+    stats: 'İstatistikler', statsRange: 'Aralık', last7: 'Son 7 gün', last30: 'Son 30 gün', last365: 'Son 1 yıl', allTime: 'Tüm zamanlar',
+    thisBot: 'Bu bot', allBots: 'Tüm botlar', statsEmpty: 'Bu aralıkta bir şey çalınmadı.', sPlays: 'çalma', sListened: 'dinlendi',
+    sSongs: 'farklı şarkı', sPeople: 'kişi', topSongs: 'En çok çalınanlar', topPeople: 'En çok isteyenler', activity: 'Hareketlilik', byHour: 'Saatlere göre',
   },
 };
 
@@ -256,7 +262,7 @@ function applyLang() {
   document.querySelectorAll('.js-lang-label').forEach(e => { e.textContent = lang.toUpperCase(); });
   if (me.name) applyRole();
   lastQueueSig = lastHistorySig = '';
-  if (S) { render(); if (libBox.open) loadLib(); }
+  if (S) { render(); if (libBox.open) loadLib(); if (statsBox.open) loadStats(); }
   if (settings) fillSettings(settings);
 }
 
@@ -352,6 +358,7 @@ function selectBot(id) {
   botId = id; store.set('panda.bot', id);
   lastQueueSig = lastHistorySig = ''; shownTrackId = null;
   stopStream(); backoff = 1000; recover();
+  if (statsBox.open) loadStats();
 }
 
 /* ---------------- rendering ---------------- */
@@ -733,6 +740,7 @@ function renderHistory() {
   // The date is part of the signature so "Today" turns into "Yesterday" after midnight.
   const s = new Date().toDateString() + JSON.stringify(h.map(x => [x.id, x.requestedBy, x.playedAt]));
   if (s === lastHistorySig) return;
+  if (lastHistorySig) reloadStats();   // a song finished
   lastHistorySig = s;
   $('history').replaceChildren(...h.map(tr => {
     const b = el('button', { class: 'icon-btn sm', type: 'button', title: t('addAgain'), 'aria-label': `${t('addAgain')}: ${tr.title}` }, icon('plus'));
@@ -907,6 +915,63 @@ $('pw-form').addEventListener('submit', async e => {
     if (ok) e.target.reset();
   });
 });
+
+/* ---------------- statistics ---------------- */
+const statsBox = $('stats-box');
+let statsSeq = 0;
+
+async function loadStats() {
+  const seq = ++statsSeq;
+  const bot = manyBots() && $('stats-bot').value === 'all' ? 'all' : botId;
+  const r = await act(() => api('GET', `/api/stats?bot=${encodeURIComponent(bot)}&days=${$('stats-days').value}&tz=${new Date().getTimezoneOffset()}`));
+  if (r && seq === statsSeq) renderStats(r);
+}
+/** A song finished: refresh the numbers, but not on every little change. */
+const reloadStats = debounce(() => { if (statsBox.open) loadStats(); }, 1500);
+const fmtListened = sec => t('uptime', Math.floor(sec / 86400), Math.floor(sec / 3600) % 24, Math.floor(sec / 60) % 60);
+
+statsBox.open = store.get('panda.statsOpen') === '1';
+statsBox.addEventListener('toggle', () => { store.set('panda.statsOpen', statsBox.open ? '1' : '0'); if (statsBox.open && S) loadStats(); });
+$('stats-days').value = store.get('panda.statsDays') || '30';
+$('stats-days').addEventListener('change', () => { store.set('panda.statsDays', $('stats-days').value); loadStats(); });
+$('stats-bot').addEventListener('change', loadStats);
+
+function renderStats(r) {
+  if (!r.plays) return $('stats').replaceChildren(el('p', { class: 'empty muted', text: t('statsEmpty') }));
+  const num = n => n.toLocaleString(lang);
+  const tile = (v, k) => el('div', { class: 'tile' }, el('b', { text: v }), el('span', { text: k }));
+  /** Bar chart: items → bars as tall as their plays, a tooltip each and a few labels under it. */
+  const chart = (title, items, tip, labels) => {
+    const max = Math.max(1, ...items.map(x => x.plays));
+    return el('section', { class: 'chart' }, el('h4', { class: 'eyebrow', text: title }),
+      el('div', { class: 'bars', role: 'img', 'aria-label': title },
+        ...items.map(x => el('i', { class: x.plays ? '' : 'zero', style: `height:${Math.max(2, x.plays / max * 100)}%`, title: `${tip(x)}: ${t('plays', x.plays)}` }))),
+      el('div', { class: 'bar-labels' }, ...labels.map(l => el('span', { text: l }))));
+  };
+  const dayLabel = k => new Date(k + 'T12:00').toLocaleDateString(lang, { day: 'numeric', month: 'short' });
+  const monthLabel = k => new Date(k + '-15T12:00').toLocaleDateString(lang, { month: 'short', year: '2-digit' });
+  const label = r.bucket === 'day' ? dayLabel : monthLabel;
+  const tl = r.timeline;
+  const pick = [...new Set([0, Math.floor((tl.length - 1) / 2), tl.length - 1])].filter(i => i >= 0 && i < tl.length);
+
+  const maxPerson = Math.max(1, ...r.topPeople.map(p => p.plays));
+  $('stats').replaceChildren(
+    el('div', { class: 'tiles' },
+      tile(num(r.plays), t('sPlays')), tile(fmtListened(r.listened), t('sListened')),
+      tile(num(r.songs), t('sSongs')), tile(num(r.people), t('sPeople'))),
+    tl.length > 1 ? chart(t('activity'), tl, x => label(x.key), pick.map(i => label(tl[i].key))) : null,
+    chart(t('byHour'), r.hours.map((plays, h) => ({ plays, h })), x => `${x.h}:00–${x.h}:59`, ['0:00', '6:00', '12:00', '18:00', '23:00']),
+    el('section', {}, el('h4', { class: 'eyebrow', text: t('topSongs') }),
+      el('ol', { class: 'tracks queue' }, ...r.topSongs.map((s, i) => el('li', { class: 'track' },
+        el('span', { class: 'num', text: i + 1 }), thumb(s),
+        trackText(s, { req: false, extra: [el('span', { text: t('plays', s.plays) }), el('span', { text: fmtListened(s.listened) })] }),
+        playButtons(s, false))))),
+    el('section', {}, el('h4', { class: 'eyebrow', text: t('topPeople') }),
+      el('ol', { class: 'people' }, ...r.topPeople.map((p, i) => el('li', {},
+        el('span', { class: 'num', text: i + 1 }), el('span', { class: 'nm', text: p.name, title: p.name }),
+        el('span', { class: 'val', text: `${t('requests', p.plays)} · ${fmtListened(p.listened)}` }),
+        el('div', { class: 'meter' }, el('span', { style: `width:${p.plays / maxPerson * 100}%` })))))));
+}
 
 /* ---------------- system: health + logs (admins) ---------------- */
 let healthTimer = 0, logEs = null, logLines = [], logLast = 0;
