@@ -15,7 +15,8 @@ public sealed record PlayerState(
 	IReadOnlyList<Track> Queue,
 	IReadOnlyList<PlayedTrack> History,
 	int Volume,
-	LoopMode Loop);
+	LoopMode Loop,
+	bool Radio);
 
 public sealed class QueueFullException : Exception;
 
@@ -50,6 +51,12 @@ public sealed class Player : IDisposable
 	// by sources that are already gone (seeking and loop-one replace the source).
 	DateTimeOffset startedAt;
 	double heardBefore;
+	// Radio: a pick is being looked for; anything that makes a running search outdated bumps the
+	// generation; a song without a Mix isn't asked again; picks that fail to play in a row.
+	bool radioBusy;
+	int radioGen;
+	string? radioNoMix;
+	int radioFailures;
 
 	public LoopMode Loop { get; private set; }
 
@@ -88,7 +95,7 @@ public sealed class Player : IDisposable
 		lock (gate)
 		{
 			NowPlaying? now = current is null ? null : new(current, PositionLocked(), paused);
-			return new PlayerState(now, queue.ToArray(), history.Recent(), volume, Loop);
+			return new PlayerState(now, queue.ToArray(), history.Recent(), volume, Loop, settings.Bot.Radio);
 		}
 	}
 
@@ -103,6 +110,7 @@ public sealed class Player : IDisposable
 		{
 			if (queue.Count >= settings.Bot.MaxQueueLength)
 				throw new QueueFullException();
+			DropRadioPicksLocked();
 			if (current is null)
 			{
 				StartLocked(track, 0);
@@ -123,6 +131,7 @@ public sealed class Player : IDisposable
 	{
 		lock (gate)
 		{
+			DropRadioPicksLocked();
 			queue.Insert(0, track);
 			AdvanceLocked(finished: false);
 		}
@@ -144,6 +153,7 @@ public sealed class Player : IDisposable
 	{
 		lock (gate)
 		{
+			radioGen++; // a pick on its way must not start playing again
 			queue.Clear();
 			if (current != null) AddHistoryLocked(current);
 			StopSourceLocked();
@@ -231,8 +241,113 @@ public sealed class Player : IDisposable
 
 	public void ClearQueue()
 	{
-		lock (gate) queue.Clear();
+		lock (gate)
+		{
+			radioGen++;
+			queue.Clear();
+		}
 		RaiseChanged();
+	}
+
+	// ---- radio: when the queue runs out, songs from the Mix of the last one ----
+
+	public bool Radio => settings.Bot.Radio;
+
+	public void SetRadio(bool on)
+	{
+		Track? seed = null;
+		lock (gate)
+		{
+			settings.Bot.Radio = on;
+			radioGen++;
+			radioNoMix = null;
+			radioFailures = 0;
+			if (!on) queue.RemoveAll(t => t.Radio);
+			// Turned on while idle: start from the last song played.
+			else if (current is null && queue.Count == 0) seed = history.Recent().FirstOrDefault()?.ToTrack();
+		}
+		config.Save();
+		if (seed != null) FetchRadio(seed);
+		RaiseChanged();
+	}
+
+	// A song someone asked for goes first; the radio picks again after it.
+	void DropRadioPicksLocked()
+	{
+		if (queue.RemoveAll(t => t.Radio) > 0 || radioBusy) radioGen++;
+	}
+
+	// The last song is playing and nothing comes after it: look for the next one now, so it can be
+	// downloaded ahead of time like any queued song.
+	void CheckRadio()
+	{
+		Track seed;
+		lock (gate)
+		{
+			if (!settings.Bot.Radio || radioBusy || current is null || queue.Count > 0 || current.Id == radioNoMix) return;
+			seed = current;
+		}
+		FetchRadio(seed);
+	}
+
+	void FetchRadio(Track seed)
+	{
+		int gen;
+		lock (gate)
+		{
+			if (radioBusy) return;
+			radioBusy = true;
+			gen = radioGen;
+		}
+		_ = Task.Run(async () =>
+		{
+			Track? pick = null;
+			try { pick = await PickRadioAsync(seed); }
+			catch (Exception ex) { log.LogWarning("Radio: no Mix for {Title}: {Error}", seed.Title, ex.Message); }
+			var added = false;
+			lock (gate)
+			{
+				radioBusy = false;
+				if (gen != radioGen || !settings.Bot.Radio) { } // outdated: looked at again below
+				else if (pick is null) radioNoMix = seed.Id; // stays quiet after this song
+				else if (queue.Count == 0)
+				{
+					log.LogInformation("Radio: {Title} comes next (like {Seed})", pick.Title, seed.Title);
+					if (current is null) StartLocked(pick, 0);
+					else queue.Add(pick);
+					added = true;
+				}
+			}
+			if (added) RaiseChanged();
+			else if (gen != radioGen) CheckRadio();
+		});
+	}
+
+	/// <summary>The first song of the seed's Mix that wasn't played lately, or null.</summary>
+	async Task<Track?> PickRadioAsync(Track seed)
+	{
+		HashSet<string> skip;
+		lock (gate)
+		{
+			skip = history.Recent().Select(p => p.Id).Concat(queue.Select(t => t.Id)).ToHashSet();
+			if (current != null) skip.Add(current.Id);
+		}
+		skip.Add(seed.Id);
+		var max = config.YouTube.MaxDurationMinutes * 60;
+		using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(90));
+		foreach (var t in await youtube.MixAsync(seed.Id, 50, cts.Token))
+		{
+			if (skip.Contains(t.Id) || (max > 0 && t.Duration > max)) continue;
+			var track = t;
+			if (track.IsLive) // the Mix didn't say how long it is: ask
+			{
+				try { track = await youtube.ResolveAsync(t.Url, "", cts.Token); }
+				catch (YouTubeException) { continue; }
+				if (track.IsLive) continue; // no live streams on the radio
+			}
+			return track with { RequestedBy = Strings.Get(settings.Bot.Language, "radio-name"), Radio = true };
+		}
+		return null;
 	}
 
 	public void Shuffle()
@@ -374,6 +489,7 @@ public sealed class Player : IDisposable
 			}
 			else
 			{
+				radioFailures = 0;
 				AdvanceLocked(finished: true);
 			}
 		}
@@ -392,17 +508,22 @@ public sealed class Player : IDisposable
 	}
 
 	// A broken song is dropped: never repeated by loop-one, never re-queued by loop-all.
+	// When it was the radio's pick and nothing else comes, the radio tries again (a few times).
 	void AdvanceAfterFailureLocked()
 	{
+		var failed = current;
 		var loop = Loop;
 		current = null;
 		Loop = LoopMode.Off;
 		try { AdvanceLocked(finished: false); }
 		finally { Loop = loop; }
+		if (failed is { Radio: true } && current is null && settings.Bot.Radio && ++radioFailures <= 3)
+			_ = Task.Run(() => FetchRadio(failed));
 	}
 
 	void RaiseChanged()
 	{
+		CheckRadio();
 		Track[] upcoming;
 		bool idle;
 		lock (gate)

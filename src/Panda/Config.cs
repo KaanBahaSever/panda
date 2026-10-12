@@ -298,6 +298,8 @@ public sealed class BotSettings
 	public List<string> AllowedUsers { get; set; } = new();
 	public List<ulong> AllowedServerGroups { get; set; } = new();
 	public int MaxQueueLength { get; set; } = 100;
+	/// <summary>When the queue runs out, keep playing songs like the last one.</summary>
+	public bool Radio { get; set; }
 }
 
 public sealed class PanelSettings

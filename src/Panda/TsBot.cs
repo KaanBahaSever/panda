@@ -368,6 +368,18 @@ public sealed class TsBot : BackgroundService
 			return Strings.Get(Lang, mode switch { LoopMode.One => "loop-one", LoopMode.All => "loop-all", _ => "loop-off" });
 		}
 
+		case "radio":
+		{
+			var on = arg.ToLowerInvariant() switch
+			{
+				"on" or "aç" or "ac" or "açık" or "acik" or "1" => true,
+				"off" or "kapat" or "kapalı" or "kapali" or "0" => false,
+				_ => !player.Radio,
+			};
+			player.SetRadio(on);
+			return Strings.Get(Lang, on ? "radio-on" : "radio-off");
+		}
+
 		case "join":
 		{
 			if (!c.Book.Clients.TryGetValue(msg.InvokerId, out var invoker)) return Strings.Get(Lang, "join-failed");
@@ -446,6 +458,7 @@ public static class Commands
 		["shuffle"] = "shuffle", ["karıştır"] = "shuffle", ["karistir"] = "shuffle",
 		["loop"] = "loop", ["repeat"] = "loop", ["tekrar"] = "loop",
 		["join"] = "join", ["come"] = "join", ["gel"] = "join",
+		["radio"] = "radio", ["radyo"] = "radio",
 		["help"] = "help", ["h"] = "help", ["yardım"] = "help", ["yardim"] = "help", ["komutlar"] = "help",
 	};
 

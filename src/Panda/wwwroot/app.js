@@ -9,6 +9,7 @@ const I18N = {
     nowPlaying: 'Now playing', live: 'LIVE', napping: 'Panda is napping 💤 — add a song!', seek: 'Seek',
     shuffle: 'Shuffle queue', stop: 'Stop', play: 'Play', pause: 'Pause', skip: 'Skip', mute: 'Mute', unmute: 'Unmute', volume: 'Volume',
     loopOff: 'Loop: off', loopAll: 'Loop: whole queue', loopOne: 'Loop: this song',
+    radioOn: 'Radio: on — similar songs follow when the queue ends', radioOff: 'Radio: off', radioToast: '📻 Radio on: similar songs follow when the queue ends',
     addSong: 'Add a song', addPh: 'Song name or YouTube link', add: 'Add', playNow: 'Play now', added: 'Added', results: 'Results',
     noResults: 'No results 🐾', close: 'Close', queue: 'Queue', clear: 'Clear', queueEmpty: 'The queue is empty. Search for something above!',
     history: 'Recently played', historyEmpty: 'Nothing played yet.', today: 'Today', yesterday: 'Yesterday', addAgain: 'Add again', remove: 'Remove', moveUp: 'Move up', moveDown: 'Move down',
@@ -67,6 +68,7 @@ const I18N = {
     nowPlaying: 'Şimdi çalıyor', live: 'CANLI', napping: 'Panda uyukluyor 💤 — bir şarkı ekle!', seek: 'Sar',
     shuffle: 'Sırayı karıştır', stop: 'Durdur', play: 'Oynat', pause: 'Duraklat', skip: 'Geç', mute: 'Sessize al', unmute: 'Sesi aç', volume: 'Ses',
     loopOff: 'Tekrar: kapalı', loopAll: 'Tekrar: tüm sıra', loopOne: 'Tekrar: bu şarkı',
+    radioOn: 'Radyo: açık — sıra bitince benzer şarkılar gelir', radioOff: 'Radyo: kapalı', radioToast: '📻 Radyo açık: sıra bitince benzer şarkılar gelir',
     addSong: 'Şarkı ekle', addPh: 'Şarkı adı ya da YouTube linki', add: 'Ekle', playNow: 'Hemen çal', added: 'Eklendi', results: 'Sonuçlar',
     noResults: 'Sonuç yok 🐾', close: 'Kapat', queue: 'Sıra', clear: 'Temizle', queueEmpty: 'Sıra boş. Yukarıdan bir şey ara!',
     history: 'Son çalınanlar', historyEmpty: 'Henüz bir şey çalınmadı.', today: 'Bugün', yesterday: 'Dün', addAgain: 'Tekrar ekle', remove: 'Kaldır', moveUp: 'Yukarı taşı', moveDown: 'Aşağı taşı',
@@ -446,6 +448,9 @@ function renderNow() {
   setIcon(lb, loop === 'One' ? 'repeat1' : 'repeat');
   lb.classList.toggle('on', loop !== 'Off');
   setLabel(lb, t('loop' + loop)); lb.setAttribute('aria-pressed', String(loop !== 'Off'));
+  const rb = $('btn-radio');
+  rb.classList.toggle('on', !!p.radio); rb.setAttribute('aria-pressed', String(!!p.radio));
+  setLabel(rb, t(p.radio ? 'radioOn' : 'radioOff'));
 
   if (!volDragging) showVolume(p.volume);
   tick();
@@ -485,6 +490,11 @@ $('btn-loop').addEventListener('click', () => {
   const next = { Off: 'All', All: 'One', One: 'Off' }[S.player.loop] || 'All';
   S.player.loop = next; renderNow();                       // optimistic
   act(() => api('POST', B('/loop'), { mode: next }));
+});
+$('btn-radio').addEventListener('click', () => {
+  const on = !S.player.radio;
+  S.player.radio = on; renderNow();                         // optimistic
+  act(() => api('POST', B('/radio'), { on }), on ? t('radioToast') : null);
 });
 
 // Seek bar: preview while dragging, commit on change.

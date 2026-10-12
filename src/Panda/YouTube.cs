@@ -16,6 +16,8 @@ public sealed record Track(
 	public string Url => $"https://www.youtube.com/watch?v={Id}";
 	public string Thumbnail => $"https://i.ytimg.com/vi/{Id}/hqdefault.jpg";
 	public bool IsLive => Duration <= 0;
+	/// <summary>Picked by the radio rather than asked for by someone.</summary>
+	public bool Radio { get; init; }
 }
 
 public sealed class YouTubeException(string message) : Exception(message);
@@ -110,6 +112,22 @@ public sealed partial class YouTube(PandaConfig config, ILogger<YouTube> log)
 			foreach (var e in entries.EnumerateArray())
 				if (e.TryGetProperty("id", out var idEl) && idEl.GetString() is { Length: 11 })
 					list.Add(FromJson(e, requestedBy));
+		return list;
+	}
+
+	/// <summary>
+	/// Songs like this one: YouTube's automatic "Mix" playlist for the video (it starts with the video
+	/// itself). Empty when YouTube has no Mix for it, e.g. for very new or non-music videos.
+	/// </summary>
+	public async Task<List<Track>> MixAsync(string videoId, int max, CancellationToken ct = default)
+	{
+		var json = await RunJsonAsync(["--flat-playlist", "--playlist-end", Math.Clamp(max, 1, 100).ToString(),
+			$"https://www.youtube.com/watch?v={videoId}&list=RD{videoId}"], ct);
+		var list = new List<Track>();
+		if (json.TryGetProperty("entries", out var entries))
+			foreach (var e in entries.EnumerateArray())
+				if (e.TryGetProperty("id", out var idEl) && idEl.GetString() is { Length: 11 })
+					list.Add(FromJson(e, ""));
 		return list;
 	}
 

@@ -44,6 +44,9 @@ public static class Strings
 		["err-other"] = ("Couldn't play that: {0}", "Çalamadım: {0}"),
 		["play-failed"] = ("Couldn't play [b]{0}[/b]: {1}", "[b]{0}[/b] çalınamadı: {1}"),
 		["live"] = ("LIVE", "CANLI"),
+		["radio-name"] = ("📻 Radio", "📻 Radyo"),
+		["radio-on"] = ("📻 Radio on: when the queue runs out I keep playing songs like the last one.", "📻 Radyo açık: sıra bitince son şarkıya benzer şarkılar çalarım."),
+		["radio-off"] = ("📻 Radio off.", "📻 Radyo kapalı."),
 		["help"] = (
 			"🐼 [b]Panda[/b] commands:\n" +
 			"[b]{0}play[/b] <song or link> – play / add to queue\n" +
@@ -51,7 +54,8 @@ public static class Strings
 			"[b]{0}pause[/b] · [b]{0}resume[/b]\n" +
 			"[b]{0}queue[/b] – show queue · [b]{0}np[/b] – now playing\n" +
 			"[b]{0}vol[/b] <0-100> · [b]{0}loop[/b] <off|one|all> · [b]{0}shuffle[/b]\n" +
-			"[b]{0}remove[/b] <#> · [b]{0}clear[/b] · [b]{0}join[/b] – come to my channel",
+			"[b]{0}remove[/b] <#> · [b]{0}clear[/b] · [b]{0}join[/b] – come to my channel\n" +
+			"[b]{0}radio[/b] <on|off> – keep playing similar songs when the queue ends",
 			"🐼 [b]Panda[/b] komutları:\n" +
 			"[b]{0}çal[/b] <şarkı veya link> – çal / sıraya ekle\n" +
 			"[b]{0}geç[/b] – sonraki şarkı · [b]{0}dur[/b] – durdur ve sırayı temizle\n" +
@@ -59,6 +63,7 @@ public static class Strings
 			"[b]{0}sıra[/b] – sırayı göster · [b]{0}şimdi[/b] – çalan şarkı\n" +
 			"[b]{0}ses[/b] <0-100> · [b]{0}tekrar[/b] <kapalı|şarkı|hepsi> · [b]{0}karıştır[/b]\n" +
 			"[b]{0}sil[/b] <#> · [b]{0}temizle[/b] · [b]{0}gel[/b] – kanalıma gel\n" +
+			"[b]{0}radyo[/b] <aç|kapat> – sıra bitince benzer şarkılar çalmaya devam et\n" +
 			"(English commands like [b]{0}play[/b] work too)"),
 	};
 

@@ -90,6 +90,7 @@ public static class PanelApi
 		botAdmin.MapPost("/seek", (SeekRequest req, BotInstance b) => Done(b.Player.Seek((int)Math.Round(req.Seconds))));
 		botAdmin.MapPost("/volume", (VolumeRequest req, BotInstance b) => Done(Run(() => b.Player.SetVolume(req.Volume))));
 		botAdmin.MapPost("/loop", (LoopRequest req, BotInstance b) => Done(Run(() => b.Player.SetLoop(req.Mode))));
+		botAdmin.MapPost("/radio", (RadioRequest req, BotInstance b) => Done(Run(() => b.Player.SetRadio(req.On))));
 		// The song id guards against the queue having moved on since the panel showed it.
 		botAdmin.MapDelete("/queue/{index:int}", (int index, string? id, BotInstance b) => Done(b.Player.Remove(index, id) != null));
 		botAdmin.MapPost("/queue/move", (MoveRequest req, BotInstance b) => Done(b.Player.Move(req.From, req.To, req.Id)));
@@ -339,6 +340,7 @@ public static class PanelApi
 	public sealed record SeekRequest(double Seconds);
 	public sealed record VolumeRequest(int Volume);
 	public sealed record LoopRequest(LoopMode Mode);
+	public sealed record RadioRequest(bool On);
 	public sealed record MoveRequest(int From, int To, string? Id = null);
 	public sealed record PasswordRequest(string? Current, string? New);
 }
