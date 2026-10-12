@@ -29,6 +29,9 @@ public static class Strings
 		["loop-all"] = ("Repeating the whole queue.", "Tüm sıra tekrar edecek."),
 		["joined"] = ("🐼 Coming!", "🐼 Geliyorum!"),
 		["join-failed"] = ("I can't join your channel.", "Kanalına giremiyorum."),
+		["follow-on"] = ("🐾 Following you, {0}. Say [b]{1}follow[/b] again to stop.", "🐾 Seni takip ediyorum, {0}. Durdurmak için yine [b]{1}takip[/b] yaz."),
+		["follow-off"] = ("🐾 Stopped following.", "🐾 Takibi bıraktım."),
+		["not-following"] = ("I'm not following anyone.", "Kimseyi takip etmiyorum."),
 		["no-permission"] = ("You are not allowed to control me.", "Beni kontrol etme iznin yok."),
 		["unknown-command"] = ("Unknown command. Try [b]{0}help[/b]", "Bilinmeyen komut. [b]{0}yardım[/b] yazabilirsin."),
 		["usage-play"] = ("Usage: [b]{0}play <song name or YouTube link>[/b]", "Kullanım: [b]{0}çal <şarkı adı veya YouTube linki>[/b]"),
@@ -60,7 +63,7 @@ public static class Strings
 			"[b]{0}pause[/b] · [b]{0}resume[/b]\n" +
 			"[b]{0}queue[/b] – show queue · [b]{0}np[/b] – now playing\n" +
 			"[b]{0}vol[/b] <0-100> · [b]{0}loop[/b] <off|one|all> · [b]{0}shuffle[/b]\n" +
-			"[b]{0}remove[/b] <#> · [b]{0}clear[/b] · [b]{0}join[/b] – come to my channel\n" +
+			"[b]{0}remove[/b] <#> · [b]{0}clear[/b] · [b]{0}join[/b] – come to my channel · [b]{0}follow[/b] – follow me around\n" +
 			"[b]{0}radio[/b] <on|off> – keep playing similar songs when the queue ends\n" +
 			"[b]{0}playlist[/b] <name> – queue a saved playlist · [b]{0}playlists[/b] · [b]{0}fav[/b] – save this song to Favorites",
 			"🐼 [b]Panda[/b] komutları:\n" +
@@ -69,7 +72,7 @@ public static class Strings
 			"[b]{0}duraklat[/b] · [b]{0}devam[/b]\n" +
 			"[b]{0}sıra[/b] – sırayı göster · [b]{0}şimdi[/b] – çalan şarkı\n" +
 			"[b]{0}ses[/b] <0-100> · [b]{0}tekrar[/b] <kapalı|şarkı|hepsi> · [b]{0}karıştır[/b]\n" +
-			"[b]{0}sil[/b] <#> · [b]{0}temizle[/b] · [b]{0}gel[/b] – kanalıma gel\n" +
+			"[b]{0}sil[/b] <#> · [b]{0}temizle[/b] · [b]{0}gel[/b] – kanalıma gel · [b]{0}takip[/b] – beni takip et\n" +
 			"[b]{0}radyo[/b] <aç|kapat> – sıra bitince benzer şarkılar çalmaya devam et\n" +
 			"[b]{0}liste[/b] <ad> – kayıtlı listeyi sıraya ekle · [b]{0}listeler[/b] · [b]{0}fav[/b] – bu şarkıyı Favoriler'e kaydet\n" +
 			"(English commands like [b]{0}play[/b] work too)"),

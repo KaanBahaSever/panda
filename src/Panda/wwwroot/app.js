@@ -384,7 +384,7 @@ function renderBot() {
   const b = S.bot, st = $('status');
   st.dataset.state = b.state;
   let text;
-  if (b.state === 'connected') text = [b.serverName, b.channelName, t('listeners', b.listeners)].filter(Boolean).join(' · ');
+  if (b.state === 'connected') text = [b.serverName, b.channelName, t('listeners', b.listeners), b.following && '🐾 ' + b.following].filter(Boolean).join(' · ');
   else text = stateText(b.state);
   // With several bots the pill also says which one is shown.
   $('status-name').hidden = !manyBots();

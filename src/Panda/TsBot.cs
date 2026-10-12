@@ -16,7 +16,9 @@ public sealed record BotStatus(
 	string? ServerName,
 	string? ChannelName,
 	string Nickname,
-	int Listeners);
+	int Listeners,
+	/// <summary>Nickname of the client the bot follows around, if any.</summary>
+	string? Following = null);
 
 /// <summary>
 /// Keeps the bot connected to TeamSpeak (reconnecting when needed) and handles chat commands.
@@ -37,6 +39,10 @@ public sealed class TsBot : BackgroundService
 	volatile string state = "connecting";
 	string? lastError;
 	TaskCompletionSource reconnect = new(TaskCreationOptions.RunContinuationsAsynchronously);
+	// "Follow me": the bot moves along when this client changes channels, until it leaves the
+	// server, says so, or the connection drops. Only touched on the scheduler thread.
+	ClientId? following;
+	string? followingName;
 
 	public event Action? StatusChanged;
 
@@ -82,7 +88,7 @@ public sealed class TsBot : BackgroundService
 			listeners = book.Clients.Values.Count(c =>
 				c.Channel == self.Channel && c.Id != self.Id && c.ClientType == ClientType.Full);
 		}
-		return new BotStatus(state, lastError, book?.Server?.Name, channelName, self?.Name ?? Bot.Nickname, listeners);
+		return new BotStatus(state, lastError, book?.Server?.Name, channelName, self?.Name ?? Bot.Nickname, listeners, followingName);
 	});
 
 	protected override async Task ExecuteAsync(CancellationToken ct)
@@ -131,14 +137,28 @@ public sealed class TsBot : BackgroundService
 
 	async Task<string?> ConnectAsync(TaskCompletionSource<string> disconnected, CancellationToken ct)
 	{
+		Unfollow(); // client ids don't survive a reconnect
 		client?.Dispose();
 		var c = new TsFullClient(scheduler);
 		client = c;
 		c.OnDisconnected += (_, e) => disconnected.TrySetResult(e.Error?.ErrorFormat() ?? e.ExitReason.ToString());
 		c.OnEachTextMessage += (_, msg) => _ = HandleMessageAsync(c, msg);
-		c.OnEachClientMoved += (_, _) => StatusChanged?.Invoke();
+		c.OnEachClientMoved += (_, e) =>
+		{
+			StatusChanged?.Invoke();
+			if (e.ClientId == following) _ = FollowAsync(c, e.TargetChannelId);
+		};
 		c.OnEachClientEnterView += (_, _) => StatusChanged?.Invoke();
-		c.OnEachClientLeftView += (_, _) => StatusChanged?.Invoke();
+		c.OnEachClientLeftView += (_, e) =>
+		{
+			if (e.ClientId == following)
+			{
+				// Moved into a channel we don't see: still a move. No target: gone from the server.
+				if (e.TargetChannelId != ChannelId.Null) _ = FollowAsync(c, e.TargetChannelId);
+				else Unfollow();
+			}
+			StatusChanged?.Invoke();
+		};
 
 		var s = Server;
 		var data = new ConnectionDataFull(
@@ -210,6 +230,22 @@ public sealed class TsBot : BackgroundService
 	{
 		if (client is not { Connected: true } c) return;
 		await c.SendChannelMessage(Strings.Get(Lang, "play-failed", t.Title, Strings.ShortError(Lang, reason)));
+	}
+
+	async Task FollowAsync(TsFullClient c, ChannelId target)
+	{
+		if (!c.Connected || c.Book.Self()?.Channel == target) return;
+		var r = await c.ClientMove(c.ClientId, target);
+		if (r.Ok) StatusChanged?.Invoke();
+		else log.LogInformation("Could not follow {Name}: {Error}", followingName, r.Error.ErrorFormat());
+	}
+
+	void Unfollow()
+	{
+		if (following is null) return;
+		following = null;
+		followingName = null;
+		StatusChanged?.Invoke();
 	}
 
 	static string Link(Track t) => $"[url={t.Url}]{Escape(t.Title)}[/url]";
@@ -410,6 +446,24 @@ public sealed class TsBot : BackgroundService
 			return Strings.Get(Lang, on ? "radio-on" : "radio-off");
 		}
 
+		case "follow":
+		{
+			// "!takip" follows the one who wrote it; again (or "!takip kapat") stops.
+			var stop = arg.ToLowerInvariant() is "off" or "stop" or "kapat" or "kapalı" or "kapali" or "bırak" or "birak" or "0";
+			if (stop || following == msg.InvokerId)
+			{
+				if (following is null) return Strings.Get(Lang, "not-following");
+				Unfollow();
+				return Strings.Get(Lang, "follow-off");
+			}
+			if (!c.Book.Clients.TryGetValue(msg.InvokerId, out var invoker)) return Strings.Get(Lang, "join-failed");
+			following = msg.InvokerId;
+			followingName = who;
+			StatusChanged?.Invoke();
+			await FollowAsync(c, invoker.Channel);
+			return Strings.Get(Lang, "follow-on", Escape(who), Prefix);
+		}
+
 		case "join":
 		{
 			if (!c.Book.Clients.TryGetValue(msg.InvokerId, out var invoker)) return Strings.Get(Lang, "join-failed");
@@ -489,6 +543,7 @@ public static class Commands
 		["loop"] = "loop", ["repeat"] = "loop", ["tekrar"] = "loop",
 		["join"] = "join", ["come"] = "join", ["gel"] = "join",
 		["radio"] = "radio", ["radyo"] = "radio",
+		["follow"] = "follow", ["followme"] = "follow", ["takip"] = "follow", ["takipet"] = "follow",
 		["playlist"] = "playlist", ["pl"] = "playlist", ["çalmalistesi"] = "playlist", ["calmalistesi"] = "playlist",
 		["playlists"] = "playlists", ["lists"] = "playlists", ["listeler"] = "playlists",
 		["fav"] = "fav", ["favorite"] = "fav", ["favori"] = "fav",
