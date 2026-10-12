@@ -176,7 +176,7 @@ echo
 green "🐼 Panda is running!"
 info "Panel:     http://${IP:-your-server-ip}:${PORT}"
 if [ -n "$PANEL_PASSWORD" ]; then
-	info "Password:  $PANEL_PASSWORD   (change it in Settings)"
+	info "Login:     admin / $PANEL_PASSWORD   (change it in Settings)"
 fi
 info "Logs:      journalctl -u panda -f"
 info "Update:    run this installer again"

@@ -38,7 +38,14 @@ public sealed class PandaConfig
 		else
 			cfg = new();
 		cfg.Path = path;
-		cfg.knownHash = cfg.Panel.PasswordHash;
+
+		// Up to 0.2 the panel had one password and no user names.
+		if (cfg.Panel.Users.Count == 0 && !string.IsNullOrEmpty(cfg.Panel.PasswordHash))
+			cfg.Panel.Users.Add(new PanelUser { Name = "admin", Role = Roles.Admin, PasswordHash = cfg.Panel.PasswordHash, Stamp = PasswordHasher.Generate() });
+		cfg.Panel.PasswordHash = null;
+		cfg.Panel.Users.RemoveAll(u => !PanelUser.IsValidName(u.Name) || u.PasswordHash.Length == 0);
+		foreach (var u in cfg.Panel.Users.Where(u => !Roles.IsValid(u.Role))) u.Role = Roles.Dj;
+		cfg.knownUsers = cfg.UsersJson();
 
 		if (cfg.Bots.Count == 0)
 			cfg.Bots.Add(new BotConfig { Id = "1", Server = cfg.OldServer ?? new(), Bot = cfg.OldBot ?? new() });
@@ -90,38 +97,142 @@ public sealed class PandaConfig
 		return true;
 	}
 
+	// ---- panel users ----
+
+	public PanelUser? FindUser(string name)
+	{
+		lock (saveLock) return Panel.Users.FirstOrDefault(u => u.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+	}
+
+	/// <summary>The user when the password is right. Also tries again after picking up a password
+	/// that `panda set-password` just wrote to the file.</summary>
+	public PanelUser? CheckLogin(string name, string password)
+	{
+		if (Check() is { } user) return user;
+		ReloadUsers();
+		return Check();
+
+		PanelUser? Check()
+		{
+			var u = FindUser(name);
+			// The same work for unknown names, so the answer time doesn't tell which names exist.
+			var ok = PasswordHasher.Verify(password, u?.PasswordHash ?? DummyHash);
+			return ok ? u : null;
+		}
+	}
+
+	static readonly string DummyHash = PasswordHasher.Hash(PasswordHasher.Generate());
+
+	/// <summary>Adds a user or, when the name exists, gives it a new password (and role). Saves.</summary>
+	public PanelUser SetUser(string name, string password, string? role = null)
+	{
+		PanelUser user;
+		lock (saveLock)
+		{
+			user = Panel.Users.FirstOrDefault(u => u.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
+				?? new PanelUser { Name = name, Role = Roles.Admin };
+			if (role != null) user.Role = role;
+			user.PasswordHash = PasswordHasher.Hash(password);
+			user.Stamp = PasswordHasher.Generate(); // logs out the user's other sessions
+			if (!Panel.Users.Contains(user)) Panel.Users = [.. Panel.Users, user];
+		}
+		Save();
+		return user;
+	}
+
+	/// <summary>Changes a user's role. The last admin always stays an admin.</summary>
+	public bool SetRole(string name, string role)
+	{
+		lock (saveLock)
+		{
+			var user = Panel.Users.FirstOrDefault(u => u.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+			if (user is null || (role != Roles.Admin && IsLastAdminLocked(user))) return false;
+			user.Role = role;
+		}
+		Save();
+		return true;
+	}
+
+	/// <summary>Removes a user. The last admin can't be removed.</summary>
+	public bool RemoveUser(string name)
+	{
+		lock (saveLock)
+		{
+			var user = Panel.Users.FirstOrDefault(u => u.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+			if (user is null || IsLastAdminLocked(user)) return false;
+			Panel.Users = Panel.Users.Where(u => u != user).ToList();
+		}
+		Save();
+		return true;
+	}
+
+	bool IsLastAdminLocked(PanelUser user) =>
+		user.Role == Roles.Admin && Panel.Users.Count(u => u.Role == Roles.Admin) <= 1;
+
+	// ---- saving ----
+
 	readonly object saveLock = new();
-	// The password hash as last read from or written to the file. `panda set-password` changes the
-	// file while the bot is running; comparing against this tells such a change from our own.
-	string knownHash = "";
+	// The users as last read from or written to the file. `panda set-password` changes the file
+	// while the bot is running; comparing against this tells such a change from our own.
+	string knownUsers = "";
+
+	string UsersJson() => JsonSerializer.Serialize(Panel.Users, JsonOptions);
 
 	public void Save()
 	{
 		lock (saveLock)
 		{
-			AdoptPasswordFromFileLocked();
+			AdoptUsersFromFileLocked();
 			SafeFile.Write(Path, JsonSerializer.Serialize(this, JsonOptions), ownerOnly: true);
-			knownHash = Panel.PasswordHash;
+			knownUsers = UsersJson();
 		}
 	}
 
-	/// <summary>Picks up a password set with `panda set-password` while the bot is running.</summary>
-	public void ReloadPassword()
+	/// <summary>Picks up users or passwords changed with `panda set-password` while the bot is running.</summary>
+	public void ReloadUsers()
 	{
-		lock (saveLock) AdoptPasswordFromFileLocked();
+		lock (saveLock) AdoptUsersFromFileLocked();
 	}
 
-	void AdoptPasswordFromFileLocked()
+	void AdoptUsersFromFileLocked()
 	{
-		if (Panel.PasswordHash != knownHash) return; // changed here (e.g. in the panel): ours wins
+		if (UsersJson() != knownUsers) return; // changed here (e.g. in the panel): ours wins
 		try
 		{
-			var onDisk = JsonSerializer.Deserialize<PandaConfig>(File.ReadAllText(Path), JsonOptions)?.Panel.PasswordHash;
-			if (!string.IsNullOrEmpty(onDisk) && onDisk != knownHash)
-				Panel.PasswordHash = knownHash = onDisk;
+			var onDisk = Load(Path).Panel.Users;
+			if (onDisk.Count > 0 && JsonSerializer.Serialize(onDisk, JsonOptions) != knownUsers)
+			{
+				Panel.Users = onDisk;
+				knownUsers = UsersJson();
+			}
 		}
 		catch (Exception ex) when (ex is IOException or JsonException) { }
 	}
+}
+
+/// <summary>Someone who can log in to the panel.</summary>
+public sealed class PanelUser
+{
+	public string Name { get; set; } = "";
+	/// <summary>See <see cref="Roles"/>.</summary>
+	public string Role { get; set; } = Roles.Admin;
+	/// <summary>PBKDF2 hash; set in the panel or with `panda set-password`.</summary>
+	public string PasswordHash { get; set; } = "";
+	/// <summary>Changes with the password; sessions made with an older one are logged out.</summary>
+	public string Stamp { get; set; } = "";
+
+	public static bool IsValidName(string name) =>
+		name.Length is >= 2 and <= 32 && name.All(c => char.IsLetterOrDigit(c) || c is '.' or '_' or '-');
+}
+
+public static class Roles
+{
+	/// <summary>Everything: playback, settings, bots, users.</summary>
+	public const string Admin = "admin";
+	/// <summary>Can watch and add songs to the queue, nothing else.</summary>
+	public const string Dj = "dj";
+
+	public static bool IsValid(string role) => role is Admin or Dj;
 }
 
 public static class SafeFile
@@ -193,8 +304,10 @@ public sealed class PanelSettings
 {
 	public string Listen { get; set; } = "0.0.0.0";
 	public int Port { get; set; } = 8080;
-	/// <summary>PBKDF2 hash; set with `panda set-password`.</summary>
-	public string PasswordHash { get; set; } = "";
+	public List<PanelUser> Users { get; set; } = [];
+	/// <summary>The single panel password up to 0.2; Load turns it into the "admin" user.</summary>
+	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+	public string? PasswordHash { get; set; }
 }
 
 public sealed class YouTubeSettings

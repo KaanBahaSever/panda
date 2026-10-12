@@ -300,6 +300,18 @@ dialog::backdrop { background: rgba(22,22,30,.45); backdrop-filter: blur(2px); }
 .confirm { width: min(380px, calc(100vw - 32px)); padding: 22px; border: 0; border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow); }
 .confirm[open] { animation: pop .18s ease-out; }
 .confirm p { margin-bottom: 18px; font-size: 16px; font-weight: 650; }
+#confirm-input { margin: -6px 0 18px; }
+
+/* roles: "dj" users only watch and add songs */
+[data-role="dj"] .admin-only { display: none !important; }
+
+/* panel users */
+.users { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.users li { display: flex; align-items: center; gap: 8px; min-width: 0; padding: 4px 4px 4px 10px; border-radius: 12px; background: var(--surface-2); }
+.users .nm { flex: 1; min-width: 0; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.users select { width: auto; min-height: 36px; padding: 4px 10px; font-size: 13.5px; }
+.users .you { font-size: 12px; color: var(--muted); font-weight: 600; }
+.user-add { display: grid; gap: 12px; padding-top: 6px; border-top: 1px solid var(--border); }
 @keyframes pop { from { transform: scale(.94); opacity: 0; } }
 
 /* ---------- toasts ---------- */

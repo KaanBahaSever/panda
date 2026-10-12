@@ -20,33 +20,36 @@ case "version":
 	return 0;
 case "set-password":
 {
-	var pw = args.SkipWhile(a => a != "set-password").Skip(1).FirstOrDefault();
-	if (pw is null || pw.Length < 6)
+	// panda set-password <password> [user]: also creates the user (as an admin) when it doesn't exist,
+	// so it doubles as the way back in when every admin password is lost.
+	var rest = args.SkipWhile(a => a != "set-password").Skip(1).ToArray();
+	var pw = rest.FirstOrDefault();
+	var name = rest.ElementAtOrDefault(1) ?? config.Panel.Users.FirstOrDefault(u => u.Role == Roles.Admin)?.Name ?? "admin";
+	if (pw is null || pw.Length < 6 || !PanelUser.IsValidName(name))
 	{
-		Console.Error.WriteLine("usage: panda set-password <password>   (at least 6 characters)");
+		Console.Error.WriteLine("usage: panda set-password <password> [user]   (at least 6 characters; default user: the first admin)");
 		return 1;
 	}
-	config.Panel.PasswordHash = PasswordHasher.Hash(pw);
-	config.Save();
-	Console.WriteLine("Panel password updated.");
+	var user = config.SetUser(name, pw);
+	Console.WriteLine($"Panel password of \"{user.Name}\" updated.");
 	return 0;
 }
 case null:
 	break;
 default:
-	Console.Error.WriteLine("usage: panda [--data <dir>] [version | set-password <password>]");
+	Console.Error.WriteLine("usage: panda [--data <dir>] [version | set-password <password> [user]]");
 	return 1;
 }
 
-// First start: write a config with defaults and a random panel password.
-if (config.Panel.PasswordHash.Length == 0)
+// First start: write a config with defaults and an "admin" user with a random password.
+if (config.Panel.Users.Count == 0)
 {
 	var pw = PasswordHasher.Generate();
-	config.Panel.PasswordHash = PasswordHasher.Hash(pw);
+	config.SetUser("admin", pw, Roles.Admin);
 	Console.WriteLine($"""
 
 		  🐼  Panda is starting for the first time.
-		      Panel password: {pw}
+		      Panel login: admin / {pw}
 		      (change it in the panel under Settings)
 
 		""");
@@ -88,8 +91,10 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
 		o.SlidingExpiration = true;
 		o.Events.OnRedirectToLogin = ctx => { ctx.Response.StatusCode = 401; return Task.CompletedTask; };
 		o.Events.OnRedirectToAccessDenied = ctx => { ctx.Response.StatusCode = 403; return Task.CompletedTask; };
+		o.Events.OnValidatePrincipal = PanelApi.ValidateSession;
 	});
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorizationBuilder()
+	.AddPolicy(Roles.Admin, p => p.RequireRole(Roles.Admin));
 
 var app = builder.Build();
 

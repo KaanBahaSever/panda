@@ -50,6 +50,7 @@
     <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></symbol>
     <symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M12 7.5v5.5M12 16.5v.01"/></symbol>
     <symbol id="i-lib" viewBox="0 0 24 24"><path d="M4 4v16M8.5 4v16"/><path d="M13 5.2l3.9-1 4.1 15.6-3.9 1z"/><path d="M3 20.5h18"/></symbol>
+    <symbol id="i-key" viewBox="0 0 24 24"><circle cx="7.5" cy="15.5" r="4.5"/><path d="M10.7 12.3L20 3"/><path d="M16 7l3 3"/><path d="M14 9l2 2"/></symbol>
     <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M12 7v5l3 2"/></symbol>
   </defs>
 </svg>
@@ -64,6 +65,10 @@
     <img class="login-logo" src="img/logo.svg" alt="" width="120" height="120">
     <h1 class="wordmark">Panda</h1>
     <p class="muted" data-i18n="loginHint">Your cozy TeamSpeak DJ</p>
+    <label class="field">
+      <span data-i18n="userName">User name</span>
+      <input id="login-name" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="admin">
+    </label>
     <label class="field">
       <span data-i18n="password">Password</span>
       <input id="login-pw" type="password" autocomplete="current-password" required>
@@ -87,7 +92,7 @@
       <div id="bot-menu" class="menu" hidden>
         <h3 class="eyebrow" data-i18n="bots">Bots</h3>
         <ul id="bot-list"></ul>
-        <button id="bot-add" class="menu-item add" type="button"><svg class="ic"><use href="#i-plus"/></svg><span data-i18n="addBot">Add a bot</span></button>
+        <button id="bot-add" class="menu-item add admin-only" type="button"><svg class="ic"><use href="#i-plus"/></svg><span data-i18n="addBot">Add a bot</span></button>
       </div>
     </div>
     <nav class="tools">
@@ -122,14 +127,14 @@
           <div class="times"><span id="t-pos">0:00</span><span id="t-dur">0:00</span></div>
         </div>
       </div>
-      <div class="controls">
+      <div class="controls admin-only">
         <button id="btn-shuffle" class="icon-btn" type="button" data-i18n-aria="shuffle"><svg class="ic"><use href="#i-shuffle"/></svg></button>
         <button id="btn-stop" class="icon-btn" type="button" data-i18n-aria="stop"><svg class="ic"><use href="#i-stop"/></svg></button>
         <button id="btn-toggle" class="play-btn" type="button" data-i18n-aria="play"><svg class="ic"><use href="#i-play"/></svg></button>
         <button id="btn-skip" class="icon-btn" type="button" data-i18n-aria="skip"><svg class="ic"><use href="#i-skip"/></svg></button>
         <button id="btn-loop" class="icon-btn" type="button"><svg class="ic"><use href="#i-repeat"/></svg></button>
       </div>
-      <div class="volume">
+      <div class="volume admin-only">
         <button id="btn-mute" class="icon-btn" type="button" data-i18n-aria="mute"><svg class="ic"><use href="#i-vol"/></svg></button>
         <input id="vol" class="range" type="range" min="0" max="100" step="1" value="50" data-i18n-aria="volume">
         <output id="vol-val" class="vol-val">50</output>
@@ -161,7 +166,7 @@
       <section class="card" aria-labelledby="queue-label">
         <div class="list-head">
           <h2 id="queue-label" class="title"><span data-i18n="queue">Queue</span> <span id="queue-sum" class="muted sum"></span></h2>
-          <button id="btn-clear" class="btn ghost sm" type="button"><svg class="ic"><use href="#i-trash"/></svg><span data-i18n="clear">Clear</span></button>
+          <button id="btn-clear" class="btn ghost sm admin-only" type="button"><svg class="ic"><use href="#i-trash"/></svg><span data-i18n="clear">Clear</span></button>
         </div>
         <ol id="queue" class="tracks queue"></ol>
         <p id="queue-empty" class="empty muted" data-i18n="queueEmpty">The queue is empty. Search for something above!</p>
@@ -202,7 +207,7 @@
     <button class="icon-btn" type="button" data-close data-i18n-aria="close"><svg class="ic"><use href="#i-x"/></svg></button>
   </div>
   <div class="sheet-body">
-    <form id="set-form" novalidate>
+    <form id="set-form" class="admin-only" novalidate>
       <fieldset class="group">
         <legend>🔌 <span data-i18n="sConn">Connection</span></legend>
         <p class="hint" data-i18n="sConnHint">Changing these makes the bot reconnect.</p>
@@ -261,7 +266,7 @@
       </div>
     </form>
 
-    <section class="group">
+    <section class="group admin-only">
       <h3 class="legend">🍪 <span data-i18n="sCookies">YouTube cookies</span> <span id="cookie-status" class="chip"></span></h3>
       <p class="hint" data-i18n="sCookiesHelp">If YouTube says "confirm you're not a bot": open a private/incognito window, log in to YouTube, export cookies with a "cookies.txt" browser extension, paste them here, then close that window.</p>
       <textarea id="cookie-text" rows="4" spellcheck="false" placeholder="# Netscape HTTP Cookie File" aria-label="cookies.txt"></textarea>
@@ -272,9 +277,26 @@
       </div>
     </section>
 
+    <section class="group admin-only">
+      <h3 class="legend">👥 <span data-i18n="sUsers2">Panel users</span></h3>
+      <p class="hint" data-i18n="sUsersHint2">Admins can do everything. "Can only add songs" users can watch and add songs, nothing else.</p>
+      <ul id="user-list" class="users"></ul>
+      <form id="user-form" class="user-add">
+        <div class="row2">
+          <label class="field"><span data-i18n="userName">User name</span>
+            <input name="name" type="text" minlength="2" maxlength="32" autocomplete="off" autocapitalize="none" spellcheck="false" required></label>
+          <label class="field"><span data-i18n="password">Password</span>
+            <input name="password" type="password" minlength="6" autocomplete="new-password" required></label>
+        </div>
+        <label class="field"><span data-i18n="role">Role</span>
+          <select name="role"><option value="dj" data-i18n="roleDj">Can only add songs</option><option value="admin" data-i18n="roleAdmin">Admin</option></select></label>
+        <div class="save-row"><button class="btn primary" type="submit"><svg class="ic"><use href="#i-plus"/></svg><span data-i18n="addUser">Add user</span></button></div>
+      </form>
+    </section>
+
     <form id="pw-form" class="group">
-      <h3 class="legend">🔑 <span data-i18n="sPanelPw">Panel password</span></h3>
-      <input type="text" name="username" value="admin" autocomplete="username" hidden>
+      <h3 class="legend">🔑 <span data-i18n="sPanelPw">Panel password</span> <span id="pw-user" class="chip"></span></h3>
+      <input type="text" name="username" autocomplete="username" hidden>
       <div class="row2">
         <label class="field"><span data-i18n="pwCurrent">Current password</span><input name="current" type="password" autocomplete="current-password" required></label>
         <label class="field"><span data-i18n="pwNew">New password</span><input name="new" type="password" minlength="6" autocomplete="new-password" required></label>
@@ -282,7 +304,7 @@
       <div class="save-row"><button class="btn primary" type="submit"><span data-i18n="pwChange">Change password</span></button></div>
     </form>
 
-    <section class="group js-many" hidden>
+    <section class="group js-many admin-only" hidden>
       <h3 class="legend">🗑️ <span data-i18n="sRemoveBot">Remove this bot</span></h3>
       <p class="hint" data-i18n="sRemoveBotHint">Disconnects it and deletes its TeamSpeak identity and play history.</p>
       <div class="save-row"><button id="bot-remove" class="btn ghost danger" type="button"><svg class="ic"><use href="#i-trash"/></svg><span data-i18n="removeBot">Remove bot</span></button></div>
@@ -300,6 +322,7 @@
 <dialog id="confirm" class="confirm" aria-labelledby="confirm-msg">
   <form method="dialog">
     <p id="confirm-msg"></p>
+    <input id="confirm-input" type="password" autocomplete="new-password" hidden>
     <div class="save-row end">
       <button class="btn ghost" value="no" data-i18n="cancel">Cancel</button>
       <button class="btn primary" value="yes" data-i18n="ok">OK</button>

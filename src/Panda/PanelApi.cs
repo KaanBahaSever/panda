@@ -30,35 +30,43 @@ public static class PanelApi
 		});
 
 		var api = app.MapGroup("/api");
+		// Any logged-in user ("dj" too): watch, search, add songs, change their own password.
 		var authed = api.MapGroup("").RequireAuthorization();
+		// Everything else is for admins.
+		var admin = authed.MapGroup("").RequireAuthorization(Roles.Admin);
 
 		api.MapPost("/login", Login);
 		api.MapPost("/logout", async (HttpContext ctx) =>
 		{
-			await ctx.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+			await ctx.SignOutAsync(Scheme);
 			return Results.NoContent();
 		});
 		api.MapGet("/version", () => new { version = Version });
+		authed.MapGet("/me", (HttpContext ctx) => new { name = ctx.User.Identity?.Name, role = ctx.User.FindFirst(ClaimTypes.Role)?.Value });
 
 		// --- bots ---
 
 		authed.MapGet("/bots", (BotManager bots) => bots.Summaries());
-		authed.MapPost("/bots", async (AddBotRequest req, BotManager bots) =>
+		admin.MapPost("/bots", async (AddBotRequest req, BotManager bots) =>
 		{
 			var b = await bots.AddAsync(bots.Get(req.Like ?? ""));
 			return Results.Ok(b.Summary());
 		});
 
 		var bot = authed.MapGroup("/bots/{bot}");
-		bot.MapDelete("", async (BotInstance b, BotManager bots) => Done(await bots.RemoveAsync(b.Id)));
+		var botAdmin = bot.MapGroup("").RequireAuthorization(Roles.Admin);
+		botAdmin.MapDelete("", async (BotInstance b, BotManager bots) => Done(await bots.RemoveAsync(b.Id)));
 		bot.MapGet("/state", async (BotInstance b, BotManager bots, Library library) => await Snapshot(b, bots, library));
 		bot.MapGet("/events", Events);
 
-		bot.MapPost("/play", async (PlayRequest req, BotInstance b, Library library) =>
+		bot.MapPost("/play", async (PlayRequest req, BotInstance b, Library library, HttpContext ctx) =>
 		{
+			var isAdmin = ctx.User.IsInRole(Roles.Admin);
+			if (req.Now && !isAdmin) return Results.StatusCode(StatusCodes.Status403Forbidden); // it skips the current song
 			try
 			{
-				var track = await library.ResolveAsync(req.Query ?? "", req.RequestedBy is { Length: > 0 } by ? by : PanelUser);
+				var by = isAdmin && req.RequestedBy is { Length: > 0 } r ? r : "🌐 " + ctx.User.Identity?.Name;
+				var track = await library.ResolveAsync(req.Query ?? "", by);
 				if (req.Now) b.Player.PlayNow(track);
 				else b.Player.Enqueue(track);
 				return Results.Ok(track);
@@ -67,7 +75,7 @@ public static class PanelApi
 			catch (QueueFullException) { return Problem("queue-full"); }
 		});
 
-		bot.MapPost("/control/{action}", (string action, BotInstance b) => action switch
+		botAdmin.MapPost("/control/{action}", (string action, BotInstance b) => action switch
 		{
 			"pause" => Done(b.Player.Pause()),
 			"resume" => Done(b.Player.Resume()),
@@ -79,15 +87,15 @@ public static class PanelApi
 			_ => Results.NotFound(),
 		});
 
-		bot.MapPost("/seek", (SeekRequest req, BotInstance b) => Done(b.Player.Seek((int)Math.Round(req.Seconds))));
-		bot.MapPost("/volume", (VolumeRequest req, BotInstance b) => Done(Run(() => b.Player.SetVolume(req.Volume))));
-		bot.MapPost("/loop", (LoopRequest req, BotInstance b) => Done(Run(() => b.Player.SetLoop(req.Mode))));
+		botAdmin.MapPost("/seek", (SeekRequest req, BotInstance b) => Done(b.Player.Seek((int)Math.Round(req.Seconds))));
+		botAdmin.MapPost("/volume", (VolumeRequest req, BotInstance b) => Done(Run(() => b.Player.SetVolume(req.Volume))));
+		botAdmin.MapPost("/loop", (LoopRequest req, BotInstance b) => Done(Run(() => b.Player.SetLoop(req.Mode))));
 		// The song id guards against the queue having moved on since the panel showed it.
-		bot.MapDelete("/queue/{index:int}", (int index, string? id, BotInstance b) => Done(b.Player.Remove(index, id) != null));
-		bot.MapPost("/queue/move", (MoveRequest req, BotInstance b) => Done(b.Player.Move(req.From, req.To, req.Id)));
+		botAdmin.MapDelete("/queue/{index:int}", (int index, string? id, BotInstance b) => Done(b.Player.Remove(index, id) != null));
+		botAdmin.MapPost("/queue/move", (MoveRequest req, BotInstance b) => Done(b.Player.Move(req.From, req.To, req.Id)));
 
-		bot.MapGet("/settings", (BotInstance b, PandaConfig config) => SettingsDto.From(config, b.Config));
-		bot.MapPut("/settings", (SettingsDto dto, BotInstance b, PandaConfig config, Library library) =>
+		botAdmin.MapGet("/settings", (BotInstance b, PandaConfig config) => SettingsDto.From(config, b.Config));
+		botAdmin.MapPut("/settings", (SettingsDto dto, BotInstance b, PandaConfig config, Library library) =>
 		{
 			var reconnect = dto.Apply(config, b.Config);
 			config.Save();
@@ -95,20 +103,20 @@ public static class PanelApi
 			if (reconnect) b.Ts.Reconnect();
 			return Results.Ok(SettingsDto.From(config, b.Config));
 		});
-		bot.MapPost("/reconnect", (BotInstance b) => Done(Run(b.Ts.Reconnect)));
+		botAdmin.MapPost("/reconnect", (BotInstance b) => Done(Run(b.Ts.Reconnect)));
 
 		// --- shared by all bots ---
 
 		authed.MapGet("/search", async (string q, YouTube yt, HttpContext ctx) =>
 		{
-			try { return Results.Ok(await yt.SearchAsync(q, 10, PanelUser, ctx.RequestAborted)); }
+			try { return Results.Ok(await yt.SearchAsync(q, 10, "🌐 " + ctx.User.Identity?.Name, ctx.RequestAborted)); }
 			catch (YouTubeException ex) { return Problem(ex.Message); }
 		});
 
 		authed.MapGet("/library", (string? q, Library library) => library.GetInfo(q));
-		authed.MapDelete("/library/{id}", (string id, Library library) => Done(library.Delete(id)));
+		admin.MapDelete("/library/{id}", (string id, Library library) => Done(library.Delete(id)));
 
-		authed.MapPost("/cookies", async (HttpContext ctx, PandaConfig config, DataPaths paths) =>
+		admin.MapPost("/cookies", async (HttpContext ctx, PandaConfig config, DataPaths paths) =>
 		{
 			if (ctx.Request.ContentLength > 2_000_000) return Problem("too-large");
 			using var reader = new StreamReader(ctx.Request.Body);
@@ -130,22 +138,52 @@ public static class PanelApi
 			return Results.Ok(new { hasCookies = config.YouTube.CookiesFile.Length > 0 });
 		});
 
-		authed.MapPost("/password", (PasswordRequest req, PandaConfig config) =>
+		// --- panel users ---
+
+		authed.MapPost("/password", async (PasswordRequest req, PandaConfig config, HttpContext ctx) =>
 		{
-			if (!PasswordHasher.Verify(req.Current ?? "", config.Panel.PasswordHash))
+			var name = ctx.User.Identity?.Name ?? "";
+			if (config.CheckLogin(name, req.Current ?? "") is null)
 				return Problem("wrong-password");
 			if ((req.New ?? "").Length < 6)
 				return Problem("password-too-short");
-			config.Panel.PasswordHash = PasswordHasher.Hash(req.New!);
-			config.Save();
+			// A new password logs out the user's other sessions; this one gets a fresh cookie.
+			await SignIn(ctx, config.SetUser(name, req.New!));
 			return Results.NoContent();
+		});
+
+		admin.MapGet("/users", (PandaConfig config) => config.Panel.Users.Select(u => new { u.Name, u.Role }));
+		admin.MapPost("/users", (UserRequest req, PandaConfig config) =>
+		{
+			var name = (req.Name ?? "").Trim();
+			if (!PanelUser.IsValidName(name)) return Problem("bad-name");
+			if (config.FindUser(name) != null) return Problem("user-exists");
+			if ((req.Password ?? "").Length < 6) return Problem("password-too-short");
+			if (!Roles.IsValid(req.Role ?? "")) return Problem("bad-role");
+			config.SetUser(name, req.Password!, req.Role);
+			return Results.NoContent();
+		});
+		// Changes the role and/or sets a new password.
+		admin.MapPut("/users/{name}", (string name, UserRequest req, PandaConfig config) =>
+		{
+			if (config.FindUser(name) is null) return Results.NotFound();
+			if (req.Password is { Length: > 0 and < 6 }) return Problem("password-too-short");
+			if (req.Role != null && (!Roles.IsValid(req.Role) || !config.SetRole(name, req.Role))) return Problem("last-admin");
+			if (req.Password is { Length: >= 6 }) config.SetUser(name, req.Password);
+			return Results.NoContent();
+		});
+		admin.MapDelete("/users/{name}", (string name, PandaConfig config, HttpContext ctx) =>
+		{
+			if (name.Equals(ctx.User.Identity?.Name, StringComparison.OrdinalIgnoreCase)) return Problem("self");
+			if (config.FindUser(name) is null) return Results.NotFound();
+			return config.RemoveUser(name) ? Results.NoContent() : Problem("last-admin");
 		});
 	}
 
 	public static string Version =>
 		typeof(PanelApi).Assembly.GetName().Version?.ToString(3) ?? "0.0.0";
 
-	const string PanelUser = "🌐 Panel";
+	const string Scheme = CookieAuthenticationDefaults.AuthenticationScheme;
 
 	static IResult Done(bool ok) => ok ? Results.NoContent() : Results.Conflict();
 	static bool Run(Action a) { a(); return true; }
@@ -161,14 +199,9 @@ public static class PanelApi
 		if (Failures.TryGetValue(ip, out var f) && f.Fails >= 5 && f.Until > DateTime.UtcNow)
 			return Results.Json(new { error = "too-many-attempts" }, statusCode: 429);
 
-		var ok = PasswordHasher.Verify(req.Password ?? "", config.Panel.PasswordHash);
-		if (!ok)
-		{
-			// The password may have just been reset with `panda set-password`.
-			config.ReloadPassword();
-			ok = PasswordHasher.Verify(req.Password ?? "", config.Panel.PasswordHash);
-		}
-		if (!ok)
+		var name = (req.Name ?? "").Trim();
+		var user = config.CheckLogin(name.Length > 0 ? name : "admin", req.Password ?? "");
+		if (user is null)
 		{
 			if (Failures.Count > 1000) // forget old entries so a flood of addresses can't grow this forever
 				foreach (var (key, old) in Failures)
@@ -178,11 +211,35 @@ public static class PanelApi
 			return Results.Json(new { error = "wrong-password" }, statusCode: 401);
 		}
 		Failures.TryRemove(ip, out _);
-
-		var principal = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.Name, "admin")], CookieAuthenticationDefaults.AuthenticationScheme));
-		await ctx.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal,
-			new AuthenticationProperties { IsPersistent = true });
+		await SignIn(ctx, user);
 		return Results.NoContent();
+	}
+
+	static ClaimsPrincipal Principal(PanelUser u) => new(new ClaimsIdentity(
+		[new Claim(ClaimTypes.Name, u.Name), new Claim(ClaimTypes.Role, u.Role), new Claim("stamp", u.Stamp)], Scheme));
+
+	static Task SignIn(HttpContext ctx, PanelUser u) =>
+		ctx.SignInAsync(Scheme, Principal(u), new AuthenticationProperties { IsPersistent = true });
+
+	/// <summary>
+	/// Runs for every request with a session cookie: a removed user or a changed password ends the
+	/// session, and the role is taken from the settings so a change applies right away.
+	/// </summary>
+	public static Task ValidateSession(CookieValidatePrincipalContext ctx)
+	{
+		var config = ctx.HttpContext.RequestServices.GetRequiredService<PandaConfig>();
+		var user = ctx.Principal?.Identity?.Name is { } name ? config.FindUser(name) : null;
+		if (user is null || user.Stamp != ctx.Principal!.FindFirst("stamp")?.Value)
+		{
+			ctx.RejectPrincipal();
+			return ctx.HttpContext.SignOutAsync(Scheme);
+		}
+		if (ctx.Principal.FindFirst(ClaimTypes.Role)?.Value != user.Role || ctx.Principal.Identity?.Name != user.Name)
+		{
+			ctx.ReplacePrincipal(Principal(user));
+			ctx.ShouldRenew = true;
+		}
+		return Task.CompletedTask;
 	}
 
 	// --- live updates (Server-Sent Events) ---
@@ -231,7 +288,9 @@ public static class PanelApi
 		}
 	}
 
-	public sealed record LoginRequest(string? Password);
+	/// <param name="Name">Empty = "admin" (logins from before there were user names).</param>
+	public sealed record LoginRequest(string? Name, string? Password);
+	public sealed record UserRequest(string? Name, string? Password, string? Role);
 	/// <param name="Like">Copy the server address from this bot.</param>
 	public sealed record AddBotRequest(string? Like);
 	public sealed record PlayRequest(string? Query, bool Now = false, string? RequestedBy = null);

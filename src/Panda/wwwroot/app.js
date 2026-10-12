@@ -45,6 +45,13 @@ const I18N = {
     sPrefixHint: 'Bots in the same channel need different prefixes, or they all answer.', sShared: 'Shared by all bots.',
     sRemoveBot: 'Remove this bot', sRemoveBotHint: 'Disconnects it and deletes its TeamSpeak identity and play history.', removeBot: 'Remove bot',
     confirmBotRemove: x => `Remove "${x}"? Its identity and play history are deleted.`, botRemoved: 'Bot removed',
+    userName: 'User name', role: 'Role', roleAdmin: 'Admin', roleDj: 'Can only add songs', sUsers2: 'Panel users',
+    sUsersHint2: 'Admins can do everything. "Can only add songs" users can watch and add songs, nothing else.',
+    addUser: 'Add user', userAdded: 'User added', userRemoved: 'User removed', roleChanged: 'Role changed', you: '(you)',
+    confirmUserRemove: x => `Remove the user "${x}"?`, resetPw: 'Set a new password', resetPwFor: x => `New password for "${x}" (min 6):`, pwReset: 'Password set',
+    forbidden: 'You are not allowed to do that.', 'err.bad-name': 'User names are 2–32 letters, digits, ".", "_" or "-".',
+    'err.user-exists': 'That user name is taken.', 'err.bad-role': 'Unknown role.', 'err.last-admin': 'There must be at least one admin.',
+    'err.self': 'You can\'t remove yourself.',
   },
   tr: {
     loginHint: 'Sevimli TeamSpeak DJ\'in', password: 'Şifre', login: 'Giriş yap', language: 'Dil: Türkçe (English\'e geç)',
@@ -88,6 +95,13 @@ const I18N = {
     sPrefixHint: 'Aynı kanaldaki botların önekleri farklı olmalı, yoksa hepsi cevap verir.', sShared: 'Tüm botlar için geçerli.',
     sRemoveBot: 'Bu botu kaldır', sRemoveBotHint: 'Bağlantısını keser, TeamSpeak kimliğini ve çalma geçmişini siler.', removeBot: 'Botu kaldır',
     confirmBotRemove: x => `"${x}" kaldırılsın mı? Kimliği ve çalma geçmişi silinir.`, botRemoved: 'Bot kaldırıldı',
+    userName: 'Kullanıcı adı', role: 'Rol', roleAdmin: 'Yönetici', roleDj: 'Sadece şarkı ekler', sUsers2: 'Panel kullanıcıları',
+    sUsersHint2: 'Yöneticiler her şeyi yapabilir. "Sadece şarkı ekler" kullanıcıları izler ve şarkı ekler, başka bir şey yapamaz.',
+    addUser: 'Kullanıcı ekle', userAdded: 'Kullanıcı eklendi', userRemoved: 'Kullanıcı silindi', roleChanged: 'Rol değişti', you: '(sen)',
+    confirmUserRemove: x => `"${x}" kullanıcısı silinsin mi?`, resetPw: 'Yeni şifre koy', resetPwFor: x => `"${x}" için yeni şifre (en az 6):`, pwReset: 'Şifre ayarlandı',
+    forbidden: 'Bunu yapma iznin yok.', 'err.bad-name': 'Kullanıcı adı 2–32 harf, rakam, ".", "_" ya da "-" olmalı.',
+    'err.user-exists': 'Bu kullanıcı adı alınmış.', 'err.bad-role': 'Bilinmeyen rol.', 'err.last-admin': 'En az bir yönetici kalmalı.',
+    'err.self': 'Kendini silemezsin.',
   },
 };
 
@@ -162,6 +176,7 @@ async function api(method, path, body) {
 function errText(e) {
   if (!(e instanceof ApiError)) return String(e && e.message || e);
   if (e.status === 0) return t('netError');
+  if (e.status === 403) return t('forbidden');
   if (e.status === 409) return t('nothing');
   if (I18N.en['err.' + e.code]) return t('err.' + e.code);
   if (e.code.startsWith('missing:')) return t('err.missing') + e.code.slice(8);
@@ -201,6 +216,18 @@ function confirmBox(msg) {
     d.addEventListener('close', () => done(d.returnValue === 'yes'), { signal: ac.signal });
   });
 }
+/** confirmBox with a password field; resolves to what was typed, or null when cancelled. */
+async function promptBox(msg) {
+  const inp = $('confirm-input');
+  inp.value = ''; inp.hidden = false;
+  setTimeout(() => inp.focus());
+  try { return (await confirmBox(msg)) ? inp.value : null; }
+  finally { inp.hidden = true; inp.value = ''; }
+}
+// Enter in the field means OK (the form's default button would be Cancel).
+$('confirm-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); $('confirm').querySelector('button[value=yes]').click(); }
+});
 
 /* ---------------- theme & language ---------------- */
 const darkMq = matchMedia('(prefers-color-scheme: dark)');
@@ -217,6 +244,7 @@ function applyLang() {
   document.querySelectorAll('[data-i18n-ph]').forEach(e => { e.placeholder = t(e.dataset.i18nPh); });
   document.querySelectorAll('[data-i18n-aria]').forEach(e => setLabel(e, t(e.dataset.i18nAria)));
   document.querySelectorAll('.js-lang-label').forEach(e => { e.textContent = lang.toUpperCase(); });
+  if (me.name) applyRole();
   lastQueueSig = lastHistorySig = '';
   if (S) { render(); if (libBox.open) loadLib(); }
   if (settings) fillSettings(settings);
@@ -234,7 +262,8 @@ function showLogin() {
   stopStream();
   $('app').hidden = true; $('login').hidden = false;
   if ($('settings').open) $('settings').close();
-  $('login-pw').focus();
+  $('login-name').value ||= store.get('panda.user') || '';
+  ($('login-name').value ? $('login-pw') : $('login-name')).focus();
 }
 function showApp() { $('login').hidden = true; $('app').hidden = false; }
 
@@ -244,7 +273,9 @@ $('login-form').addEventListener('submit', async e => {
   $('login-err').textContent = '';
   await busy(btn, async () => {
     try {
-      await api('POST', '/api/login', { password: $('login-pw').value });
+      const name = $('login-name').value.trim();
+      await api('POST', '/api/login', { name, password: $('login-pw').value });
+      store.set('panda.user', name);
       $('login-pw').value = '';
       await boot();
     } catch (err) { $('login-err').textContent = errText(err); $('login-pw').select(); }
@@ -272,8 +303,21 @@ async function pickBot() {
   if (!list.some(b => b.id === botId)) botId = list[0]?.id || '';
   store.set('panda.bot', botId);
 }
+/* Who is logged in. "dj" users only watch and add songs; the server enforces it, the page hides the rest. */
+let me = { name: '', role: 'admin' };
+const isAdmin = () => me.role === 'admin';
+function applyRole() {
+  document.body.dataset.role = me.role;
+  $('pw-user').textContent = me.name;
+  $('pw-form').elements.username.value = me.name;
+  setLabel($('logout'), `${t('logout')} (${me.name})`);
+}
+
 /** Loads the chosen bot's state and follows its live updates. */
 async function loadBot() {
+  const m = await api('GET', '/api/me');
+  if (m.role !== me.role) lastQueueSig = lastHistorySig = lastBotsSig = '';   // rows have role-specific buttons
+  me = m; applyRole();
   try { setState(await api('GET', B('/state'))); }
   catch (e) { if (e.status !== 404) throw e; await pickBot(); setState(await api('GET', B('/state'))); }   // it was removed
   startStream();
@@ -372,6 +416,7 @@ function renderNow() {
     }
     $('np-req').textContent = `${t('requestedBy')} ${tr.requestedBy}`;
     $('seek').hidden = tr.isLive;
+    $('seek').disabled = !isAdmin();
     $('seek').max = Math.max(1, tr.duration);
     $('t-dur').textContent = tr.isLive ? t('live') : fmt(tr.duration);
     document.title = `${playing ? '▶' : '⏸'} ${tr.title} — Panda 🐼`;
@@ -500,7 +545,7 @@ function resultRow(tr, saved) {
 function playButtons(tr, labelled, ...more) {
   const add = el('button', { class: labelled ? 'btn soft sm' : 'icon-btn sm', type: 'button', title: t('add'), 'aria-label': `${t('add')}: ${tr.title}` },
     icon('plus'), labelled && el('span', { class: 'lbl', text: t('add') }));
-  const now = el('button', { class: 'icon-btn sm', type: 'button', title: t('playNow'), 'aria-label': `${t('playNow')}: ${tr.title}` }, icon('play'));
+  const now = el('button', { class: 'icon-btn sm admin-only', type: 'button', title: t('playNow'), 'aria-label': `${t('playNow')}: ${tr.title}` }, icon('play'));
   add.addEventListener('click', () => addTrack(add, tr, false));
   now.addEventListener('click', () => addTrack(now, tr, true));
   return el('div', { class: 'acts' }, add, now, ...more);
@@ -570,7 +615,7 @@ function renderLibPage() {
   $('lib-more').hidden = libShown >= libItems.length;
 }
 function libRow(it) {
-  const del = el('button', { class: 'icon-btn sm del', type: 'button', title: t('delete'), 'aria-label': `${t('delete')}: ${it.title}` }, icon('trash'));
+  const del = el('button', { class: 'icon-btn sm del admin-only', type: 'button', title: t('delete'), 'aria-label': `${t('delete')}: ${it.title}` }, icon('trash'));
   const li = el('li', { class: 'track' }, thumb(it),
     trackText(it, { req: false, extra: [el('span', { text: t('plays', it.plays) }), el('span', { text: fmtBytes(it.size) })] }),
     playButtons(it, false, del));
@@ -615,11 +660,11 @@ function queueItem(tr, i, n) {
     const b = el('button', { class: 'icon-btn sm', type: 'button', title: label, 'aria-label': `${label}: ${tr.title}`, disabled: dis, 'data-key': `${name}:${key}` }, icon(name));
     b.addEventListener('click', fn); return b;
   };
-  const li = el('li', { class: 'track', draggable: 'true' },
-    el('span', { class: 'grip', 'aria-hidden': 'true' }, icon('grip')),
+  const li = el('li', { class: 'track', draggable: isAdmin() ? 'true' : null },
+    el('span', { class: 'grip admin-only', 'aria-hidden': 'true' }, icon('grip')),
     el('span', { class: 'num', text: i + 1 }),
     thumb(tr), trackText(tr),
-    el('div', { class: 'acts' },
+    el('div', { class: 'acts admin-only' },
       btn('up', t('moveUp'), () => move(i, i - 1), i === 0),
       btn('down', t('moveDown'), () => move(i, i + 1), i === n - 1),
       btn('x', t('remove'), () => remove(i, tr.id))));
@@ -690,14 +735,58 @@ function renderHistory() {
 let settings = null, pwTouched = {};
 const F = () => $('set-form').elements;
 
-/** Settings of the bot shown in the panel (plus the shared ones). */
+/** Settings of the bot shown in the panel (plus the shared ones). Others only get their password. */
 async function openSettings() {
   if (!$('settings').open) $('settings').showModal();
-  const [s, v] = await Promise.all([act(() => api('GET', B('/settings'))), api('GET', '/api/version').catch(() => null)]);
-  if (s) fillSettings(s);
-  if (v) $('version').textContent = 'v' + v.version;
+  $('set-bot').textContent = isAdmin() ? botName() : '';
+  const v = api('GET', '/api/version').then(v => { $('version').textContent = 'v' + v.version; }).catch(() => {});
+  if (isAdmin()) {
+    const s = await act(() => api('GET', B('/settings')));
+    if (s) fillSettings(s);
+    loadUsers();
+  }
+  await v;
 }
 $('open-settings').addEventListener('click', openSettings);
+
+/* ---------------- panel users (admins) ---------------- */
+async function loadUsers() {
+  const list = await act(() => api('GET', '/api/users'));
+  if (!list) return;
+  $('user-list').replaceChildren(...list.map(u => {
+    const self = u.name.toLowerCase() === me.name.toLowerCase();
+    const role = el('select', { 'aria-label': `${t('role')}: ${u.name}` },
+      el('option', { value: 'admin', text: t('roleAdmin') }), el('option', { value: 'dj', text: t('roleDj') }));
+    role.value = u.role;
+    role.addEventListener('change', async () => {
+      const ok = await act(() => api('PUT', '/api/users/' + encodeURIComponent(u.name), { role: role.value }).then(() => true), t('roleChanged'));
+      if (!ok) role.value = u.role; else u.role = role.value;
+      if (ok && self) loadBot().catch(() => {});   // demoted yourself: the page follows
+    });
+    const pw = el('button', { class: 'icon-btn sm', type: 'button', title: t('resetPw'), 'aria-label': `${t('resetPw')}: ${u.name}` }, icon('key'));
+    pw.addEventListener('click', async () => {
+      const v = await promptBox(t('resetPwFor', u.name));
+      if (v == null) return;
+      if (v.length < 6) return toast(t('err.password-too-short'), 'err');
+      await act(() => api('PUT', '/api/users/' + encodeURIComponent(u.name), { password: v }), t('pwReset'));
+    });
+    const del = el('button', { class: 'icon-btn sm del', type: 'button', title: t('delete'), 'aria-label': `${t('delete')}: ${u.name}`, disabled: self }, icon('trash'));
+    del.addEventListener('click', async () => {
+      if (!(await confirmBox(t('confirmUserRemove', u.name)))) return;
+      const ok = await act(() => api('DELETE', '/api/users/' + encodeURIComponent(u.name)).then(() => true), t('userRemoved'));
+      if (ok) loadUsers();
+    });
+    return el('li', {}, el('span', { class: 'nm', text: u.name }, self && el('span', { class: 'you', text: ' ' + t('you') })), role, pw, del);
+  }));
+}
+$('user-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const f = e.target.elements;
+  await busy(e.submitter || e.target.querySelector('[type=submit]'), async () => {
+    const ok = await act(() => api('POST', '/api/users', { name: f.name.value.trim(), password: f.password.value, role: f.role.value }).then(() => true), t('userAdded'));
+    if (ok) { e.target.reset(); loadUsers(); }
+  });
+});
 
 $('bot-remove').addEventListener('click', async e => {
   const btn = e.currentTarget, name = settings?.nickname || botName();
