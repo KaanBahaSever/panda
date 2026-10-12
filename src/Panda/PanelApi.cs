@@ -189,12 +189,11 @@ public static class PanelApi
 		admin.MapGet("/update", async (bool? fresh, Updates updates) => await updates.CheckAsync(fresh == true));
 		admin.MapPost("/update", (Updates updates) =>
 			updates.StartUpgrade() ? Results.Accepted() : Problem("cannot-update"));
-		admin.MapPost("/update/yt-dlp", async (Updates updates, SystemInfo system) =>
+		admin.MapPost("/update/yt-dlp", async (Updates updates) =>
 		{
 			try
 			{
-				var result = await updates.UpdateYtDlpAsync();
-				return Results.Ok(new { result, version = (await system.ToolsAsync()).YtDlp });
+				return Results.Ok(await updates.UpdateYtDlpAsync());
 			}
 			catch (Exception ex) when (ex is HttpRequestException or IOException or InvalidOperationException
 				or UnauthorizedAccessException or OperationCanceledException)

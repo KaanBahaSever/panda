@@ -529,6 +529,7 @@ public sealed class TsBot : BackgroundService
 
 	public override void Dispose()
 	{
+		if (disposed) return;
 		disposed = true;
 		base.Dispose();
 		client?.Dispose();

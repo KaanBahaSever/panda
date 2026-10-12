@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 namespace Panda;
 
 public sealed record BotSummary(string Id, string Nickname, string State, string? Song);
@@ -11,13 +13,56 @@ public sealed class BotInstance : IDisposable
 	public Player Player { get; }
 	public TsBot Ts { get; }
 
+	readonly string sessionPath;
+	readonly ILogger log;
+
 	internal BotInstance(BotConfig config, PandaConfig global, YouTube youtube, Library library, Playlists playlists, string dir, ILoggerFactory logs)
 	{
 		Config = config;
 		Directory.CreateDirectory(dir);
+		sessionPath = Path.Combine(dir, "session.json");
+		log = logs.CreateLogger($"Panda.Bot.{config.Id}");
 		History = new PlayHistory(dir, logs.CreateLogger<PlayHistory>());
 		Player = new Player(config, global, youtube, library, History, logs.CreateLogger($"Panda.Player.{config.Id}"));
 		Ts = new TsBot(config, Player, library, playlists, dir, logs.CreateLogger($"Panda.TsBot.{config.Id}"));
+		RestoreSession();
+	}
+
+	static readonly JsonSerializerOptions SessionJson = new(JsonSerializerDefaults.Web);
+
+	/// <summary>Panda is stopping (an update or a restart): remember the queue and the song.</summary>
+	public void SaveSession()
+	{
+		var s = Player.SaveSession();
+		if (s.Current is null && s.Queue.Count == 0) return;
+		try
+		{
+			SafeFile.Write(sessionPath, JsonSerializer.Serialize(s, SessionJson));
+			log.LogInformation("Saved the queue ({Count} songs) for after the restart", s.Queue.Count + (s.Current is null ? 0 : 1));
+		}
+		catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+		{
+			log.LogWarning("Could not save the queue: {Error}", ex.Message);
+		}
+	}
+
+	// Read once: a session that breaks the start must not come back on every start.
+	void RestoreSession()
+	{
+		if (!File.Exists(sessionPath)) return;
+		try
+		{
+			var s = JsonSerializer.Deserialize<PlayerSession>(File.ReadAllText(sessionPath), SessionJson);
+			File.Delete(sessionPath);
+			if (s is null) return;
+			Player.Restore(s with { Queue = s.Queue ?? [] });
+			log.LogInformation("Picked up where it left off: {Title}, {Count} songs queued", s.Current?.Title ?? "-", s.Queue?.Count ?? 0);
+		}
+		catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
+		{
+			log.LogWarning("Could not restore the queue: {Error}", ex.Message);
+			try { File.Delete(sessionPath); } catch (IOException) { }
+		}
 	}
 
 	public BotSummary Summary() => new(Id, Config.Bot.Nickname, Ts.State, Player.Current?.Title);
@@ -110,7 +155,11 @@ public sealed class BotManager(PandaConfig config, YouTube youtube, Library libr
 		finally { changing.Release(); }
 	}
 
-	public Task StopAsync(CancellationToken ct) => Task.WhenAll(All.Select(b => b.Ts.StopAsync(ct)));
+	public Task StopAsync(CancellationToken ct)
+	{
+		foreach (var b in All) b.SaveSession();
+		return Task.WhenAll(All.Select(b => b.Ts.StopAsync(ct)));
+	}
 
 	// Up to 0.2 the only bot kept its files in the data folder itself. The identity matters most:
 	// server groups belong to it. Copied, not moved, so an older version still finds them.
@@ -136,8 +185,11 @@ public sealed class BotManager(PandaConfig config, YouTube youtube, Library libr
 		catch (Exception ex) { log.LogError(ex, "Changed handler failed"); }
 	}
 
+	// Called twice: the container disposes the singleton and the hosted service made from it.
 	public void Dispose()
 	{
-		foreach (var b in All) b.Dispose();
+		BotInstance[] all;
+		lock (gate) { all = bots.ToArray(); bots.Clear(); }
+		foreach (var b in all) b.Dispose();
 	}
 }

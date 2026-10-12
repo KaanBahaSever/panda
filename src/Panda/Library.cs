@@ -176,6 +176,13 @@ public sealed class Library : IDisposable
 		SaveSoon();
 	}
 
+	/// <summary>A song picked up again after a restart: kept like any playing song, not counted again.</summary>
+	public void Resumed(string bot, Track t)
+	{
+		lock (gate) nowPlayingBy[bot] = t.Id;
+		Signal();
+	}
+
 	public void ClearNowPlaying(string bot)
 	{
 		lock (gate) nowPlayingBy.Remove(bot);

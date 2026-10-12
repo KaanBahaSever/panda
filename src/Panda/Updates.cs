@@ -5,13 +5,22 @@ using System.Text.Json;
 
 namespace Panda;
 
+/// <summary>Installed and newest versions of Panda and of yt-dlp.</summary>
 /// <param name="Install">
 /// "systemd": installed by install.sh, the panel can update it. "systemd-old": installed before
 /// one-click updates; running the installer once more enables them. "docker" or "manual": only told.
 /// </param>
+/// <param name="Error">"unreachable" when GitHub could not be asked; the newest versions are then null.</param>
 public sealed record UpdateInfo(
 	string Current, string? Latest, bool Newer, string? Notes, string? Url, DateTimeOffset? Published,
-	string Install, string? Error);
+	string? YtDlp, string? YtDlpLatest, bool YtDlpNewer,
+	string Install, DateTimeOffset? CheckedAt, string? Error);
+
+/// <param name="Result">
+/// "updated", "current" (was already the newest), "pending" (systemd hasn't finished yet), "installed"
+/// (Panda's own copy), "failed", or "reinstall" (an install.sh install from before one-click updates).
+/// </param>
+public sealed record YtDlpUpdate(string Result, string? From, string? To);
 
 /// <summary>Looks for new Panda releases on GitHub and starts updates of Panda and yt-dlp.</summary>
 public sealed class Updates(PandaConfig config, DataPaths paths, SystemInfo system, ILogger<Updates> log)
@@ -20,8 +29,6 @@ public sealed class Updates(PandaConfig config, DataPaths paths, SystemInfo syst
 	static readonly HttpClient Http = CreateHttp();
 
 	readonly SemaphoreSlim checking = new(1);
-	UpdateInfo? cached;
-	DateTime cachedAt;
 
 	static HttpClient CreateHttp()
 	{
@@ -42,38 +49,59 @@ public sealed class Updates(PandaConfig config, DataPaths paths, SystemInfo syst
 		return "manual";
 	}
 
-	/// <summary>The latest release; asks GitHub at most once an hour unless <paramref name="fresh"/>.</summary>
+	/// <summary>
+	/// The newest Panda and yt-dlp releases; GitHub is asked at most once an hour unless
+	/// <paramref name="fresh"/>. The installed yt-dlp version is read again when <paramref name="fresh"/>.
+	/// </summary>
 	public async Task<UpdateInfo> CheckAsync(bool fresh = false)
 	{
 		await checking.WaitAsync();
 		try
 		{
-			if (!fresh && cached != null && DateTime.UtcNow - cachedAt < TimeSpan.FromHours(1)) return cached;
-			var current = PanelApi.Version;
-			try
+			var ytDlp = (await system.ToolsAsync(fresh)).YtDlp;
+			if (fresh || latest is null || DateTime.UtcNow - checkedAt > TimeSpan.FromHours(1))
 			{
-				using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(20));
-				using var doc = JsonDocument.Parse(await Http.GetStringAsync($"https://api.github.com/repos/{Repo}/releases/latest", cts.Token));
-				var r = doc.RootElement;
-				var tag = r.GetProperty("tag_name").GetString() ?? "";
-				var latest = tag.TrimStart('v');
-				var newer = Version.TryParse(latest, out var l) && Version.TryParse(current, out var c) && l > c;
-				cached = new UpdateInfo(current, latest, newer,
-					r.TryGetProperty("body", out var body) ? body.GetString() : null,
-					r.TryGetProperty("html_url", out var url) ? url.GetString() : null,
-					r.TryGetProperty("published_at", out var p) && p.TryGetDateTimeOffset(out var at) ? at : null,
-					InstallKind(), null);
+				try
+				{
+					using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+					var panda = GetJsonAsync($"https://api.github.com/repos/{Repo}/releases/latest", cts.Token);
+					var yt = GetJsonAsync("https://api.github.com/repos/yt-dlp/yt-dlp/releases/latest", cts.Token);
+					using var p = await panda;
+					using var y = await yt;
+					var r = p.RootElement;
+					latest = new Release(
+						r.GetProperty("tag_name").GetString()?.TrimStart('v') ?? "",
+						r.TryGetProperty("body", out var body) ? body.GetString() : null,
+						r.TryGetProperty("html_url", out var url) ? url.GetString() : null,
+						r.TryGetProperty("published_at", out var at) && at.TryGetDateTimeOffset(out var when) ? when : null,
+						y.RootElement.GetProperty("tag_name").GetString());
+					checkedAt = DateTime.UtcNow;
+				}
+				catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException
+					or KeyNotFoundException or InvalidOperationException)
+				{
+					log.LogWarning("Could not check for updates: {Error}", ex.Message);
+					return new UpdateInfo(PanelApi.Version, null, false, null, null, null,
+						ytDlp, null, false, InstallKind(), null, "unreachable");
+				}
 			}
-			catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException or KeyNotFoundException)
-			{
-				log.LogWarning("Could not check for updates: {Error}", ex.Message);
-				return new UpdateInfo(current, null, false, null, null, null, InstallKind(), "unreachable");
-			}
-			cachedAt = DateTime.UtcNow;
-			return cached;
+			var l = latest;
+			return new UpdateInfo(PanelApi.Version, l.Panda, IsNewer(l.Panda, PanelApi.Version), l.Notes, l.Url, l.Published,
+				ytDlp, l.YtDlp, IsNewer(l.YtDlp, ytDlp), InstallKind(), new DateTimeOffset(checkedAt, TimeSpan.Zero), null);
 		}
 		finally { checking.Release(); }
 	}
+
+	sealed record Release(string Panda, string? Notes, string? Url, DateTimeOffset? Published, string? YtDlp);
+	Release? latest;
+	DateTime checkedAt;
+
+	static async Task<JsonDocument> GetJsonAsync(string url, CancellationToken ct) =>
+		JsonDocument.Parse(await Http.GetStringAsync(url, ct));
+
+	// Panda: "0.3.1"; yt-dlp: "2025.10.22" (a nightly build adds ".123456" and counts as newer).
+	static bool IsNewer(string? latest, string? installed) =>
+		latest != null && installed != null && Version.TryParse(latest, out var l) && Version.TryParse(installed, out var i) && l > i;
 
 	/// <summary>
 	/// Asks systemd to run the installer, which downloads the latest release and restarts Panda.
@@ -88,17 +116,13 @@ public sealed class Updates(PandaConfig config, DataPaths paths, SystemInfo syst
 	}
 
 	/// <summary>
-	/// Updates yt-dlp. On installs made by install.sh systemd does it (the program belongs to root);
-	/// otherwise yt-dlp updates itself, and if it can't (no write access, or a package manager's copy)
-	/// Panda downloads its own copy into the data folder and uses that from then on.
+	/// Updates yt-dlp and waits for the result. On installs made by install.sh systemd does it (the
+	/// program belongs to root); otherwise yt-dlp updates itself, and if it can't (no write access, or a
+	/// package manager's copy) Panda downloads its own copy into the data folder and uses that from then on.
 	/// </summary>
-	/// <returns>
-	/// "started" (systemd, takes a few seconds), "updated", "installed" (own copy), or "reinstall"
-	/// (an install.sh install from before one-click updates: its yt-dlp belongs to root and is kept up
-	/// to date daily; running the installer once more enables the button).
-	/// </returns>
-	public async Task<string> UpdateYtDlpAsync()
+	public async Task<YtDlpUpdate> UpdateYtDlpAsync()
 	{
+		var before = (await system.ToolsAsync(fresh: true)).YtDlp;
 		switch (InstallKind())
 		{
 		case "systemd":
@@ -110,18 +134,28 @@ public sealed class Updates(PandaConfig config, DataPaths paths, SystemInfo syst
 				config.YouTube.YtDlpPath = installed;
 				config.Save();
 			}
+			log.LogInformation("Updating yt-dlp {Version}", before);
 			File.WriteAllText(YtDlpTrigger, DateTimeOffset.UtcNow.ToString("o"));
-			return "started";
+			var state = await WaitForSystemdAsync();
+			var after = (await system.ToolsAsync(fresh: true)).YtDlp;
+			var result = state switch
+			{
+				"failed" => "failed",
+				"pending" => "pending",
+				_ => after != before ? "updated" : "current",
+			};
+			log.LogInformation("yt-dlp update: {Result} ({From} -> {To})", result, before, after);
+			return new YtDlpUpdate(result, before, after);
 		case "systemd-old":
 			// Downloading a private copy here would leave the daily updates behind for good.
-			return "reinstall";
+			return new YtDlpUpdate("reinstall", before, before);
 		}
 		var (code, output) = await RunAsync(config.YouTube.YtDlpPath, "-U");
 		log.LogInformation("yt-dlp -U: {Output}", output.Trim());
 		if (code == 0 && !output.Contains("ERROR", StringComparison.OrdinalIgnoreCase))
 		{
-			await system.ToolsAsync(fresh: true);
-			return "updated";
+			var after = (await system.ToolsAsync(fresh: true)).YtDlp;
+			return new YtDlpUpdate(after != before ? "updated" : "current", before, after);
 		}
 
 		var asset = YtDlpAsset() ?? throw new InvalidOperationException("no yt-dlp build for this system");
@@ -142,8 +176,30 @@ public sealed class Updates(PandaConfig config, DataPaths paths, SystemInfo syst
 		File.Move(tmp, target, overwrite: true);
 		config.YouTube.YtDlpPath = target;
 		config.Save();
-		await system.ToolsAsync(fresh: true);
-		return "installed";
+		return new YtDlpUpdate("installed", before, (await system.ToolsAsync(fresh: true)).YtDlp);
+	}
+
+	/// <summary>
+	/// Waits for panda-update.service to pick up the trigger and finish: "done", "failed", or "pending"
+	/// when it hasn't finished within two minutes.
+	/// </summary>
+	async Task<string> WaitForSystemdAsync()
+	{
+		var until = DateTime.UtcNow + TimeSpan.FromMinutes(2);
+		while (DateTime.UtcNow < until)
+		{
+			await Task.Delay(1500);
+			// The service deletes the trigger as its first step, then runs "yt-dlp -U".
+			if (File.Exists(YtDlpTrigger)) continue;
+			var (_, output) = await RunAsync("systemctl", "is-active panda-update.service");
+			switch (output.Trim())
+			{
+			case "activating" or "active" or "reloading": continue;
+			case "failed": return "failed";
+			default: return "done";
+			}
+		}
+		return "pending";
 	}
 
 	static string? YtDlpAsset() =>

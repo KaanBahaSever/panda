@@ -384,6 +384,25 @@ dialog::backdrop { background: rgba(22,22,30,.45); backdrop-filter: blur(2px); }
   font: 12.5px/1.5 ui-monospace, SFMono-Regular, Consolas, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
 .update details summary { cursor: pointer; font-weight: 700; font-size: 13.5px; color: var(--accent-text); }
 .update .new { color: var(--accent-text); }
+.upd-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.update .hint.bad { color: var(--danger); }
+.upd-item { display: grid; gap: 6px; padding: 12px 14px; border-radius: 14px; background: var(--surface-2); min-width: 0; }
+.upd-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.upd-top strong { font-size: 15px; font-weight: 800; }
+.upd-pill { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 999px; font-size: 12.5px; font-weight: 800; white-space: nowrap; }
+.upd-pill .ic { width: 14px; height: 14px; }
+.upd-pill.ok { color: var(--soft-text); background: var(--soft); }
+.upd-pill.new { color: var(--ink); background: var(--pink); }
+.upd-versions { display: flex; flex-wrap: wrap; gap: 6px 22px; font-size: 13.5px; font-variant-numeric: tabular-nums; }
+.upd-versions .k { color: var(--muted); font-weight: 600; margin-right: 6px; }
+.upd-versions b { font-weight: 800; overflow-wrap: anywhere; }
+.upd-versions b.new { color: var(--accent-text); }
+.upd-msg { display: flex; align-items: center; gap: 8px; margin: 2px 0 0; font-size: 13.5px; font-weight: 700; }
+.upd-msg .ic { width: 16px; height: 16px; flex: none; }
+.upd-msg.ok { color: var(--accent-text); }
+.upd-msg.err { color: var(--danger); }
+.upd-msg .spin { flex: none; }
+.upd-notes { flex-basis: 100%; order: 9; }
 .icon-btn.badge-dot::after { content: ""; position: absolute; top: 7px; right: 7px; width: 9px; height: 9px; border-radius: 50%; background: var(--pink); box-shadow: 0 0 0 2px var(--bg); }
 
 /* panel users */

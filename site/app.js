@@ -77,7 +77,7 @@ const tr = {
   "faq.q4": "Ne kadar kaynak ister?",
   "faq.a4": "Çok az: bot yaklaşık 130 MB RAM kullanır, yt-dlp ve ffmpeg sadece şarkı çalarken çalışır. TeamSpeak sunucunun yanındaki küçük bir VPS bol bol yeter.",
   "faq.q6": "Nasıl güncellerim?",
-  "faq.a6": "Linux kurulumunda paneldeki <b>Sistem → Güncellemeler</b> kısmında <b>Şimdi güncelle</b>'ye bas (ya da kurulum komutunu tekrar çalıştır). Docker'da: <code>git pull &amp;&amp; docker compose up -d --build</code>.",
+  "faq.a6": "Linux kurulumunda paneldeki <b>Sistem → Güncellemeler</b> kısmında <b>Panda'yı güncelle</b>'ye bas (ya da kurulum komutunu tekrar çalıştır). Docker'da: <code>git pull &amp;&amp; docker compose up -d --build</code>. Şarkılar, geçmiş, listeler ve ayarlar silinmez; kuyruk kaldığı yerden sürer.",
   "faq.q5": "Ücretsiz mi?",
   "faq.a5": "Evet, Panda Open Software License 3.0 ile açık kaynak. Fikirler, hata bildirimleri ve pull request'ler GitHub'da memnuniyetle karşılanır.",
   "foot.made": "🎧 ve bambuyla yapıldı.",

@@ -87,7 +87,8 @@ curl -fsSL https://raw.githubusercontent.com/KaanBahaSever/panda/main/scripts/in
 
 Kurulum TeamSpeak sunucu adresini ve panel portunu sorar; `ffmpeg`, `yt-dlp` ve `deno`'yu kurar,
 bir systemd servisi oluşturur ve sonunda panel adresiyle giriş bilgisini yazar. Güncellemek için
-paneldeki **Sistem → Güncellemeler** kısmını kullan ya da aynı komutu tekrar çalıştır.
+paneldeki **Sistem → Güncellemeler** kısmını kullan ya da aynı komutu tekrar çalıştır. Güncelleme
+şarkıları, geçmişi, listeleri ve ayarları silmez; botlar kuyruğa kaldıkları yerden devam eder.
 
 ```bash
 journalctl -u panda -f                    # loglar

@@ -63,13 +63,19 @@ const I18N = {
     logSearch: 'Search the log', logFollow: 'Follow', download: 'Download', logNote: 'The latest 2000 lines since Panda started.', logEmpty: 'No log lines match.',
     hPanda: 'Panda', hVersion: 'Version', hUptime: 'Running for', hRuntime: 'Runtime', hOs: 'System', hTs: 'TeamSpeak', hCpu: 'CPU', hRam: 'Memory',
     hDisk: 'Disk', hTools: 'Tools', hThis: 'Panda', hMachine: 'Whole server', hFree: 'free', hLib: 'Library', missingTool: 'not found',
-    updates: 'Updates', updCheck: 'Check now', updLatest: 'Newest release', updNone: 'Panda is up to date.', updNotes: 'What\'s new',
-    updUnreachable: 'GitHub could not be reached; try again later.', updNow: 'Update now', updAvailable: x => `Version ${x} is out!`,
-    updStarted: 'Updating — Panda restarts in a minute or two…', updDone: x => `Panda was updated to v${x}`, updRelease: 'Release page',
+    updates: 'Updates', updCheck: 'Check', updChecked: x => `Last checked at ${x}`, updNotes: 'What\'s new',
+    updUnreachable: 'GitHub could not be reached; try again later.', updRelease: 'Release page',
+    updInstalled: 'Installed', updNewest: 'Newest', updOk: 'Up to date', updNew: 'New version',
+    updPandaWhat: 'The bot itself. Your songs, history, playlists and settings stay; the queue carries on after the restart.',
+    updYtWhat: 'The tool that fetches songs from YouTube. YouTube changes often; the server also updates it daily.',
+    updNow: 'Update Panda', updStarted: 'Updating… Panda restarts in a minute or two.', updDone: x => `Panda was updated to v${x}. Reloading…`,
+    updSlow: 'Panda hasn\'t come back yet; see the logs on the server.',
     'updHow.docker': 'Docker: in the Panda folder run "git pull && docker compose up -d --build".',
     'updHow.systemd-old': 'Run the installer on the server once more (the command in the README); after that you can update from here.',
     'updHow.manual': 'Download the new release from GitHub and replace the program.',
-    ytUpdate: 'Update yt-dlp', ytStarted: 'yt-dlp is updating…', ytUpdated: x => `yt-dlp ${x || ''} is ready`, 'err.ytdlp-update-failed': 'yt-dlp could not be updated; see the logs.',
+    ytUpdate: 'Update yt-dlp', ytBusy: 'Updating… this can take a minute.', ytDone: (a, b) => `Updated: ${a || '?'} → ${b || '?'}`,
+    ytCurrent: x => `Already the newest version (${x || '?'}).`, ytPending: 'The server is still updating it; press Check in a minute.',
+    'err.ytdlp-update-failed': 'yt-dlp could not be updated; see the logs.',
     'err.cannot-update': 'This install can\'t update itself.',
     cores: n => n === 1 ? '1 core' : `${n} cores`, uptime: (d, h, m) => d ? `${d}d ${h}h` : h ? `${h}h ${m}m` : `${m}m`,
     stats: 'Statistics', statsRange: 'Period', last7: 'Last 7 days', last30: 'Last 30 days', last365: 'Last year', allTime: 'All time',
@@ -136,13 +142,19 @@ const I18N = {
     logSearch: 'Kayıtlarda ara', logFollow: 'Canlı takip', download: 'İndir', logNote: 'Panda açıldığından beri son 2000 satır.', logEmpty: 'Eşleşen kayıt yok.',
     hPanda: 'Panda', hVersion: 'Sürüm', hUptime: 'Çalışma süresi', hRuntime: 'Çalışma ortamı', hOs: 'Sistem', hTs: 'TeamSpeak', hCpu: 'İşlemci', hRam: 'Bellek',
     hDisk: 'Disk', hTools: 'Araçlar', hThis: 'Panda', hMachine: 'Tüm sunucu', hFree: 'boş', hLib: 'Kütüphane', missingTool: 'bulunamadı',
-    updates: 'Güncellemeler', updCheck: 'Şimdi denetle', updLatest: 'En yeni sürüm', updNone: 'Panda güncel.', updNotes: 'Neler yeni',
-    updUnreachable: 'GitHub\'a ulaşılamadı; sonra tekrar dene.', updNow: 'Şimdi güncelle', updAvailable: x => `${x} sürümü çıktı!`,
-    updStarted: 'Güncelleniyor — Panda bir iki dakika içinde yeniden başlayacak…', updDone: x => `Panda v${x} sürümüne güncellendi`, updRelease: 'Sürüm sayfası',
+    updates: 'Güncellemeler', updCheck: 'Denetle', updChecked: x => `Son denetim ${x}`, updNotes: 'Neler yeni',
+    updUnreachable: 'GitHub\'a ulaşılamadı; sonra tekrar dene.', updRelease: 'Sürüm sayfası',
+    updInstalled: 'Kurulu', updNewest: 'En son', updOk: 'Güncel', updNew: 'Yeni sürüm var',
+    updPandaWhat: 'Botun kendisi. Şarkılar, geçmiş, listeler ve ayarlar silinmez; kuyruk yeniden başlayınca kaldığı yerden sürer.',
+    updYtWhat: 'Şarkıları YouTube\'dan çeken araç. YouTube sık değiştiği için sunucu bunu her gün kendisi de günceller.',
+    updNow: 'Panda\'yı güncelle', updStarted: 'Güncelleniyor… Panda bir iki dakika içinde yeniden başlayacak.', updDone: x => `Panda v${x} sürümüne güncellendi. Sayfa yenileniyor…`,
+    updSlow: 'Panda henüz geri gelmedi; sunucudaki kayıtlara bak.',
     'updHow.docker': 'Docker: Panda klasöründe "git pull && docker compose up -d --build" çalıştır.',
     'updHow.systemd-old': 'Sunucuda kurulum komutunu bir kez daha çalıştır (README\'deki komut); sonra buradan güncelleyebilirsin.',
     'updHow.manual': 'Yeni sürümü GitHub\'dan indirip programı değiştir.',
-    ytUpdate: 'yt-dlp\'yi güncelle', ytStarted: 'yt-dlp güncelleniyor…', ytUpdated: x => `yt-dlp ${x || ''} hazır`, 'err.ytdlp-update-failed': 'yt-dlp güncellenemedi; kayıtlara bak.',
+    ytUpdate: 'yt-dlp\'yi güncelle', ytBusy: 'Güncelleniyor… bir dakika sürebilir.', ytDone: (a, b) => `Güncellendi: ${a || '?'} → ${b || '?'}`,
+    ytCurrent: x => `Zaten en son sürüm (${x || '?'}).`, ytPending: 'Sunucu hâlâ güncelliyor; bir dakika sonra Denetle\'ye bas.',
+    'err.ytdlp-update-failed': 'yt-dlp güncellenemedi; kayıtlara bak.',
     'err.cannot-update': 'Bu kurulum kendini güncelleyemiyor.',
     cores: n => `${n} çekirdek`, uptime: (d, h, m) => d ? `${d} gün ${h} sa` : h ? `${h} sa ${m} dk` : `${m} dk`,
     stats: 'İstatistikler', statsRange: 'Aralık', last7: 'Son 7 gün', last30: 'Son 30 gün', last365: 'Son 1 yıl', allTime: 'Tüm zamanlar',
@@ -1134,54 +1146,93 @@ function showSysTab(name) {
   if (name === 'health') { stopLogs(); loadHealth(); renderUpdate(); checkUpdate(false); } else startLogs();
 }
 
-/* Updates: GitHub is asked at most hourly by the server; "Check now" asks right away. */
-let updateInfo = null;
+/* Updates: one row for Panda, one for yt-dlp, each with what is installed, what is newest and what
+   an update did. GitHub is asked at most hourly by the server; "Check" asks right away. */
+let updateInfo = null, updChecking = false;
+const updMsg = { panda: null, yt: null };   // { kind: 'busy' | 'ok' | 'err', text }
+
 async function checkUpdate(fresh) {
+  if (fresh) { updChecking = true; updMsg.panda = updMsg.yt = null; renderUpdate(); }
   const u = await api('GET', '/api/update' + (fresh ? '?fresh=true' : '')).catch(() => null);
-  if (!u) return;
-  updateInfo = u;
-  $('open-system').classList.toggle('badge-dot', !!u.newer);
+  updChecking = false;
+  if (u) { updateInfo = u; $('open-system').classList.toggle('badge-dot', !!u.newer); }
   renderUpdate();
 }
+
 function renderUpdate() {
   const u = updateInfo;
-  const kv = (k, v, cls) => el('div', { class: 'kv' }, el('span', { class: 'k', text: k }), el('span', { class: 'v ' + (cls || ''), text: v }));
   const button = (label, iconName, fn, primary) => {
     const b = el('button', { class: `btn sm ${primary ? 'primary' : 'ghost'}`, type: 'button' }, icon(iconName), el('span', { text: label }));
     b.addEventListener('click', () => busy(b, fn)); return b;
   };
-  const kids = [el('h3', { text: t('updates') }), kv(t('hVersion'), 'v' + (u?.current || '…'))];
-  if (u?.error) kids.push(el('p', { class: 'hint', text: t('updUnreachable') }));
-  else if (u?.newer) {
-    const date = u.published ? ' · ' + new Date(u.published).toLocaleDateString(lang, { day: 'numeric', month: 'short', year: 'numeric' }) : '';
-    kids.push(kv(t('updLatest'), `v${u.latest}${date}`, 'new'), el('p', { class: 'new', text: t('updAvailable', 'v' + u.latest) }));
-    if (u.notes) kids.push(el('details', {}, el('summary', { text: t('updNotes') }), el('pre', { class: 'notes', text: u.notes })));
-    if (u.install !== 'systemd') kids.push(el('p', { class: 'hint', text: t('updHow.' + u.install) }));
-  } else if (u) kids.push(el('p', { class: 'hint', text: t('updNone') }));
-  const row = el('div', { class: 'save-row' });
-  if (u?.newer && u.install === 'systemd') row.append(button(t('updNow'), 'download', startUpgrade, true));
-  row.append(button(t('updCheck'), 'refresh', () => checkUpdate(true)), button(t('ytUpdate'), 'download', updateYtDlp));
-  if (u?.newer && u.url && safeUrl(u.url)) row.append(el('a', { class: 'btn ghost sm', href: safeUrl(u.url), target: '_blank', rel: 'noopener noreferrer' }, icon('ext'), el('span', { text: t('updRelease') })));
-  kids.push(row);
-  $('update').replaceChildren(...kids);
+  const check = button(t('updCheck'), 'refresh', () => checkUpdate(true));
+  if (updChecking) { check.disabled = true; check.prepend(el('span', { class: 'spin', 'aria-hidden': 'true' })); }
+  const when = u?.checkedAt ? new Date(u.checkedAt).toLocaleTimeString(lang, { hour: '2-digit', minute: '2-digit' }) : '';
+  const sub = u?.error ? el('p', { class: 'hint bad', text: t('updUnreachable') }) : when ? el('p', { class: 'hint', text: t('updChecked', when) }) : null;
+
+  const item = ({ name, what, installed, newest, newer, msg, actions = [], hint }) => {
+    const pill = msg?.kind === 'busy' ? null
+      : !newest ? null
+      : newer ? el('span', { class: 'upd-pill new', text: t('updNew') })
+      : el('span', { class: 'upd-pill ok' }, icon('check'), el('span', { text: t('updOk') }));
+    const status = msg && el('p', { class: 'upd-msg ' + msg.kind, role: 'status' },
+      msg.kind === 'busy' ? el('span', { class: 'spin', 'aria-hidden': 'true' }) : icon(msg.kind === 'err' ? 'alert' : 'check'),
+      el('span', { text: msg.text }));
+    return el('div', { class: 'upd-item' },
+      el('div', { class: 'upd-top' }, el('strong', { text: name }), pill),
+      el('p', { class: 'hint', text: what }),
+      el('div', { class: 'upd-versions' },
+        el('span', {}, el('span', { class: 'k', text: t('updInstalled') }), el('b', { text: installed || t('missingTool') })),
+        el('span', {}, el('span', { class: 'k', text: t('updNewest') }), el('b', { class: newer ? 'new' : '', text: newest || '—' }))),
+      status, hint ? el('p', { class: 'hint', text: hint }) : null,
+      actions.length && msg?.kind !== 'busy' ? el('div', { class: 'save-row' }, ...actions) : null);
+  };
+
+  const pandaActions = [];
+  if (u?.newer && u.install === 'systemd') pandaActions.push(button(t('updNow'), 'download', startUpgrade, true));
+  if (u?.newer && u.notes) pandaActions.push(el('details', { class: 'upd-notes' }, el('summary', { text: t('updNotes') }), el('pre', { class: 'notes', text: u.notes })));
+  if (u?.newer && u.url && safeUrl(u.url)) pandaActions.push(el('a', { class: 'btn ghost sm', href: safeUrl(u.url), target: '_blank', rel: 'noopener noreferrer' }, icon('ext'), el('span', { text: t('updRelease') })));
+  // Unknown newest version (GitHub unreachable) or a missing yt-dlp: let them try anyway.
+  const ytActions = u && (u.ytDlpNewer || !u.ytDlpLatest || !u.ytDlp) ? [button(t('ytUpdate'), 'download', updateYtDlp, !!u.ytDlpNewer)] : [];
+
+  $('update').replaceChildren(
+    el('div', { class: 'upd-head' }, el('h3', { text: t('updates') }), check), sub,
+    item({ name: 'Panda', what: t('updPandaWhat'), installed: u && 'v' + u.current, newest: u?.latest && 'v' + u.latest,
+      newer: u?.newer, msg: updMsg.panda, actions: pandaActions,
+      hint: u?.newer && u.install !== 'systemd' ? t('updHow.' + u.install) : null }),
+    item({ name: 'yt-dlp', what: t('updYtWhat'), installed: u?.ytDlp, newest: u?.ytDlpLatest,
+      newer: u?.ytDlpNewer, msg: updMsg.yt, actions: ytActions }));
 }
+
 async function startUpgrade() {
   const from = updateInfo?.current;
-  if (!(await act(() => api('POST', '/api/update').then(() => true), t('updStarted')))) return;
+  updMsg.panda = { kind: 'busy', text: t('updStarted') }; renderUpdate();
+  try { await api('POST', '/api/update'); }
+  catch (e) { updMsg.panda = { kind: 'err', text: errText(e) }; return renderUpdate(); }
   // The installer replaces Panda and restarts it; wait for the new version, then load the new panel.
   for (let i = 0; i < 60; i++) {
     await new Promise(r => setTimeout(r, 5000));
     const v = await api('GET', '/api/version').catch(() => null);
-    if (v && v.version !== from) { toast(t('updDone', v.version)); setTimeout(() => location.reload(), 1500); return; }
+    if (v && v.version !== from) {
+      updMsg.panda = { kind: 'ok', text: t('updDone', v.version) }; renderUpdate();
+      setTimeout(() => location.reload(), 2000); return;
+    }
   }
+  updMsg.panda = { kind: 'err', text: t('updSlow') }; renderUpdate();
 }
+
 async function updateYtDlp() {
-  const r = await act(() => api('POST', '/api/update/yt-dlp'));
-  if (!r) return;
-  if (r.result === 'reinstall') return toast(t('updHow.systemd-old'), 'err');
-  if (r.result !== 'started') { toast(t('ytUpdated', r.version)); return loadHealth(true); }
-  toast(t('ytStarted'));
-  setTimeout(() => { if ($('system').open) loadHealth(true); }, 20000);   // systemd does it in the background
+  updMsg.yt = { kind: 'busy', text: t('ytBusy') }; renderUpdate();
+  try {
+    const r = await api('POST', '/api/update/yt-dlp');
+    updMsg.yt = r.result === 'updated' || r.result === 'installed' ? { kind: 'ok', text: t('ytDone', r.from, r.to) }
+      : r.result === 'current' ? { kind: 'ok', text: t('ytCurrent', r.to) }
+      : r.result === 'pending' ? { kind: 'busy', text: t('ytPending') }
+      : r.result === 'reinstall' ? { kind: 'err', text: t('updHow.systemd-old') }
+      : { kind: 'err', text: t('err.ytdlp-update-failed') };
+  } catch (e) { updMsg.yt = { kind: 'err', text: errText(e) }; }
+  if (updMsg.yt.kind === 'busy') updMsg.yt.kind = 'ok';   // nothing runs here any more; just a note
+  await checkUpdate(false);
 }
 
 /** Refreshes every 3 s while the status tab is open. */
@@ -1224,7 +1275,6 @@ function renderHealth(h) {
       kv(t('hLib'), L.limitBytes > 0 ? t('usage', fmtBytes(L.usedBytes), fmtBytes(L.limitBytes)) : fmtBytes(L.usedBytes)),
       L.limitBytes > 0 ? meter(L.usedBytes / L.limitBytes * 100) : null),
     card(t('hTools'),
-      kv('yt-dlp', h.tools.ytDlp || t('missingTool'), !h.tools.ytDlp),
       kv('ffmpeg', h.tools.ffmpeg || t('missingTool'), !h.tools.ffmpeg)));
 }
 

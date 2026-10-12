@@ -85,7 +85,8 @@ curl -fsSL https://raw.githubusercontent.com/KaanBahaSever/panda/main/scripts/in
 
 The installer asks for your TeamSpeak server address and the panel port, installs `ffmpeg`, `yt-dlp`
 and `deno`, sets up a systemd service and prints the panel address and login. To update, use
-**System → Updates** in the panel, or run the installer again.
+**System → Updates** in the panel, or run the installer again. Updates keep your songs, history,
+playlists and settings, and the bots carry on with their queue where they left off.
 
 ```bash
 journalctl -u panda -f                    # logs

@@ -18,6 +18,13 @@ public sealed record PlayerState(
 	LoopMode Loop,
 	bool Radio);
 
+/// <summary>
+/// What a bot was playing when Panda stopped (an update or a restart), so it picks up where it left off.
+/// </summary>
+public sealed record PlayerSession(
+	Track? Current, double Position, bool Paused, DateTimeOffset StartedAt, double Heard,
+	IReadOnlyList<Track> Queue, LoopMode Loop);
+
 public sealed class QueueFullException : Exception;
 
 /// <summary>
@@ -60,6 +67,10 @@ public sealed class Player : IDisposable
 	// The bot was removed: work that finishes late (a radio pick, a song still being looked up)
 	// must not start playback, nor touch the library, on a player whose audio thread is gone.
 	bool disposed;
+	// Restored after a restart: the song waits paused until the bot is connected again.
+	bool resumeOnConnect;
+	// The current song was saved for after the restart; it is not a finished play yet.
+	bool sessionSaved;
 
 	public LoopMode Loop { get; private set; }
 
@@ -87,7 +98,17 @@ public sealed class Player : IDisposable
 	}
 
 	/// <summary>Where encoded audio goes (the connected TeamSpeak client), or null while offline.</summary>
-	public void AttachOutput(IAudioPassiveConsumer? output) => target.OutStream = output;
+	public void AttachOutput(IAudioPassiveConsumer? output)
+	{
+		target.OutStream = output;
+		bool resume;
+		lock (gate)
+		{
+			resume = output != null && resumeOnConnect;
+			resumeOnConnect = false;
+		}
+		if (resume) Resume();
+	}
 
 	public int Volume => volume;
 	public Track? Current { get { lock (gate) return current; } }
@@ -194,6 +215,7 @@ public sealed class Player : IDisposable
 	{
 		lock (gate)
 		{
+			resumeOnConnect = false;
 			if (current is null || paused == value) return false;
 			paused = value;
 			timePipe.Paused = value;
@@ -428,6 +450,7 @@ public sealed class Player : IDisposable
 	void StartLocked(Track track, int startSeconds, bool seeking = false, bool repeat = false)
 	{
 		if (disposed) return;
+		resumeOnConnect = false;
 		StopSourceLocked();
 		var gen = ++generation;
 		current = track;
@@ -549,6 +572,51 @@ public sealed class Player : IDisposable
 			_ = Task.Run(() => FetchRadio(failed));
 	}
 
+	// ---- surviving a restart ----
+
+	/// <summary>
+	/// The queue and the song with its position, for <see cref="Restore"/> after Panda starts again.
+	/// Only called when Panda stops: playback halts here. The song doesn't go into the history now;
+	/// it does when it really ends.
+	/// </summary>
+	public PlayerSession SaveSession()
+	{
+		lock (gate)
+		{
+			sessionSaved = current != null;
+			// Panda is stopping: hold the song here so it can't end (and move on) after being saved.
+			timePipe.Paused = true;
+			return new PlayerSession(current, PositionLocked(), paused, startedAt,
+				heardBefore + SourceSecondsLocked(), queue.ToArray(), Loop);
+		}
+	}
+
+	/// <summary>Puts back what <see cref="SaveSession"/> saved; playback continues once the bot is connected.</summary>
+	public void Restore(PlayerSession s)
+	{
+		lock (gate)
+		{
+			if (disposed) return;
+			queue.AddRange(s.Queue.Take(settings.Bot.MaxQueueLength));
+			Loop = s.Loop;
+			if (s.Current is { } t)
+			{
+				startedAt = s.StartedAt;
+				heardBefore = s.Heard;
+				var at = t.IsLive ? 0 : Math.Clamp((int)s.Position, 0, Math.Max(0, t.Duration - 1));
+				StartLocked(t, at, seeking: true);
+				if (current == t)
+				{
+					library.Resumed(settings.Id, t);
+					paused = true;
+					timePipe.Paused = true;
+					resumeOnConnect = !s.Paused;
+				}
+			}
+		}
+		RaiseChanged();
+	}
+
 	void RaiseChanged()
 	{
 		CheckRadio();
@@ -572,8 +640,8 @@ public sealed class Player : IDisposable
 		lock (gate)
 		{
 			if (disposed) return;
-			// Shutting down mid-song still counts as a play.
-			if (current != null) AddHistoryLocked(current);
+			// Shutting down mid-song still counts as a play, unless it goes on after a restart.
+			if (current != null && !sessionSaved) AddHistoryLocked(current);
 			current = null;
 			StopSourceLocked();
 			queue.Clear();
