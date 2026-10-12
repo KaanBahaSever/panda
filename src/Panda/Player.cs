@@ -434,12 +434,13 @@ public sealed class Player : IDisposable
 
 		AudioStream audio;
 		var file = library.GetFile(track.Id);
+		var gain = file is null ? null : library.GainFor(track.Id);
 		string? tee = null;
 		try
 		{
 			if (file != null)
 			{
-				audio = youtube.OpenFile(file, startSeconds);
+				audio = youtube.OpenFile(file, startSeconds, gain);
 			}
 			else
 			{
@@ -466,7 +467,8 @@ public sealed class Player : IDisposable
 			library.MarkPlayed(settings.Id, track);
 			_ = Task.Run(() => TrackStarted?.Invoke(track));
 		}
-		log.LogInformation("Playing {Title} ({Id}) for {User}{From}", track.Title, track.Id, track.RequestedBy, file != null ? " from the library" : "");
+		log.LogInformation("Playing {Title} ({Id}) for {User}{From}{Gain}", track.Title, track.Id, track.RequestedBy,
+			file != null ? " from the library" : "", gain is { } g ? $", loudness {g:+0.0;-0.0} dB" : "");
 	}
 
 	void StopSourceLocked()

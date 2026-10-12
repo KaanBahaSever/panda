@@ -45,6 +45,12 @@ public sealed class Library : IDisposable
 	// doesn't make the loop hammer YouTube.
 	readonly Dictionary<string, DateTime> retryAfter = new();
 	readonly SemaphoreSlim wake = new(0);
+	// Loudness: songs waiting to be measured, ones that couldn't be (until restart), and the
+	// measurements of prefetched files (with saving off they aren't in the index).
+	readonly List<string> toMeasure = [];
+	readonly HashSet<string> unmeasurable = [];
+	readonly Dictionary<string, (double Lufs, double Peak)> prefetchLoudness = new();
+	readonly SemaphoreSlim measureWake = new(0);
 	readonly CancellationTokenSource stop = new();
 	CancellationTokenSource? currentDownload;
 	string? currentDownloadId;
@@ -63,6 +69,8 @@ public sealed class Library : IDisposable
 		Directory.CreateDirectory(TempDir);
 		Load();
 		_ = Task.Run(DownloadLoop);
+		_ = Task.Run(MeasureLoop);
+		MeasureMissing();
 	}
 
 	public bool Enabled => config.Library.Enabled;
@@ -205,7 +213,76 @@ public sealed class Library : IDisposable
 		lock (gate) EvictLocked();
 		SaveSoon();
 		Signal();
+		MeasureMissing();
 		Changed?.Invoke();
+	}
+
+	// ---- loudness ----
+
+	/// <summary>
+	/// Volume change (dB) that brings this song to the target loudness, without pushing its peaks
+	/// over -1 dBFS. Null when normalizing is off or the song hasn't been measured yet.
+	/// </summary>
+	public double? GainFor(string id)
+	{
+		var audio = config.Audio;
+		if (!audio.Normalize) return null;
+		(double Lufs, double Peak) m;
+		lock (gate)
+		{
+			if (songs.TryGetValue(id, out var s) && s.Loudness is { } l) m = (l, s.Peak ?? 0);
+			else if (!prefetchLoudness.TryGetValue(id, out m)) return null;
+		}
+		return Math.Clamp(Math.Min(audio.TargetLufs - m.Lufs, -1 - m.Peak), -20, 12);
+	}
+
+	/// <summary>Queues every saved song that has no loudness yet (older libraries, or normalizing just turned on).</summary>
+	void MeasureMissing()
+	{
+		if (!config.Audio.Normalize) return;
+		lock (gate)
+			foreach (var s in songs.Values.Where(s => s.Loudness is null).OrderByDescending(s => PlaysOf(s.Id)))
+				QueueMeasureLocked(s.Id);
+	}
+
+	void QueueMeasureLocked(string id)
+	{
+		if (!config.Audio.Normalize || unmeasurable.Contains(id) || toMeasure.Contains(id)) return;
+		toMeasure.Add(id);
+		if (measureWake.CurrentCount == 0) measureWake.Release();
+	}
+
+	// One song at a time at low priority; a few hundred times faster than real time.
+	async Task MeasureLoop()
+	{
+		var ct = stop.Token;
+		while (!ct.IsCancellationRequested)
+		{
+			try { await measureWake.WaitAsync(ct); }
+			catch (OperationCanceledException) { return; }
+			while (!ct.IsCancellationRequested)
+			{
+				string id;
+				lock (gate)
+				{
+					if (toMeasure.Count == 0) break;
+					id = toMeasure[0];
+					toMeasure.RemoveAt(0);
+				}
+				if (GetFile(id) is not { } file) continue;
+				(double Lufs, double Peak)? m = null;
+				try { m = await youtube.MeasureAsync(file, ct); }
+				catch (OperationCanceledException) { return; }
+				catch (Exception ex) { log.LogInformation("Could not measure {Id}: {Error}", id, ex.Message); }
+				lock (gate)
+				{
+					if (m is null) unmeasurable.Add(id);
+					else if (songs.TryGetValue(id, out var s)) { s.Loudness = Math.Round(m.Value.Lufs, 1); s.Peak = Math.Round(m.Value.Peak, 1); }
+					else prefetchLoudness[id] = m.Value;
+				}
+				if (m != null) SaveSoon();
+			}
+		}
 	}
 
 	// ---- downloads ----
@@ -370,6 +447,7 @@ public sealed class Library : IDisposable
 				File.Move(file, PrefetchPath(track.Id), overwrite: true);
 				log.LogInformation("Ready ahead of time: {Title}", track.Title);
 			}
+			QueueMeasureLocked(track.Id);
 		}
 		SaveSoon();
 		Changed?.Invoke();
@@ -410,6 +488,9 @@ public sealed class Library : IDisposable
 		foreach (var f in Directory.EnumerateFiles(TempDir, "*.audio"))
 			if (!keep.Contains(Path.GetFileNameWithoutExtension(f)))
 				TryDelete(f);
+		lock (gate)
+			foreach (var id in prefetchLoudness.Keys.Where(id => !keep.Contains(id)).ToList())
+				prefetchLoudness.Remove(id);
 	}
 
 	// ---- persistence ----
@@ -525,6 +606,9 @@ public sealed class Library : IDisposable
 		public int Duration { get; set; }
 		public long Size { get; set; }
 		public DateTimeOffset Added { get; set; }
+		/// <summary>Integrated loudness (LUFS) and sample peak (dBFS); null until measured.</summary>
+		public double? Loudness { get; set; }
+		public double? Peak { get; set; }
 		public Track ToTrack(string requestedBy) => new(Id, Title, Channel, Duration, requestedBy);
 	}
 

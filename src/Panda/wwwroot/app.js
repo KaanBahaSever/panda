@@ -47,6 +47,7 @@ const I18N = {
     plays: n => n === 1 ? '1 play' : `${n} plays`, requests: n => n === 1 ? '1 song' : `${n} songs`, delete: 'Delete', deleted: 'Deleted', confirmLibDelete: x => `Delete "${x}" from the library?`,
     sLib: 'Library', sLibOn: 'Save every requested song', sLibOnHint: 'When off, only the next song is downloaded ahead of time.',
     sLibMax: 'Size limit (GB)', sLibMaxHint: 'When full, the least played songs are deleted first. 0 = no limit.', sLibMaxBad: 'Use 0 (no limit) or at least 0.1 GB.',
+    sNorm: 'Play songs equally loud', sNormHint: 'Each saved song is measured once and played at the same loudness. A song\'s very first play, before it is saved, plays as it is.',
     bots: 'Bots', addBot: 'Add a bot', botAdded: 'Bot added — now set its channel', idle: 'Idle',
     sPrefixHint: 'Bots in the same channel need different prefixes, or they all answer.', sShared: 'Shared by all bots.',
     sRemoveBot: 'Remove this bot', sRemoveBotHint: 'Disconnects it and deletes its TeamSpeak identity and play history.', removeBot: 'Remove bot',
@@ -111,6 +112,7 @@ const I18N = {
     plays: n => `${n} kez çalındı`, requests: n => `${n} şarkı`, delete: 'Sil', deleted: 'Silindi', confirmLibDelete: x => `"${x}" kütüphaneden silinsin mi?`,
     sLib: 'Kütüphane', sLibOn: 'İstenen her şarkıyı kaydet', sLibOnHint: 'Kapalıyken sadece sıradaki şarkı önceden indirilir.',
     sLibMax: 'Boyut sınırı (GB)', sLibMaxHint: 'Dolduğunda en az dinlenen şarkılar önce silinir. 0 = sınırsız.', sLibMaxBad: '0 (sınırsız) ya da en az 0,1 GB girin.',
+    sNorm: 'Şarkıları aynı yükseklikte çal', sNormHint: 'Kaydedilen her şarkının ses seviyesi bir kez ölçülür ve hepsi aynı yükseklikte çalar. Bir şarkı kaydedilmeden önceki ilk çalınışında olduğu gibi çalar.',
     bots: 'Botlar', addBot: 'Bot ekle', botAdded: 'Bot eklendi — şimdi kanalını ayarla', idle: 'Boşta',
     sPrefixHint: 'Aynı kanaldaki botların önekleri farklı olmalı, yoksa hepsi cevap verir.', sShared: 'Tüm botlar için geçerli.',
     sRemoveBot: 'Bu botu kaldır', sRemoveBotHint: 'Bağlantısını keser, TeamSpeak kimliğini ve çalma geçmişini siler.', removeBot: 'Botu kaldır',
@@ -851,7 +853,7 @@ function fillSettings(s) {
   f.announce.checked = !!s.announce; f.showSongInDescription.checked = !!s.showSongInDescription;
   f.allowedUsers.value = (s.allowedUsers || []).join('\n');
   f.allowedServerGroups.value = (s.allowedServerGroups || []).join(', ');
-  f.libraryEnabled.checked = !!s.libraryEnabled;
+  f.libraryEnabled.checked = !!s.libraryEnabled; f.normalizeVolume.checked = !!s.normalizeVolume;
   f.libraryMaxGb.value = Math.round((s.libraryMaxSizeMb || 0) / 1024 * 100) / 100;
   for (const k of ['serverPassword', 'channelPassword']) {
     const has = s['has' + k[0].toUpperCase() + k.slice(1)];
@@ -889,7 +891,7 @@ $('set-form').addEventListener('submit', async e => {
     announce: f.announce.checked, showSongInDescription: f.showSongInDescription.checked,
     maxQueueLength: +f.maxQueueLength.value, maxDurationMinutes: +f.maxDurationMinutes.value,
     allowedUsers: f.allowedUsers.value.split(/\r?\n/).map(x => x.trim()).filter(Boolean),
-    libraryEnabled: f.libraryEnabled.checked, libraryMaxSizeMb: Math.round(gb * 1024),
+    libraryEnabled: f.libraryEnabled.checked, libraryMaxSizeMb: Math.round(gb * 1024), normalizeVolume: f.normalizeVolume.checked,
     allowedServerGroups: f.allowedServerGroups.value.split(/[,\s;]+/).map(x => x.trim()).filter(x => /^\d+$/.test(x)).map(Number),
   };
   const old = settings;

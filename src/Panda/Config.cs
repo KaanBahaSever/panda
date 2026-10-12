@@ -12,6 +12,7 @@ public sealed class PandaConfig
 	public PanelSettings Panel { get; set; } = new();
 	public YouTubeSettings YouTube { get; set; } = new();
 	public LibrarySettings Library { get; set; } = new();
+	public AudioSettings Audio { get; set; } = new();
 
 	// Up to 0.2 there was one bot, set up by these two at the top level. Load moves them into Bots.
 	[JsonPropertyName("server"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
@@ -351,6 +352,17 @@ public static class PasswordHasher
 
 	public static string Generate() =>
 		Convert.ToBase64String(RandomNumberGenerator.GetBytes(12)).Replace('+', 'x').Replace('/', 'y').TrimEnd('=');
+}
+
+public sealed class AudioSettings
+{
+	/// <summary>
+	/// Play saved songs equally loud: each is measured once (EBU R128) and played with a fixed gain,
+	/// so its own dynamics stay. Songs not measured yet (the first play) play as they are.
+	/// </summary>
+	public bool Normalize { get; set; } = true;
+	/// <summary>Integrated loudness to aim for, in LUFS. -14 is what YouTube and Spotify use.</summary>
+	public double TargetLufs { get; set; } = -14;
 }
 
 public sealed class LibrarySettings

@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -218,12 +219,13 @@ public sealed partial class YouTube(PandaConfig config, ILogger<YouTube> log)
 	}
 
 	/// <summary>Plays a saved song; seeking in a file is instant.</summary>
-	public AudioStream OpenFile(string path, int startSeconds = 0) =>
-		new(null, StartProcess(FfmpegInfo([.. SeekArgs(startSeconds), "-i", path], stdin: false)), log);
+	/// <param name="gainDb">Loudness correction for this song, if it was measured.</param>
+	public AudioStream OpenFile(string path, int startSeconds = 0, double? gainDb = null) =>
+		new(null, StartProcess(FfmpegInfo([.. SeekArgs(startSeconds), "-i", path], stdin: false, gainDb)), log);
 
 	static string[] SeekArgs(int seconds) => seconds > 0 ? ["-ss", seconds.ToString()] : [];
 
-	ProcessStartInfo FfmpegInfo(string[] input, bool stdin)
+	ProcessStartInfo FfmpegInfo(string[] input, bool stdin, double? gainDb = null)
 	{
 		var ff = new ProcessStartInfo(config.YouTube.FfmpegPath)
 		{
@@ -232,9 +234,46 @@ public sealed partial class YouTube(PandaConfig config, ILogger<YouTube> log)
 			RedirectStandardError = true,
 			UseShellExecute = false,
 		};
-		foreach (var a in (string[])["-hide_banner", "-loglevel", "error", .. input, "-vn", "-f", "s16le", "-ar", "48000", "-ac", "2", "pipe:1"])
+		string[] filter = gainDb is { } g && Math.Abs(g) >= 0.1 ? ["-af", $"volume={g.ToString("0.0", CultureInfo.InvariantCulture)}dB"] : [];
+		foreach (var a in (string[])["-hide_banner", "-loglevel", "error", .. input, "-vn", .. filter, "-f", "s16le", "-ar", "48000", "-ac", "2", "pipe:1"])
 			ff.ArgumentList.Add(a);
 		return ff;
+	}
+
+	[GeneratedRegex(@"I:\s+(-?\d+(?:\.\d+)?) LUFS")]
+	private static partial Regex LoudnessRegex();
+
+	[GeneratedRegex(@"Peak:\s+(-?\d+(?:\.\d+)?) dBFS")]
+	private static partial Regex PeakRegex();
+
+	/// <summary>
+	/// Integrated loudness (LUFS) and sample peak (dBFS) of a song file, by ffmpeg's EBU R128 meter.
+	/// Fast (hundreds of times real time) and run at low priority. Null for silence or errors.
+	/// </summary>
+	public async Task<(double Lufs, double Peak)?> MeasureAsync(string path, CancellationToken ct)
+	{
+		var psi = new ProcessStartInfo(config.YouTube.FfmpegPath)
+		{
+			RedirectStandardOutput = true,
+			RedirectStandardError = true,
+			UseShellExecute = false,
+		};
+		foreach (var a in new[] { "-hide_banner", "-nostats", "-threads", "1", "-i", path, "-vn", "-af", "ebur128=peak=sample:framelog=quiet", "-f", "null", "-" })
+			psi.ArgumentList.Add(a);
+		using var proc = StartProcess(psi);
+		try { proc.PriorityClass = ProcessPriorityClass.BelowNormal; } catch { }
+		using var reg = ct.Register(() => Kill(proc));
+		var stderr = proc.StandardError.ReadToEndAsync(CancellationToken.None);
+		_ = proc.StandardOutput.ReadToEndAsync(CancellationToken.None);
+		await proc.WaitForExitAsync(CancellationToken.None);
+		ct.ThrowIfCancellationRequested();
+		var text = await stderr;
+		// The summary comes last; the meter also prints "I:" while running, so take the last match.
+		var i = LoudnessRegex().Matches(text).LastOrDefault();
+		var p = PeakRegex().Matches(text).LastOrDefault();
+		if (proc.ExitCode != 0 || i is null || p is null) return null;
+		var lufs = double.Parse(i.Groups[1].Value, CultureInfo.InvariantCulture);
+		return lufs <= -70 ? null : (lufs, double.Parse(p.Groups[1].Value, CultureInfo.InvariantCulture));
 	}
 
 	/// <summary>Downloads the song's audio as-is (no re-encoding) into <paramref name="path"/>.</summary>

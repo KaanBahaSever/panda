@@ -405,6 +405,7 @@ public sealed class SettingsDto
 	public int MaxDurationMinutes { get; set; }
 	public bool LibraryEnabled { get; set; }
 	public int LibraryMaxSizeMb { get; set; }
+	public bool NormalizeVolume { get; set; }
 	public bool HasCookies { get; set; }
 
 	/// <summary>The bot's own settings plus the shared ones (library, YouTube).</summary>
@@ -425,6 +426,7 @@ public sealed class SettingsDto
 		MaxDurationMinutes = c.YouTube.MaxDurationMinutes,
 		LibraryEnabled = c.Library.Enabled,
 		LibraryMaxSizeMb = c.Library.MaxSizeMb,
+		NormalizeVolume = c.Audio.Normalize,
 		HasCookies = c.YouTube.CookiesFile.Length > 0 && File.Exists(c.YouTube.CookiesFile),
 	};
 
@@ -453,6 +455,7 @@ public sealed class SettingsDto
 		if (MaxDurationMinutes is >= 0 and <= 1440) c.YouTube.MaxDurationMinutes = MaxDurationMinutes;
 		c.Library.Enabled = LibraryEnabled;
 		if (LibraryMaxSizeMb is 0 or (>= 100 and <= 1_000_000)) c.Library.MaxSizeMb = LibraryMaxSizeMb;
+		c.Audio.Normalize = NormalizeVolume;
 		return reconnect;
 	}
 }
