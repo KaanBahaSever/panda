@@ -13,7 +13,7 @@ public sealed record NowPlaying(Track Track, double Position, bool Paused);
 public sealed record PlayerState(
 	NowPlaying? Current,
 	IReadOnlyList<Track> Queue,
-	IReadOnlyList<Track> History,
+	IReadOnlyList<PlayedTrack> History,
 	int Volume,
 	LoopMode Loop);
 
@@ -25,10 +25,10 @@ public sealed class QueueFullException : Exception;
 public sealed class Player : IDisposable
 {
 	const int BytesPerSecond = 48000 * 2 * 2;
-	const int HistorySize = 30;
 
 	readonly YouTube youtube;
 	readonly Library library;
+	readonly PlayHistory history;
 	readonly PandaConfig config;
 	readonly ILogger<Player> log;
 
@@ -39,13 +39,16 @@ public sealed class Player : IDisposable
 
 	readonly object gate = new();
 	readonly List<Track> queue = [];
-	readonly List<Track> history = [];
 	Track? current;
 	TrackSource? source;
 	int generation;
 	int startOffset;
 	bool paused;
 	int volume;
+	// For the play history: when the current song started and how much of it was heard
+	// by sources that are already gone (seeking and loop-one replace the source).
+	DateTimeOffset startedAt;
+	double heardBefore;
 
 	public LoopMode Loop { get; private set; }
 
@@ -54,10 +57,11 @@ public sealed class Player : IDisposable
 	public event Action<Track>? TrackStarted;
 	public event Action<Track, string>? TrackFailed;
 
-	public Player(YouTube youtube, Library library, PandaConfig config, ILogger<Player> log)
+	public Player(YouTube youtube, Library library, PlayHistory history, PandaConfig config, ILogger<Player> log)
 	{
 		this.youtube = youtube;
 		this.library = library;
+		this.history = history;
 		this.config = config;
 		this.log = log;
 
@@ -82,7 +86,7 @@ public sealed class Player : IDisposable
 		lock (gate)
 		{
 			NowPlaying? now = current is null ? null : new(current, PositionLocked(), paused);
-			return new PlayerState(now, queue.ToArray(), history.ToArray(), volume, Loop);
+			return new PlayerState(now, queue.ToArray(), history.Recent(), volume, Loop);
 		}
 	}
 
@@ -247,23 +251,23 @@ public sealed class Player : IDisposable
 	void AdvanceLocked(bool finished)
 	{
 		var prev = current;
-		Track? next = null;
 		if (finished && Loop == LoopMode.One && prev != null)
 		{
-			next = prev;
+			// One history entry for the whole loop, not one per repeat.
+			StartLocked(prev, 0, repeat: true);
+			return;
 		}
-		else
+
+		if (prev != null)
 		{
-			if (prev != null)
-			{
-				AddHistoryLocked(prev);
-				if (Loop == LoopMode.All) queue.Add(prev);
-			}
-			if (queue.Count > 0)
-			{
-				next = queue[0];
-				queue.RemoveAt(0);
-			}
+			AddHistoryLocked(prev);
+			if (Loop == LoopMode.All) queue.Add(prev);
+		}
+		Track? next = null;
+		if (queue.Count > 0)
+		{
+			next = queue[0];
+			queue.RemoveAt(0);
 		}
 
 		if (next is null)
@@ -278,13 +282,19 @@ public sealed class Player : IDisposable
 	}
 
 	// "seeking" restarts the same song elsewhere: no announcement, no extra play count.
-	void StartLocked(Track track, int startSeconds, bool seeking = false)
+	// "repeat" is loop-one starting it over: announced, but the same history entry.
+	void StartLocked(Track track, int startSeconds, bool seeking = false, bool repeat = false)
 	{
 		StopSourceLocked();
 		var gen = ++generation;
 		current = track;
 		startOffset = startSeconds;
 		paused = false;
+		if (!seeking && !repeat)
+		{
+			startedAt = DateTimeOffset.UtcNow;
+			heardBefore = 0;
+		}
 
 		AudioStream audio;
 		var file = library.GetFile(track.Id);
@@ -327,14 +337,18 @@ public sealed class Player : IDisposable
 	{
 		timePipe.Paused = true;
 		timePipe.InStream = null;
+		heardBefore += SourceSecondsLocked();
 		source?.Dispose();
 		source = null;
 	}
 
+	double SourceSecondsLocked() =>
+		source is null ? 0 : Interlocked.Read(ref source.BytesRead) / (double)BytesPerSecond;
+
 	void AddHistoryLocked(Track t)
 	{
-		history.Insert(0, t);
-		if (history.Count > HistorySize) history.RemoveAt(history.Count - 1);
+		var heard = (int)Math.Round(heardBefore + SourceSecondsLocked());
+		history.Add(new PlayedTrack(t.Id, t.Title, t.Channel, t.Duration, t.RequestedBy, startedAt, heard));
 	}
 
 	void OnSourceEnded(TrackSource ended)
@@ -402,7 +416,13 @@ public sealed class Player : IDisposable
 
 	public void Dispose()
 	{
-		lock (gate) StopSourceLocked();
+		lock (gate)
+		{
+			// Shutting down mid-song still counts as a play.
+			if (current != null) AddHistoryLocked(current);
+			current = null;
+			StopSourceLocked();
+		}
 		timePipe.Dispose();
 	}
 

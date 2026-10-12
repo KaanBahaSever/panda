@@ -11,7 +11,7 @@ const I18N = {
     loopOff: 'Loop: off', loopAll: 'Loop: whole queue', loopOne: 'Loop: this song',
     addSong: 'Add a song', addPh: 'Song name or YouTube link', add: 'Add', playNow: 'Play now', added: 'Added', results: 'Results',
     noResults: 'No results 🐾', close: 'Close', queue: 'Queue', clear: 'Clear', queueEmpty: 'The queue is empty. Search for something above!',
-    history: 'Recently played', historyEmpty: 'Nothing played yet.', addAgain: 'Add again', remove: 'Remove', moveUp: 'Move up', moveDown: 'Move down',
+    history: 'Recently played', historyEmpty: 'Nothing played yet.', today: 'Today', yesterday: 'Yesterday', addAgain: 'Add again', remove: 'Remove', moveUp: 'Move up', moveDown: 'Move down',
     requestedBy: 'requested by', songs: n => n === 1 ? '1 song' : `${n} songs`,
     connected: 'Connected', connecting: 'Connecting…', disconnected: 'Disconnected', listeners: n => n === 1 ? '1 listener' : `${n} listeners`,
     sConn: 'Connection', sConnHint: 'Changing these makes the bot reconnect.', sAddress: 'Server address', sServerPw: 'Server password',
@@ -50,7 +50,7 @@ const I18N = {
     loopOff: 'Tekrar: kapalı', loopAll: 'Tekrar: tüm sıra', loopOne: 'Tekrar: bu şarkı',
     addSong: 'Şarkı ekle', addPh: 'Şarkı adı ya da YouTube linki', add: 'Ekle', playNow: 'Hemen çal', added: 'Eklendi', results: 'Sonuçlar',
     noResults: 'Sonuç yok 🐾', close: 'Kapat', queue: 'Sıra', clear: 'Temizle', queueEmpty: 'Sıra boş. Yukarıdan bir şey ara!',
-    history: 'Son çalınanlar', historyEmpty: 'Henüz bir şey çalınmadı.', addAgain: 'Tekrar ekle', remove: 'Kaldır', moveUp: 'Yukarı taşı', moveDown: 'Aşağı taşı',
+    history: 'Son çalınanlar', historyEmpty: 'Henüz bir şey çalınmadı.', today: 'Bugün', yesterday: 'Dün', addAgain: 'Tekrar ekle', remove: 'Kaldır', moveUp: 'Yukarı taşı', moveDown: 'Aşağı taşı',
     requestedBy: 'İsteyen:', songs: n => `${n} şarkı`,
     connected: 'Bağlı', connecting: 'Bağlanıyor…', disconnected: 'Bağlı değil', listeners: n => `${n} dinleyici`,
     sConn: 'Bağlantı', sConnHint: 'Bunları değiştirmek botun yeniden bağlanmasına yol açar.', sAddress: 'Sunucu adresi', sServerPw: 'Sunucu şifresi',
@@ -588,17 +588,32 @@ async function queueEdit(fn) {
 }
 
 /* ---------------- history ---------------- */
+/** "Today 21:14", "Yesterday 23:02", "10 Oct 18:30" (+ year when not this year), in the viewer's time zone. */
+function playedAt(iso) {
+  const d = new Date(iso);
+  if (isNaN(d)) return '';
+  const time = d.toLocaleTimeString(lang, { hour: '2-digit', minute: '2-digit' });
+  const day = x => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const days = Math.round((day(new Date()) - day(d)) / 86400000);
+  if (days === 0) return `${t('today')} ${time}`;
+  if (days === 1) return `${t('yesterday')} ${time}`;
+  const sameYear = d.getFullYear() === new Date().getFullYear();
+  return `${d.toLocaleDateString(lang, { day: 'numeric', month: 'short', year: sameYear ? undefined : 'numeric' })} ${time}`;
+}
+
 function renderHistory() {
   const h = S.player.history;
   $('history-sum').textContent = h.length ? `(${h.length})` : '';
   $('history-empty').hidden = h.length > 0;
-  const s = sig(h);
+  // The date is part of the signature so "Today" turns into "Yesterday" after midnight.
+  const s = new Date().toDateString() + JSON.stringify(h.map(x => [x.id, x.requestedBy, x.playedAt]));
   if (s === lastHistorySig) return;
   lastHistorySig = s;
   $('history').replaceChildren(...h.map(tr => {
     const b = el('button', { class: 'icon-btn sm', type: 'button', title: t('addAgain'), 'aria-label': `${t('addAgain')}: ${tr.title}` }, icon('plus'));
     b.addEventListener('click', () => busy(b, () => act(() => api('POST', '/api/play', { query: tr.url }), r => `${t('added')}: ${r.title}`)));
-    return el('li', { class: 'track' }, thumb(tr), trackText(tr), el('div', { class: 'acts' }, b));
+    const when = el('span', { class: 'when', title: new Date(tr.playedAt).toLocaleString(lang) }, icon('clock', 'ic sm'), document.createTextNode(playedAt(tr.playedAt)));
+    return el('li', { class: 'track' }, thumb(tr), trackText(tr, { extra: [when] }), el('div', { class: 'acts' }, b));
   }));
 }
 

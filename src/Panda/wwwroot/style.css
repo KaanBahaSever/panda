@@ -248,6 +248,7 @@ body.playing .eq { display: inline-flex; }
 .history .chev { margin-left: auto; transition: transform .2s; }
 .history[open] .chev { transform: rotate(180deg); }
 .history[open] summary { margin-bottom: 8px; }
+.when { display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; font-variant-numeric: tabular-nums; }
 
 /* ---------- dialogs ---------- */
 dialog { color: var(--text); }
