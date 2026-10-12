@@ -62,7 +62,8 @@ const I18N = {
     system: 'System', health: 'Status', logs: 'Logs', logLevel: 'Level', lvlAll: 'All', lvlWarn: 'Warnings and errors', lvlError: 'Errors only',
     logSearch: 'Search the log', logFollow: 'Follow', download: 'Download', logNote: 'The latest 2000 lines since Panda started.', logEmpty: 'No log lines match.',
     hPanda: 'Panda', hVersion: 'Version', hUptime: 'Running for', hRuntime: 'Runtime', hOs: 'System', hTs: 'TeamSpeak', hCpu: 'CPU', hRam: 'Memory',
-    hDisk: 'Disk', hTools: 'Tools', hThis: 'Panda', hMachine: 'Whole server', hFree: 'free', hLib: 'Library', missingTool: 'not found',
+    hDisk: 'Disk', hThis: 'Panda', hMachine: 'Whole server', hFree: 'free', hLib: 'Library',
+    hUsed: (a, b) => `${a} of ${b} used`, hLibUsed: a => `${a} on disk`, hLibOff: 'Saving is off', hLimit: 'Limit', hNoLimit: 'none', missingTool: 'not found',
     updates: 'Updates', updCheck: 'Check', updChecked: x => `Last checked at ${x}`, updNotes: 'What\'s new',
     updUnreachable: 'GitHub could not be reached; try again later.', updRelease: 'Release page',
     updInstalled: 'Installed', updNewest: 'Newest', updOk: 'Up to date', updNew: 'New version',
@@ -141,7 +142,8 @@ const I18N = {
     system: 'Sistem', health: 'Durum', logs: 'Kayıtlar', logLevel: 'Seviye', lvlAll: 'Hepsi', lvlWarn: 'Uyarı ve hatalar', lvlError: 'Sadece hatalar',
     logSearch: 'Kayıtlarda ara', logFollow: 'Canlı takip', download: 'İndir', logNote: 'Panda açıldığından beri son 2000 satır.', logEmpty: 'Eşleşen kayıt yok.',
     hPanda: 'Panda', hVersion: 'Sürüm', hUptime: 'Çalışma süresi', hRuntime: 'Çalışma ortamı', hOs: 'Sistem', hTs: 'TeamSpeak', hCpu: 'İşlemci', hRam: 'Bellek',
-    hDisk: 'Disk', hTools: 'Araçlar', hThis: 'Panda', hMachine: 'Tüm sunucu', hFree: 'boş', hLib: 'Kütüphane', missingTool: 'bulunamadı',
+    hDisk: 'Disk', hThis: 'Panda', hMachine: 'Tüm sunucu', hFree: 'boş', hLib: 'Kütüphane',
+    hUsed: (a, b) => `${a} / ${b} dolu`, hLibUsed: a => `diskte ${a}`, hLibOff: 'Kaydetme kapalı', hLimit: 'Sınır', hNoLimit: 'yok', missingTool: 'bulunamadı',
     updates: 'Güncellemeler', updCheck: 'Denetle', updChecked: x => `Son denetim ${x}`, updNotes: 'Neler yeni',
     updUnreachable: 'GitHub\'a ulaşılamadı; sonra tekrar dene.', updRelease: 'Sürüm sayfası',
     updInstalled: 'Kurulu', updNewest: 'En son', updOk: 'Güncel', updNew: 'Yeni sürüm var',
@@ -1268,10 +1270,35 @@ async function loadHealth(freshTools) {
 }
 
 function renderHealth(h) {
+  const box = $('health');
+  // Rings and bars move from their last value instead of jumping (the view is rebuilt every 3 s).
+  const was = {}, moves = [];
+  for (const e of box.querySelectorAll('[data-k]')) was[e.dataset.k] = e.dataset.to;
+  const clamp = p => Math.min(100, Math.max(0, p || 0));
+  const level = p => p >= 90 ? ' bad' : p >= 75 ? ' warn' : '';
+  const grow = (e, k, p, set) => {
+    e.dataset.k = k; e.dataset.to = clamp(p);
+    set(e, was[k] ?? 0); moves.push(() => set(e, e.dataset.to));
+    return e;
+  };
+  const whole = new Intl.NumberFormat(lang, { style: 'percent', maximumFractionDigits: 0 });
   const kv = (k, v, bad) => el('div', { class: 'kv' }, el('span', { class: 'k', text: k }), el('span', { class: 'v' + (bad ? ' bad' : ''), text: v }));
-  const meter = p => el('div', { class: 'meter' + (p >= 90 ? ' full' : '') }, el('span', { style: `width:${Math.min(100, Math.max(0, p || 0))}%` }));
-  const card = (title, ...kids) => el('section', { class: 'hcard' }, el('h3', { text: title }), ...kids);
+  const meter = (k, p) => el('div', { class: 'meter' + level(p) }, grow(el('span'), k, p, (e, v) => { e.style.width = v + '%'; }));
+  /** p = null: nothing to measure against; text is shown instead of a percentage. */
+  const ring = (k, p, text) => {
+    const label = text ?? whole.format(p / 100);
+    return grow(el('div', { class: 'ring' + (p == null ? '' : level(p)), role: 'img', 'aria-label': label }, el('span', { text: label })),
+      k, p, (e, v) => e.style.setProperty('--p', v));
+  };
+  const title = (emoji, text) => el('h3', {}, el('span', { 'aria-hidden': 'true', text: emoji }), document.createTextNode(text));
+  const card = (emoji, name, ...kids) => el('section', { class: 'hcard' }, title(emoji, name), ...kids);
+  const gauge = (emoji, name, r, big, cap, ...foot) => el('section', { class: 'hcard gauge' }, title(emoji, name), r,
+    el('div', { class: 'gauge-main' }, el('strong', { text: big }), el('span', { class: 'muted', text: cap })),
+    el('div', { class: 'gauge-foot' }, ...foot));
   const up = h.uptimeSeconds, m = h.machine, d = h.disk, L = h.library;
+  const ram = m.memoryUsedBytes != null && m.memoryTotalBytes ? m.memoryUsedBytes / m.memoryTotalBytes * 100 : null;
+  const disk = d ? (1 - d.freeBytes / d.totalBytes) * 100 : null;
+  const lib = L.limitBytes > 0 ? L.usedBytes / L.limitBytes * 100 : null;
 
   const bots = h.bots.map(b => el('div', { class: 'hbot', 'data-state': b.state },
     el('span', { class: 'nm', 'data-state': b.state }, el('span', { class: 'dot' }), document.createTextNode(b.nickname)),
@@ -1280,26 +1307,30 @@ function renderHealth(h) {
       : `${stateText(b.state)} · ${b.address}` }),
     b.error && b.state !== 'connected' ? el('span', { class: 'err', text: b.error }) : null));
 
-  $('health').replaceChildren(
-    card(t('hPanda'),
-      kv(t('hVersion'), 'v' + h.version),
-      kv(t('hUptime'), t('uptime', Math.floor(up / 86400), Math.floor(up / 3600) % 24, Math.floor(up / 60) % 60)),
-      kv(t('hRuntime'), h.runtime), kv(t('hOs'), h.os)),
-    card(t('hTs'), ...bots),
-    card(t('hCpu'),
-      kv(t('hThis'), pct(h.process.cpuPercent)), meter(h.process.cpuPercent),
-      kv(`${t('hMachine')} (${t('cores', m.cores)})`, pct(m.cpuPercent)), meter(m.cpuPercent)),
-    card(t('hRam'),
-      kv(t('hThis'), fmtBytes(h.process.memoryBytes)),
-      kv(t('hMachine'), m.memoryTotalBytes ? (m.memoryUsedBytes != null ? t('usage', fmtBytes(m.memoryUsedBytes), fmtBytes(m.memoryTotalBytes)) : fmtBytes(m.memoryTotalBytes)) : '—'),
-      m.memoryUsedBytes != null && m.memoryTotalBytes ? meter(m.memoryUsedBytes / m.memoryTotalBytes * 100) : null),
-    card(t('hDisk'),
-      d ? kv(d.path, `${fmtBytes(d.freeBytes)} ${t('hFree')} / ${fmtBytes(d.totalBytes)}`) : kv(t('hDisk'), '—'),
-      d ? meter((1 - d.freeBytes / d.totalBytes) * 100) : null,
-      kv(t('hLib'), L.limitBytes > 0 ? t('usage', fmtBytes(L.usedBytes), fmtBytes(L.limitBytes)) : fmtBytes(L.usedBytes)),
-      L.limitBytes > 0 ? meter(L.usedBytes / L.limitBytes * 100) : null),
-    card(t('hTools'),
-      kv('ffmpeg', h.tools.ffmpeg || t('missingTool'), !h.tools.ffmpeg)));
+  box.replaceChildren(
+    el('div', { class: 'gauges' },
+      gauge('⚡', t('hCpu'), ring('cpu', m.cpuPercent, m.cpuPercent == null ? '—' : null), t('cores', m.cores), t('hMachine'),
+        kv(t('hThis'), pct(h.process.cpuPercent)), meter('cpu-panda', h.process.cpuPercent)),
+      gauge('🧠', t('hRam'), ring('ram', ram, ram == null ? '—' : null),
+        m.memoryTotalBytes ? (ram != null ? t('usage', fmtBytes(m.memoryUsedBytes), fmtBytes(m.memoryTotalBytes)) : fmtBytes(m.memoryTotalBytes)) : '—',
+        t('hMachine'), kv(t('hThis'), fmtBytes(h.process.memoryBytes)),
+        m.memoryTotalBytes ? meter('ram-panda', h.process.memoryBytes / m.memoryTotalBytes * 100) : null),
+      gauge('💾', t('hDisk'), ring('disk', disk, d ? null : '—'),
+        d ? `${fmtBytes(d.freeBytes)} ${t('hFree')}` : '—',
+        d ? t('hUsed', fmtBytes(d.totalBytes - d.freeBytes), fmtBytes(d.totalBytes)) : '',
+        d ? kv(d.path, fmtBytes(d.totalBytes)) : null),
+      gauge('📚', t('hLib'), ring('lib', lib, lib == null ? '∞' : null),
+        t('requests', L.count), L.enabled ? t('hLibUsed', fmtBytes(L.usedBytes)) : t('hLibOff'),
+        kv(t('hLimit'), L.limitBytes > 0 ? fmtBytes(L.limitBytes) : t('hNoLimit')))),
+    el('div', { class: 'infos' },
+      card('🎧', t('hTs'), ...bots),
+      card('🐼', t('hPanda'),
+        kv(t('hVersion'), 'v' + h.version),
+        kv(t('hUptime'), t('uptime', Math.floor(up / 86400), Math.floor(up / 3600) % 24, Math.floor(up / 60) % 60)),
+        kv(t('hRuntime'), h.runtime), kv(t('hOs'), h.os),
+        kv('ffmpeg', h.tools.ffmpeg || t('missingTool'), !h.tools.ffmpeg))));
+  void box.offsetWidth;   // lay out the old values first so the change animates
+  moves.forEach(f => f());
 }
 
 /* Logs: the server sends what it has, then new lines in batches. */
