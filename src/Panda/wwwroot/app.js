@@ -10,6 +10,11 @@ const I18N = {
     shuffle: 'Shuffle queue', stop: 'Stop', play: 'Play', pause: 'Pause', skip: 'Skip', mute: 'Mute', unmute: 'Unmute', volume: 'Volume',
     loopOff: 'Loop: off', loopAll: 'Loop: whole queue', loopOne: 'Loop: this song',
     radioOn: 'Radio: on — similar songs follow when the queue ends', radioOff: 'Radio: off', radioToast: '📻 Radio on: similar songs follow when the queue ends',
+    playlists: 'Playlists', plEmpty: 'No saved playlists yet.', plSaveQueue: 'Save the queue as a playlist', plAdd: 'Add to playlist', plNew: 'New playlist…',
+    plName: 'Name of the playlist:', plPlay: 'Add to the queue', plShuffle: 'Add shuffled', plRename: 'Rename', plDelete: 'Delete playlist',
+    confirmPlDelete: x => `Delete the playlist "${x}"?`, plQueued: (n, x) => `${n} songs from "${x}" added`, plSaved: x => `Saved to "${x}"`,
+    plRenamed: 'Playlist renamed', plDeleted: 'Playlist deleted', 'err.bad-playlist-name': 'Playlist names are 1–40 characters.',
+    'err.playlist-exists': 'There is already a playlist with that name.',
     addSong: 'Add a song', addPh: 'Song name or YouTube link', add: 'Add', playNow: 'Play now', added: 'Added', results: 'Results',
     noResults: 'No results 🐾', close: 'Close', queue: 'Queue', clear: 'Clear', queueEmpty: 'The queue is empty. Search for something above!',
     history: 'Recently played', historyEmpty: 'Nothing played yet.', today: 'Today', yesterday: 'Yesterday', addAgain: 'Add again', remove: 'Remove', moveUp: 'Move up', moveDown: 'Move down',
@@ -69,6 +74,11 @@ const I18N = {
     shuffle: 'Sırayı karıştır', stop: 'Durdur', play: 'Oynat', pause: 'Duraklat', skip: 'Geç', mute: 'Sessize al', unmute: 'Sesi aç', volume: 'Ses',
     loopOff: 'Tekrar: kapalı', loopAll: 'Tekrar: tüm sıra', loopOne: 'Tekrar: bu şarkı',
     radioOn: 'Radyo: açık — sıra bitince benzer şarkılar gelir', radioOff: 'Radyo: kapalı', radioToast: '📻 Radyo açık: sıra bitince benzer şarkılar gelir',
+    playlists: 'Çalma listeleri', plEmpty: 'Henüz kayıtlı liste yok.', plSaveQueue: 'Sırayı liste olarak kaydet', plAdd: 'Listeye ekle', plNew: 'Yeni liste…',
+    plName: 'Listenin adı:', plPlay: 'Sıraya ekle', plShuffle: 'Karışık ekle', plRename: 'Adını değiştir', plDelete: 'Listeyi sil',
+    confirmPlDelete: x => `"${x}" listesi silinsin mi?`, plQueued: (n, x) => `"${x}" listesinden ${n} şarkı eklendi`, plSaved: x => `"${x}" listesine kaydedildi`,
+    plRenamed: 'Listenin adı değişti', plDeleted: 'Liste silindi', 'err.bad-playlist-name': 'Liste adı 1–40 karakter olmalı.',
+    'err.playlist-exists': 'Bu adda bir liste zaten var.',
     addSong: 'Şarkı ekle', addPh: 'Şarkı adı ya da YouTube linki', add: 'Ekle', playNow: 'Hemen çal', added: 'Eklendi', results: 'Sonuçlar',
     noResults: 'Sonuç yok 🐾', close: 'Kapat', queue: 'Sıra', clear: 'Temizle', queueEmpty: 'Sıra boş. Yukarıdan bir şey ara!',
     history: 'Son çalınanlar', historyEmpty: 'Henüz bir şey çalınmadı.', today: 'Bugün', yesterday: 'Dün', addAgain: 'Tekrar ekle', remove: 'Kaldır', moveUp: 'Yukarı taşı', moveDown: 'Aşağı taşı',
@@ -234,11 +244,11 @@ function confirmBox(msg) {
     d.addEventListener('close', () => done(d.returnValue === 'yes'), { signal: ac.signal });
   });
 }
-/** confirmBox with a password field; resolves to what was typed, or null when cancelled. */
-async function promptBox(msg) {
+/** confirmBox with a field (a password unless told otherwise); resolves to what was typed, or null when cancelled. */
+async function promptBox(msg, { type = 'password', value = '' } = {}) {
   const inp = $('confirm-input');
-  inp.value = ''; inp.hidden = false;
-  setTimeout(() => inp.focus());
+  inp.type = type; inp.value = value; inp.hidden = false;
+  setTimeout(() => { inp.focus(); inp.select(); });
   try { return (await confirmBox(msg)) ? inp.value : null; }
   finally { inp.hidden = true; inp.value = ''; }
 }
@@ -364,7 +374,7 @@ function selectBot(id) {
 }
 
 /* ---------------- rendering ---------------- */
-function render() { renderBot(); renderNow(); renderQueue(); renderHistory(); renderLib(); }
+function render() { renderBot(); renderNow(); renderQueue(); renderPlaylists(); renderHistory(); renderLib(); }
 
 const stateText = st => t(st === 'connected' ? 'connected' : st === 'connecting' ? 'connecting' : 'disconnected');
 const manyBots = () => !!S && S.bots.length > 1;
@@ -646,7 +656,7 @@ function libRow(it) {
   const del = el('button', { class: 'icon-btn sm del admin-only', type: 'button', title: t('delete'), 'aria-label': `${t('delete')}: ${it.title}` }, icon('trash'));
   const li = el('li', { class: 'track' }, thumb(it),
     trackText(it, { req: false, extra: [el('span', { text: t('plays', it.plays) }), el('span', { text: fmtBytes(it.size) })] }),
-    playButtons(it, false, del));
+    playButtons(it, false, starButton(it), del));
   del.addEventListener('click', async () => {
     if (!(await confirmBox(t('confirmLibDelete', it.title)))) return;
     busy(del, async () => {
@@ -756,7 +766,7 @@ function renderHistory() {
     const b = el('button', { class: 'icon-btn sm', type: 'button', title: t('addAgain'), 'aria-label': `${t('addAgain')}: ${tr.title}` }, icon('plus'));
     b.addEventListener('click', () => busy(b, () => act(() => api('POST', B('/play'), { query: tr.url }), r => `${t('added')}: ${r.title}`)));
     const when = el('span', { class: 'when', title: new Date(tr.playedAt).toLocaleString(lang) }, icon('clock', 'ic sm'), document.createTextNode(playedAt(tr.playedAt)));
-    return el('li', { class: 'track' }, thumb(tr), trackText(tr, { extra: [when] }), el('div', { class: 'acts' }, b));
+    return el('li', { class: 'track' }, thumb(tr), trackText(tr, { extra: [when] }), el('div', { class: 'acts' }, starButton(tr), b));
   }));
 }
 
@@ -925,6 +935,105 @@ $('pw-form').addEventListener('submit', async e => {
     if (ok) e.target.reset();
   });
 });
+
+/* ---------------- playlists ---------------- */
+const plBox = $('pl-box');
+let lastPlSig = '', openPl = null;
+const asSong = tr => ({ id: tr.id, title: tr.title, channel: tr.channel, duration: tr.duration });
+const plUrl = name => '/api/playlists/' + encodeURIComponent(name);
+
+plBox.open = store.get('panda.plOpen') === '1';
+plBox.addEventListener('toggle', () => store.set('panda.plOpen', plBox.open ? '1' : '0'));
+
+/** The list of playlists comes with every state update; a playlist's songs load when it is opened. */
+function renderPlaylists() {
+  const P = S.playlists || [];
+  $('pl-sum').textContent = P.length ? `(${P.length})` : '';
+  $('pl-empty').hidden = P.length > 0;
+  const s = lang + me.role + JSON.stringify(P);
+  if (s === lastPlSig) return;
+  lastPlSig = s;
+  if (openPl && !P.some(p => p.name === openPl)) openPl = null;
+  $('pl-list').replaceChildren(...P.map(p => {
+    const btn = (icon_, label, fn, cls = '') => {
+      const b = el('button', { class: 'icon-btn sm ' + cls, type: 'button', title: label, 'aria-label': `${label}: ${p.name}` }, icon(icon_));
+      b.addEventListener('click', () => fn(b)); return b;
+    };
+    const open = el('button', { class: 'open', type: 'button', 'aria-expanded': String(openPl === p.name) },
+      el('span', { class: 'nm', text: p.name }), el('span', { class: 'meta', text: `${t('songs', p.count)} · ${fmt(p.duration)}` }));
+    open.addEventListener('click', () => { openPl = openPl === p.name ? null : p.name; lastPlSig = ''; renderPlaylists(); });
+    const li = el('li', {}, el('div', { class: 'pl-row' }, open,
+      btn('plus', t('plPlay'), b => playPlaylist(b, p.name, false)),
+      btn('shuffle', t('plShuffle'), b => playPlaylist(b, p.name, true)),
+      btn('pencil', t('plRename'), () => renamePlaylist(p.name), 'admin-only'),
+      btn('trash', t('plDelete'), () => deletePlaylist(p.name), 'del admin-only')));
+    if (openPl === p.name) loadPlaylistSongs(p.name, li);
+    return li;
+  }));
+}
+
+async function loadPlaylistSongs(name, li) {
+  const p = await api('GET', plUrl(name)).catch(() => null);
+  if (!p || openPl !== name) return;
+  li.append(el('ul', { class: 'tracks pl-songs' }, ...p.songs.map((s, i) => {
+    const rm = el('button', { class: 'icon-btn sm admin-only', type: 'button', title: t('remove'), 'aria-label': `${t('remove')}: ${s.title}` }, icon('x'));
+    rm.addEventListener('click', () => act(() => api('DELETE', `${plUrl(name)}/songs/${i}?id=${encodeURIComponent(s.id)}`)));
+    return el('li', { class: 'track' }, thumb(s), trackText(s, { req: false }), playButtons(s, false, rm));
+  })));
+}
+
+function playPlaylist(btn, name, shuffle) {
+  busy(btn, () => act(() => api('POST', B('/playlist'), { name, shuffle }), r => t('plQueued', r.added, name)));
+}
+async function renamePlaylist(name) {
+  const v = await promptBox(t('plName'), { type: 'text', value: name });
+  if (v == null || v.trim() === name) return;
+  if (openPl === name) openPl = v.trim();
+  await act(() => api('PUT', plUrl(name), { name: v.trim() }), t('plRenamed'));
+}
+async function deletePlaylist(name) {
+  if (await confirmBox(t('confirmPlDelete', name))) act(() => api('DELETE', plUrl(name)), t('plDeleted'));
+}
+/** Adds songs to a playlist (made when it doesn't exist yet). */
+const saveToPlaylist = (name, body) => act(() => api('POST', '/api/playlists', { name, ...body }), r => t('plSaved', r.name));
+
+$('pl-save-queue').addEventListener('click', async () => {
+  const name = await promptBox(t('plName'), { type: 'text' });
+  if (name?.trim()) saveToPlaylist(name.trim(), { fromBot: botId });
+});
+
+/* "Add to playlist" menu next to a star button */
+let plMenuSongs = [];
+function openPlMenu(anchor, songs) {
+  plMenuSongs = songs.map(asSong);
+  const m = $('pl-menu');
+  $('pl-menu-list').replaceChildren(...(S.playlists || []).map(p => {
+    const b = el('button', { class: 'menu-item', type: 'button' }, icon('list'),
+      el('span', { class: 'tx' }, el('span', { class: 'nm', text: p.name }), el('span', { class: 'song', text: t('songs', p.count) })));
+    b.addEventListener('click', () => { closePlMenu(); saveToPlaylist(p.name, { songs: plMenuSongs }); });
+    return el('li', {}, b);
+  }));
+  m.hidden = false;
+  const r = anchor.getBoundingClientRect(), w = m.offsetWidth, h = m.offsetHeight;
+  m.style.left = Math.max(8, Math.min(r.right - w, innerWidth - w - 8)) + 'px';
+  m.style.top = (r.bottom + h + 8 < innerHeight ? r.bottom + 6 : Math.max(8, r.top - h - 6)) + 'px';
+}
+function closePlMenu() { $('pl-menu').hidden = true; }
+$('pl-menu-new').addEventListener('click', async () => {
+  closePlMenu();
+  const name = await promptBox(t('plName'), { type: 'text' });
+  if (name?.trim()) saveToPlaylist(name.trim(), { songs: plMenuSongs });
+});
+document.addEventListener('click', e => { if (!e.target.closest('#pl-menu, .js-star, #np-save')) closePlMenu(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closePlMenu(); });
+addEventListener('scroll', closePlMenu, { passive: true });
+$('np-save').addEventListener('click', e => { const cur = S?.player.current; if (cur) openPlMenu(e.currentTarget, [cur.track]); });
+/** Star button for a track row (admins). */
+function starButton(tr) {
+  const b = el('button', { class: 'icon-btn sm admin-only js-star', type: 'button', title: t('plAdd'), 'aria-label': `${t('plAdd')}: ${tr.title}` }, icon('star'));
+  b.addEventListener('click', () => openPlMenu(b, [tr]));
+  return b;
+}
 
 /* ---------------- statistics ---------------- */
 const statsBox = $('stats-box');

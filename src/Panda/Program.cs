@@ -78,6 +78,7 @@ builder.Services.AddSingleton(config);
 builder.Services.AddSingleton(new DataPaths(dataDir));
 builder.Services.AddSingleton<YouTube>();
 builder.Services.AddSingleton<Library>();
+builder.Services.AddSingleton<Playlists>();
 builder.Services.AddSingleton(logBuffer);
 builder.Services.AddSingleton<BotManager>();
 builder.Services.AddSingleton<SystemInfo>();

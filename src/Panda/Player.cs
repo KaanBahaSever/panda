@@ -126,6 +126,25 @@ public sealed class Player : IDisposable
 		return position;
 	}
 
+	/// <summary>Adds several tracks (a playlist) until the queue is full. Returns how many were added.</summary>
+	public int EnqueueMany(IEnumerable<Track> tracks)
+	{
+		var added = 0;
+		lock (gate)
+		{
+			DropRadioPicksLocked();
+			foreach (var t in tracks)
+			{
+				if (current is null) StartLocked(t, 0);
+				else if (queue.Count < settings.Bot.MaxQueueLength) queue.Add(t);
+				else break;
+				added++;
+			}
+		}
+		if (added > 0) RaiseChanged();
+		return added;
+	}
+
 	/// <summary>Puts a track at the front of the queue and skips to it.</summary>
 	public void PlayNow(Track track)
 	{

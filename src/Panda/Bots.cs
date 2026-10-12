@@ -11,13 +11,13 @@ public sealed class BotInstance : IDisposable
 	public Player Player { get; }
 	public TsBot Ts { get; }
 
-	internal BotInstance(BotConfig config, PandaConfig global, YouTube youtube, Library library, string dir, ILoggerFactory logs)
+	internal BotInstance(BotConfig config, PandaConfig global, YouTube youtube, Library library, Playlists playlists, string dir, ILoggerFactory logs)
 	{
 		Config = config;
 		Directory.CreateDirectory(dir);
 		History = new PlayHistory(dir, logs.CreateLogger<PlayHistory>());
 		Player = new Player(config, global, youtube, library, History, logs.CreateLogger($"Panda.Player.{config.Id}"));
-		Ts = new TsBot(config, Player, library, dir, logs.CreateLogger($"Panda.TsBot.{config.Id}"));
+		Ts = new TsBot(config, Player, library, playlists, dir, logs.CreateLogger($"Panda.TsBot.{config.Id}"));
 	}
 
 	public BotSummary Summary() => new(Id, Config.Bot.Nickname, Ts.State, Player.Current?.Title);
@@ -34,7 +34,7 @@ public sealed class BotInstance : IDisposable
 }
 
 /// <summary>Starts a bot for every entry in config.Bots; bots can be added and removed while running.</summary>
-public sealed class BotManager(PandaConfig config, YouTube youtube, Library library, DataPaths paths, ILoggerFactory logs, ILogger<BotManager> log)
+public sealed class BotManager(PandaConfig config, YouTube youtube, Library library, Playlists playlists, DataPaths paths, ILoggerFactory logs, ILogger<BotManager> log)
 	: IHostedService, IDisposable
 {
 	readonly object gate = new();
@@ -56,7 +56,7 @@ public sealed class BotManager(PandaConfig config, YouTube youtube, Library libr
 
 	async Task<BotInstance> StartBotAsync(BotConfig c, CancellationToken ct)
 	{
-		var b = new BotInstance(c, config, youtube, library, paths.BotDir(c.Id), logs);
+		var b = new BotInstance(c, config, youtube, library, playlists, paths.BotDir(c.Id), logs);
 		b.Player.Changed += RaiseChanged;
 		b.Ts.StatusChanged += RaiseChanged;
 		lock (gate) bots.Add(b);

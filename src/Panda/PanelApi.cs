@@ -56,7 +56,7 @@ public static class PanelApi
 		var bot = authed.MapGroup("/bots/{bot}");
 		var botAdmin = bot.MapGroup("").RequireAuthorization(Roles.Admin);
 		botAdmin.MapDelete("", async (BotInstance b, BotManager bots) => Done(await bots.RemoveAsync(b.Id)));
-		bot.MapGet("/state", async (BotInstance b, BotManager bots, Library library) => await Snapshot(b, bots, library));
+		bot.MapGet("/state", async (BotInstance b, BotManager bots, Library library, Playlists lists) => await Snapshot(b, bots, library, lists));
 		bot.MapGet("/events", Events);
 
 		bot.MapPost("/play", async (PlayRequest req, BotInstance b, Library library, HttpContext ctx) =>
@@ -139,6 +139,37 @@ public static class PanelApi
 			}
 			config.Save();
 			return Results.Ok(new { hasCookies = config.YouTube.CookiesFile.Length > 0 });
+		});
+
+		// --- playlists (shared by all bots; everyone can play them, admins edit them) ---
+
+		authed.MapGet("/playlists/{name}", (string name, Playlists lists) => lists.Find(name) is { } p ? Results.Ok(p) : Results.NotFound());
+		// Creates a list or adds songs to it: the given songs, or what a bot is playing plus its queue.
+		admin.MapPost("/playlists", (PlaylistRequest req, Playlists lists, BotManager bots) =>
+		{
+			var name = (req.Name ?? "").Trim();
+			if (!Playlists.IsValidName(name)) return Problem("bad-playlist-name");
+			var songs = (req.Songs ?? []).Where(IsValidSong).ToList();
+			if (req.FromBot != null && bots.Get(req.FromBot) is { } b)
+			{
+				var s = b.Player.GetState();
+				songs.AddRange(new[] { s.Current?.Track }.Concat(s.Queue).OfType<Track>().Where(t => !t.IsLive).Select(PlaylistSong.From));
+			}
+			return Results.Ok(lists.Save(name, songs));
+		});
+		admin.MapPut("/playlists/{name}", (string name, PlaylistRequest req, Playlists lists) =>
+			!Playlists.IsValidName(req.Name ?? "") ? Problem("bad-playlist-name")
+			: lists.Rename(name, req.Name!) ? Results.NoContent() : Problem("playlist-exists"));
+		admin.MapDelete("/playlists/{name}", (string name, Playlists lists) => Done(lists.Delete(name)));
+		admin.MapDelete("/playlists/{name}/songs/{index:int}", (string name, int index, string id, Playlists lists) => Done(lists.RemoveSong(name, index, id)));
+
+		bot.MapPost("/playlist", (PlayPlaylistRequest req, BotInstance b, Playlists lists, HttpContext ctx) =>
+		{
+			if (lists.Find(req.Name ?? "") is not { } p) return Results.NotFound();
+			var songs = p.Songs.Select(s => s.ToTrack("🌐 " + ctx.User.Identity?.Name));
+			if (req.Shuffle) songs = songs.OrderBy(_ => Random.Shared.Next());
+			var added = b.Player.EnqueueMany(songs.ToList());
+			return added == 0 && p.Songs.Count > 0 ? Problem("queue-full") : Results.Ok(new { added });
 		});
 
 		// --- health and logs ---
@@ -260,18 +291,19 @@ public static class PanelApi
 	// --- live updates (Server-Sent Events) ---
 
 	/// <summary>Everything about one bot, plus a short line about every bot for the bot picker.</summary>
-	static async Task<object> Snapshot(BotInstance b, BotManager bots, Library library) => new
+	static async Task<object> Snapshot(BotInstance b, BotManager bots, Library library, Playlists lists) => new
 	{
 		player = b.Player.GetState(),
 		bot = await b.Ts.GetStatusAsync(),
 		bots = bots.Summaries(),
 		library = library.GetSummary(),
+		playlists = lists.All().Select(p => new { p.Name, Count = p.Songs.Count, Duration = p.Songs.Sum(s => s.Duration) }),
 		serverTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
 	};
 
 	static readonly JsonSerializerOptions SseJson = new(JsonSerializerDefaults.Web);
 
-	static async Task Events(HttpContext ctx, BotInstance b, BotManager bots, Library library)
+	static async Task Events(HttpContext ctx, BotInstance b, BotManager bots, Library library, Playlists lists)
 	{
 		ctx.Response.Headers.ContentType = "text/event-stream";
 		ctx.Response.Headers.CacheControl = "no-cache";
@@ -281,6 +313,7 @@ public static class PanelApi
 		void Poke() { if (signal.CurrentCount == 0) signal.Release(); }
 		bots.Changed += Poke; // covers this bot's player and connection too
 		library.Changed += Poke;
+		lists.Changed += Poke;
 		var ct = ctx.RequestAborted;
 		try
 		{
@@ -290,7 +323,7 @@ public static class PanelApi
 				await signal.WaitAsync(TimeSpan.FromSeconds(15), ct);
 				await Task.Delay(100, ct); // coalesce bursts of changes
 				if (bots.Get(b.Id) != b) break; // removed: the panel then picks another bot
-				var json = JsonSerializer.Serialize(await Snapshot(b, bots, library), SseJson);
+				var json = JsonSerializer.Serialize(await Snapshot(b, bots, library, lists), SseJson);
 				await ctx.Response.WriteAsync($"data: {json}\n\n", ct);
 				await ctx.Response.Body.FlushAsync(ct);
 			}
@@ -300,6 +333,7 @@ public static class PanelApi
 		{
 			bots.Changed -= Poke;
 			library.Changed -= Poke;
+			lists.Changed -= Poke;
 		}
 	}
 
@@ -341,6 +375,12 @@ public static class PanelApi
 	public sealed record VolumeRequest(int Volume);
 	public sealed record LoopRequest(LoopMode Mode);
 	public sealed record RadioRequest(bool On);
+	public sealed record PlaylistRequest(string? Name, List<PlaylistSong>? Songs = null, string? FromBot = null);
+	public sealed record PlayPlaylistRequest(string? Name, bool Shuffle = false);
+
+	static bool IsValidSong(PlaylistSong s) =>
+		s.Id is { Length: 11 } id && id.All(c => char.IsAsciiLetterOrDigit(c) || c is '-' or '_')
+		&& s.Title is { Length: > 0 and <= 300 } && (s.Channel ?? "").Length <= 200 && s.Duration is >= 0 and <= 86400;
 	public sealed record MoveRequest(int From, int To, string? Id = null);
 	public sealed record PasswordRequest(string? Current, string? New);
 }

@@ -305,6 +305,17 @@ dialog::backdrop { background: rgba(22,22,30,.45); backdrop-filter: blur(2px); }
 /* roles: "dj" users only watch and add songs */
 [data-role="dj"] .admin-only { display: none !important; }
 
+/* playlists */
+.pls { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.pl-row { display: flex; align-items: center; gap: 6px; min-width: 0; padding: 4px 4px 4px 10px; border-radius: 14px; }
+.pl-row:hover { background: var(--surface-2); }
+.pl-row .open { flex: 1; min-width: 0; display: grid; padding: 4px 0; border: 0; background: none; color: inherit; text-align: left; cursor: pointer; }
+.pl-row .nm { font-weight: 750; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pl-row .meta { font-size: 12.5px; color: var(--muted); }
+.pl-songs { margin: 2px 0 8px 14px; padding-left: 8px; border-left: 2px solid var(--border); }
+.np-req #np-save { margin-left: auto; }
+.menu.floating { position: fixed; z-index: 120; max-height: min(420px, 70vh); overflow-y: auto; }
+
 /* statistics */
 .stats-tools { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
 .stats-tools select { width: auto; min-height: 38px; padding: 4px 12px; font-size: 14px; }

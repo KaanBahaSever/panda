@@ -50,6 +50,9 @@
     <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></symbol>
     <symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M12 7.5v5.5M12 16.5v.01"/></symbol>
     <symbol id="i-lib" viewBox="0 0 24 24"><path d="M4 4v16M8.5 4v16"/><path d="M13 5.2l3.9-1 4.1 15.6-3.9 1z"/><path d="M3 20.5h18"/></symbol>
+    <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1.2" fill="currentColor"/><circle cx="4.5" cy="12" r="1.2" fill="currentColor"/><circle cx="4.5" cy="18" r="1.2" fill="currentColor"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.3 5.9.9-4.2 4.1 1 5.8-5.3-2.8-5.3 2.8 1-5.8-4.2-4.1 5.9-.9z"/></symbol>
+    <symbol id="i-pencil" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></symbol>
     <symbol id="i-radio" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><path d="M16.2 7.8a6 6 0 0 1 0 8.4M7.8 16.2a6 6 0 0 1 0-8.4M19.1 4.9a10 10 0 0 1 0 14.2M4.9 19.1a10 10 0 0 1 0-14.2"/></symbol>
     <symbol id="i-chart" viewBox="0 0 24 24"><path d="M5 20V11M11 20V5M17 20v-6M2 20h20"/></symbol>
     <symbol id="i-pulse" viewBox="0 0 24 24"><path d="M2 12h4l3-8 5 16 3-8h5"/></symbol>
@@ -126,7 +129,8 @@
         <div class="np-art"><img id="np-thumb" alt="" referrerpolicy="no-referrer"></div>
         <a id="np-title" class="np-title" target="_blank" rel="noopener noreferrer"></a>
         <p class="np-meta"><span id="np-channel"></span></p>
-        <p class="np-req"><svg class="ic sm"><use href="#i-user"/></svg><span id="np-req"></span></p>
+        <p class="np-req"><svg class="ic sm"><use href="#i-user"/></svg><span id="np-req"></span>
+          <button id="np-save" class="icon-btn sm admin-only" type="button" data-i18n-aria="plAdd"><svg class="ic"><use href="#i-star"/></svg></button></p>
         <div class="seek">
           <input id="seek" class="range" type="range" min="0" max="100" step="1" value="0" data-i18n-aria="seek">
           <div class="times"><span id="t-pos">0:00</span><span id="t-dur">0:00</span></div>
@@ -177,6 +181,16 @@
         <ol id="queue" class="tracks queue"></ol>
         <p id="queue-empty" class="empty muted" data-i18n="queueEmpty">The queue is empty. Search for something above!</p>
       </section>
+
+      <!-- Playlists -->
+      <details class="card history" id="pl-box">
+        <summary><svg class="ic"><use href="#i-list"/></svg><span data-i18n="playlists">Playlists</span> <span id="pl-sum" class="muted sum"></span><svg class="ic chev"><use href="#i-down"/></svg></summary>
+        <ul id="pl-list" class="pls"></ul>
+        <p id="pl-empty" class="empty muted" data-i18n="plEmpty">No saved playlists yet.</p>
+        <div class="save-row admin-only">
+          <button id="pl-save-queue" class="btn ghost sm" type="button"><svg class="ic"><use href="#i-star"/></svg><span data-i18n="plSaveQueue">Save the queue as a playlist</span></button>
+        </div>
+      </details>
 
       <!-- Library -->
       <details class="card history lib" id="lib-box" hidden>
@@ -386,6 +400,13 @@
     </div>
   </form>
 </dialog>
+
+<!-- "Add to playlist" menu, placed next to the button that opened it -->
+<div id="pl-menu" class="menu floating" hidden>
+  <h3 class="eyebrow" data-i18n="plAdd">Add to playlist</h3>
+  <ul id="pl-menu-list"></ul>
+  <button id="pl-menu-new" class="menu-item add" type="button"><svg class="ic"><use href="#i-plus"/></svg><span data-i18n="plNew">New playlist…</span></button>
+</div>
 
 <div id="toasts" class="toasts" aria-live="polite"></div>
 </body>

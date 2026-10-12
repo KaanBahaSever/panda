@@ -27,6 +27,7 @@ public sealed class TsBot : BackgroundService
 	readonly BotConfig settings;
 	readonly Player player;
 	readonly Library library;
+	readonly Playlists playlists;
 	readonly ILogger log;
 	readonly string identityPath;
 	readonly DedicatedTaskScheduler scheduler = new(Id.Null);
@@ -48,11 +49,12 @@ public sealed class TsBot : BackgroundService
 	string Prefix => Bot.CommandPrefix;
 
 	/// <param name="dir">The bot's folder, where its identity is kept.</param>
-	public TsBot(BotConfig settings, Player player, Library library, string dir, ILogger log)
+	public TsBot(BotConfig settings, Player player, Library library, Playlists playlists, string dir, ILogger log)
 	{
 		this.settings = settings;
 		this.player = player;
 		this.library = library;
+		this.playlists = playlists;
 		this.log = log;
 		identityPath = Path.Combine(dir, "identity.json");
 
@@ -211,6 +213,9 @@ public sealed class TsBot : BackgroundService
 	}
 
 	static string Link(Track t) => $"[url={t.Url}]{Escape(t.Title)}[/url]";
+
+	string PlaylistNames() =>
+		string.Join(", ", playlists.All().Select(p => $"[b]{Escape(p.Name)}[/b] ({p.Songs.Count})"));
 	static string Escape(string s) => s.Replace("[", "(").Replace("]", ")");
 
 	// ---- chat commands ----
@@ -318,6 +323,8 @@ public sealed class TsBot : BackgroundService
 
 		case "queue":
 		{
+			// "!liste rock" plays the playlist "rock"; "!liste" alone still shows the queue.
+			if (arg.Length > 0) goto case "playlist";
 			var s = player.GetState();
 			if (s.Current is null && s.Queue.Count == 0) return Strings.Get(Lang, "queue-empty");
 			var sb = new StringBuilder();
@@ -366,6 +373,29 @@ public sealed class TsBot : BackgroundService
 			};
 			player.SetLoop(mode);
 			return Strings.Get(Lang, mode switch { LoopMode.One => "loop-one", LoopMode.All => "loop-all", _ => "loop-off" });
+		}
+
+		case "playlist":
+		{
+			if (arg.Length == 0) goto case "playlists";
+			if (playlists.Find(arg) is not { } list)
+				return Strings.Get(Lang, "playlist-not-found", Escape(arg), PlaylistNames());
+			var added = player.EnqueueMany(list.Songs.Select(s => s.ToTrack(who)));
+			return added == 0 && list.Songs.Count > 0 ? Strings.Get(Lang, "queue-full")
+				: Strings.Get(Lang, "playlist-added", added, Escape(list.Name));
+		}
+
+		case "playlists":
+			return playlists.All().Count == 0 ? Strings.Get(Lang, "playlists-none") : Strings.Get(Lang, "playlists", PlaylistNames());
+
+		case "fav":
+		{
+			if (player.Current is not { } now) return Strings.Get(Lang, "nothing-playing");
+			// One shared list; it is named in the bot's chat language when it's first made.
+			var name = playlists.Find(Strings.Get("tr", "favorites"))?.Name ?? playlists.Find(Strings.Get("en", "favorites"))?.Name
+				?? Strings.Get(Lang, "favorites");
+			playlists.Save(name, [PlaylistSong.From(now)]);
+			return Strings.Get(Lang, "fav-added", Link(now), Escape(name));
 		}
 
 		case "radio":
@@ -459,6 +489,9 @@ public static class Commands
 		["loop"] = "loop", ["repeat"] = "loop", ["tekrar"] = "loop",
 		["join"] = "join", ["come"] = "join", ["gel"] = "join",
 		["radio"] = "radio", ["radyo"] = "radio",
+		["playlist"] = "playlist", ["pl"] = "playlist", ["çalmalistesi"] = "playlist", ["calmalistesi"] = "playlist",
+		["playlists"] = "playlists", ["lists"] = "playlists", ["listeler"] = "playlists",
+		["fav"] = "fav", ["favorite"] = "fav", ["favori"] = "fav",
 		["help"] = "help", ["h"] = "help", ["yardım"] = "help", ["yardim"] = "help", ["komutlar"] = "help",
 	};
 

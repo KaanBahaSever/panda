@@ -47,6 +47,12 @@ public static class Strings
 		["radio-name"] = ("📻 Radio", "📻 Radyo"),
 		["radio-on"] = ("📻 Radio on: when the queue runs out I keep playing songs like the last one.", "📻 Radyo açık: sıra bitince son şarkıya benzer şarkılar çalarım."),
 		["radio-off"] = ("📻 Radio off.", "📻 Radyo kapalı."),
+		["playlist-added"] = ("📃 Added {0} songs from [b]{1}[/b].", "📃 [b]{1}[/b] listesinden {0} şarkı sıraya eklendi."),
+		["playlist-not-found"] = ("There is no playlist called [b]{0}[/b]. {1}", "[b]{0}[/b] adında bir liste yok. {1}"),
+		["playlists"] = ("📃 Playlists: {0}", "📃 Listeler: {0}"),
+		["playlists-none"] = ("No saved playlists yet. Make one in the panel.", "Henüz kayıtlı liste yok. Panelden oluşturabilirsin."),
+		["favorites"] = ("Favorites", "Favoriler"),
+		["fav-added"] = ("⭐ Saved to [b]{1}[/b]: {0}", "⭐ [b]{1}[/b] listesine eklendi: {0}"),
 		["help"] = (
 			"🐼 [b]Panda[/b] commands:\n" +
 			"[b]{0}play[/b] <song or link> – play / add to queue\n" +
@@ -55,7 +61,8 @@ public static class Strings
 			"[b]{0}queue[/b] – show queue · [b]{0}np[/b] – now playing\n" +
 			"[b]{0}vol[/b] <0-100> · [b]{0}loop[/b] <off|one|all> · [b]{0}shuffle[/b]\n" +
 			"[b]{0}remove[/b] <#> · [b]{0}clear[/b] · [b]{0}join[/b] – come to my channel\n" +
-			"[b]{0}radio[/b] <on|off> – keep playing similar songs when the queue ends",
+			"[b]{0}radio[/b] <on|off> – keep playing similar songs when the queue ends\n" +
+			"[b]{0}playlist[/b] <name> – queue a saved playlist · [b]{0}playlists[/b] · [b]{0}fav[/b] – save this song to Favorites",
 			"🐼 [b]Panda[/b] komutları:\n" +
 			"[b]{0}çal[/b] <şarkı veya link> – çal / sıraya ekle\n" +
 			"[b]{0}geç[/b] – sonraki şarkı · [b]{0}dur[/b] – durdur ve sırayı temizle\n" +
@@ -64,6 +71,7 @@ public static class Strings
 			"[b]{0}ses[/b] <0-100> · [b]{0}tekrar[/b] <kapalı|şarkı|hepsi> · [b]{0}karıştır[/b]\n" +
 			"[b]{0}sil[/b] <#> · [b]{0}temizle[/b] · [b]{0}gel[/b] – kanalıma gel\n" +
 			"[b]{0}radyo[/b] <aç|kapat> – sıra bitince benzer şarkılar çalmaya devam et\n" +
+			"[b]{0}liste[/b] <ad> – kayıtlı listeyi sıraya ekle · [b]{0}listeler[/b] · [b]{0}fav[/b] – bu şarkıyı Favoriler'e kaydet\n" +
 			"(English commands like [b]{0}play[/b] work too)"),
 	};
 
