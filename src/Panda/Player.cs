@@ -57,6 +57,9 @@ public sealed class Player : IDisposable
 	int radioGen;
 	string? radioNoMix;
 	int radioFailures;
+	// The bot was removed: work that finishes late (a radio pick, a song still being looked up)
+	// must not start playback, nor touch the library, on a player whose audio thread is gone.
+	bool disposed;
 
 	public LoopMode Loop { get; private set; }
 
@@ -108,6 +111,7 @@ public sealed class Player : IDisposable
 		int position;
 		lock (gate)
 		{
+			if (disposed) return 0;
 			if (queue.Count >= settings.Bot.MaxQueueLength)
 				throw new QueueFullException();
 			DropRadioPicksLocked();
@@ -132,6 +136,7 @@ public sealed class Player : IDisposable
 		var added = 0;
 		lock (gate)
 		{
+			if (disposed) return 0;
 			DropRadioPicksLocked();
 			foreach (var t in tracks)
 			{
@@ -150,6 +155,7 @@ public sealed class Player : IDisposable
 	{
 		lock (gate)
 		{
+			if (disposed) return;
 			DropRadioPicksLocked();
 			queue.Insert(0, track);
 			AdvanceLocked(finished: false);
@@ -303,7 +309,7 @@ public sealed class Player : IDisposable
 		Track seed;
 		lock (gate)
 		{
-			if (!settings.Bot.Radio || radioBusy || current is null || queue.Count > 0 || current.Id == radioNoMix) return;
+			if (disposed || !settings.Bot.Radio || radioBusy || current is null || queue.Count > 0 || current.Id == radioNoMix) return;
 			seed = current;
 		}
 		FetchRadio(seed);
@@ -314,7 +320,7 @@ public sealed class Player : IDisposable
 		int gen;
 		lock (gate)
 		{
-			if (radioBusy) return;
+			if (radioBusy || disposed) return;
 			radioBusy = true;
 			gen = radioGen;
 		}
@@ -421,6 +427,7 @@ public sealed class Player : IDisposable
 	// "repeat" is loop-one starting it over: announced, but the same history entry.
 	void StartLocked(Track track, int startSeconds, bool seeking = false, bool repeat = false)
 	{
+		if (disposed) return;
 		StopSourceLocked();
 		var gen = ++generation;
 		current = track;
@@ -549,6 +556,8 @@ public sealed class Player : IDisposable
 		bool idle;
 		lock (gate)
 		{
+			// A removed bot no longer counts for the library (BotManager has told it to forget it).
+			if (disposed) return;
 			upcoming = queue.ToArray();
 			idle = current is null;
 		}
@@ -562,10 +571,14 @@ public sealed class Player : IDisposable
 	{
 		lock (gate)
 		{
+			if (disposed) return;
 			// Shutting down mid-song still counts as a play.
 			if (current != null) AddHistoryLocked(current);
 			current = null;
 			StopSourceLocked();
+			queue.Clear();
+			disposed = true;
+			radioGen++;
 		}
 		timePipe.Dispose();
 	}

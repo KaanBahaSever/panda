@@ -196,7 +196,8 @@ public static class PanelApi
 				var result = await updates.UpdateYtDlpAsync();
 				return Results.Ok(new { result, version = (await system.ToolsAsync()).YtDlp });
 			}
-			catch (Exception ex) when (ex is HttpRequestException or IOException or InvalidOperationException or UnauthorizedAccessException)
+			catch (Exception ex) when (ex is HttpRequestException or IOException or InvalidOperationException
+				or UnauthorizedAccessException or OperationCanceledException)
 			{
 				return Problem("ytdlp-update-failed");
 			}
@@ -212,7 +213,8 @@ public static class PanelApi
 			if ((req.New ?? "").Length < 6)
 				return Problem("password-too-short");
 			// A new password logs out the user's other sessions; this one gets a fresh cookie.
-			await SignIn(ctx, config.SetUser(name, req.New!));
+			if (config.SetPassword(name, req.New!) is not { } user) return Results.Unauthorized(); // removed meanwhile
+			await SignIn(ctx, user);
 			return Results.NoContent();
 		});
 
@@ -221,11 +223,9 @@ public static class PanelApi
 		{
 			var name = (req.Name ?? "").Trim();
 			if (!PanelUser.IsValidName(name)) return Problem("bad-name");
-			if (config.FindUser(name) != null) return Problem("user-exists");
 			if ((req.Password ?? "").Length < 6) return Problem("password-too-short");
 			if (!Roles.IsValid(req.Role ?? "")) return Problem("bad-role");
-			config.SetUser(name, req.Password!, req.Role);
-			return Results.NoContent();
+			return config.AddUser(name, req.Password!, req.Role!) ? Results.NoContent() : Problem("user-exists");
 		});
 		// Changes the role and/or sets a new password.
 		admin.MapPut("/users/{name}", (string name, UserRequest req, PandaConfig config) =>
@@ -233,7 +233,7 @@ public static class PanelApi
 			if (config.FindUser(name) is null) return Results.NotFound();
 			if (req.Password is { Length: > 0 and < 6 }) return Problem("password-too-short");
 			if (req.Role != null && (!Roles.IsValid(req.Role) || !config.SetRole(name, req.Role))) return Problem("last-admin");
-			if (req.Password is { Length: >= 6 }) config.SetUser(name, req.Password);
+			if (req.Password is { Length: >= 6 } && config.SetPassword(name, req.Password) is null) return Results.NotFound();
 			return Results.NoContent();
 		});
 		admin.MapDelete("/users/{name}", (string name, PandaConfig config, HttpContext ctx) =>
@@ -321,7 +321,17 @@ public static class PanelApi
 
 	static readonly JsonSerializerOptions SseJson = new(JsonSerializerDefaults.Web);
 
-	static async Task Events(HttpContext ctx, BotInstance b, BotManager bots, Library library, Playlists lists)
+	/// <summary>
+	/// Live streams were let in once, when they opened. This asks again while they run, so a removed
+	/// user, a changed password or an admin made "dj" doesn't keep receiving them.
+	/// </summary>
+	static bool StillAllowed(HttpContext ctx, PandaConfig config, bool admin)
+	{
+		var user = ctx.User.Identity?.Name is { } name ? config.FindUser(name) : null;
+		return user != null && user.Stamp == ctx.User.FindFirst("stamp")?.Value && (!admin || user.Role == Roles.Admin);
+	}
+
+	static async Task Events(HttpContext ctx, BotInstance b, BotManager bots, Library library, Playlists lists, PandaConfig config)
 	{
 		ctx.Response.Headers.ContentType = "text/event-stream";
 		ctx.Response.Headers.CacheControl = "no-cache";
@@ -341,6 +351,7 @@ public static class PanelApi
 				await signal.WaitAsync(TimeSpan.FromSeconds(15), ct);
 				await Task.Delay(100, ct); // coalesce bursts of changes
 				if (bots.Get(b.Id) != b) break; // removed: the panel then picks another bot
+				if (!StillAllowed(ctx, config, admin: false)) break;
 				var json = JsonSerializer.Serialize(await Snapshot(b, bots, library, lists), SseJson);
 				await ctx.Response.WriteAsync($"data: {json}\n\n", ct);
 				await ctx.Response.Body.FlushAsync(ct);
@@ -357,7 +368,7 @@ public static class PanelApi
 
 	/// <param name="Name">Empty = "admin" (logins from before there were user names).</param>
 	/// <summary>Log lines as they come: first everything after <paramref name="after"/>, then each new batch.</summary>
-	static async Task LogEvents(HttpContext ctx, LogBuffer logs, long after = 0)
+	static async Task LogEvents(HttpContext ctx, LogBuffer logs, PandaConfig config, long after = 0)
 	{
 		ctx.Response.Headers.ContentType = "text/event-stream";
 		ctx.Response.Headers.CacheControl = "no-cache";
@@ -374,6 +385,7 @@ public static class PanelApi
 				// An empty batch every 15 s keeps proxies from closing the stream.
 				await signal.WaitAsync(TimeSpan.FromSeconds(15), ct);
 				await Task.Delay(250, ct); // a burst of lines goes out as one batch
+				if (!StillAllowed(ctx, config, admin: true)) break;
 				var batch = logs.Since(after);
 				if (batch.Count > 0) after = batch[^1].Seq;
 				await ctx.Response.WriteAsync($"data: {JsonSerializer.Serialize(batch, SseJson)}\n\n", ct);

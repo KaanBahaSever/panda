@@ -64,31 +64,50 @@ public sealed class BotManager(PandaConfig config, YouTube youtube, Library libr
 		return b;
 	}
 
+	// Adding and removing one at a time: a new bot must not get the id (and folder) of one that is
+	// still being taken down.
+	readonly SemaphoreSlim changing = new(1);
+
 	/// <summary>A new bot on the same server as <paramref name="like"/>; it connects right away.</summary>
 	public async Task<BotInstance> AddAsync(BotInstance? like)
 	{
-		var b = await StartBotAsync(config.AddBot(like?.Config), CancellationToken.None);
-		log.LogInformation("Added bot {Id}", b.Id);
-		RaiseChanged();
-		return b;
+		await changing.WaitAsync();
+		try
+		{
+			// A folder left behind (it couldn't be deleted) keeps its id taken, so nobody inherits its identity.
+			var leftovers = Directory.Exists(Path.Combine(paths.Data, "bots"))
+				? Directory.EnumerateDirectories(Path.Combine(paths.Data, "bots")).Select(d => Path.GetFileName(d)!)
+				: [];
+			var c = config.AddBot(like?.Config, leftovers.ToList());
+			var b = await StartBotAsync(c, CancellationToken.None);
+			log.LogInformation("Added bot {Id}", b.Id);
+			RaiseChanged();
+			return b;
+		}
+		finally { changing.Release(); }
 	}
 
 	/// <summary>Disconnects the bot and deletes its identity and history. The last bot can't be removed.</summary>
 	public async Task<bool> RemoveAsync(string id)
 	{
-		var b = Get(id);
-		if (b is null || !config.RemoveBot(id)) return false;
-		lock (gate) bots.Remove(b);
-		b.Player.Changed -= RaiseChanged;
-		b.Ts.StatusChanged -= RaiseChanged;
-		await b.Ts.StopAsync(CancellationToken.None);
-		b.Dispose();
-		library.Forget(id);
-		try { Directory.Delete(paths.BotDir(id), recursive: true); }
-		catch (Exception ex) { log.LogWarning("Could not delete {Dir}: {Error}", paths.BotDir(id), ex.Message); }
-		log.LogInformation("Removed bot {Id}", id);
-		RaiseChanged();
-		return true;
+		await changing.WaitAsync();
+		try
+		{
+			var b = Get(id);
+			if (b is null || !config.RemoveBot(id)) return false;
+			lock (gate) bots.Remove(b);
+			b.Player.Changed -= RaiseChanged;
+			b.Ts.StatusChanged -= RaiseChanged;
+			await b.Ts.StopAsync(CancellationToken.None);
+			b.Dispose();
+			library.Forget(id);
+			try { Directory.Delete(paths.BotDir(id), recursive: true); }
+			catch (Exception ex) { log.LogWarning("Could not delete {Dir}: {Error}", paths.BotDir(id), ex.Message); }
+			log.LogInformation("Removed bot {Id}", id);
+			RaiseChanged();
+			return true;
+		}
+		finally { changing.Release(); }
 	}
 
 	public Task StopAsync(CancellationToken ct) => Task.WhenAll(All.Select(b => b.Ts.StopAsync(ct)));

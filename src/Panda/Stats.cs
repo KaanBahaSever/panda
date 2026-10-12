@@ -32,6 +32,7 @@ public sealed class Stats(BotManager bots)
 	/// <param name="tzOffset">The viewer's JavaScript getTimezoneOffset(): minutes from local time to UTC.</param>
 	public StatsInfo Get(string? bot, int days, int tzOffset)
 	{
+		days = Math.Clamp(days, 0, 36500);
 		var offset = TimeSpan.FromMinutes(-Math.Clamp(tzOffset, -14 * 60, 14 * 60));
 		var today = DateTimeOffset.UtcNow.ToOffset(offset).Date;
 		DateTimeOffset? from = days > 0 ? new DateTimeOffset(today.AddDays(1 - days), offset) : null;

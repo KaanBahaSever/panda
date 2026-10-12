@@ -45,7 +45,13 @@ public sealed class Playlists
 
 	public IReadOnlyList<Playlist> All() { lock (gate) return lists.ToArray(); }
 
-	public static bool IsValidName(string name) => name.Trim().Length is >= 1 and <= 40;
+	/// <summary>
+	/// 1–40 characters with at least one letter or digit (lists are found by their letters, so "🔥"
+	/// and "❤️" would be the same list) and no slashes (names are part of panel URLs).
+	/// </summary>
+	public static bool IsValidName(string name) =>
+		name.Trim().Length is >= 1 and <= 40 && !name.Contains('/') && !name.Contains('\\')
+		&& Library.Normalize(name).Trim().Length > 0;
 
 	/// <summary>Exact name first (ignoring case and accents), then a name that starts with it, then one that contains it.</summary>
 	public Playlist? Find(string name)
@@ -127,9 +133,13 @@ public sealed class Playlists
 	{
 		try
 		{
-			string json;
-			lock (gate) json = JsonSerializer.Serialize(lists, JsonOpts);
-			lock (saveLock) SafeFile.Write(path, json);
+			// Taken in this order, the newest lists are always the ones written last.
+			lock (saveLock)
+			{
+				string json;
+				lock (gate) json = JsonSerializer.Serialize(lists, JsonOpts);
+				SafeFile.Write(path, json);
+			}
 		}
 		catch (Exception ex) { log.LogWarning("Could not save {Path}: {Error}", path, ex.Message); }
 		try { Changed?.Invoke(); } catch { }

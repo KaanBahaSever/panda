@@ -10,6 +10,7 @@
 #   --file <panda.tar.gz>    install from a local release archive
 #   --uninstall              remove Panda (keeps /var/lib/panda unless --purge)
 #   --purge                  with --uninstall: also delete settings and data
+#   --upgrade                update an existing install only (used by the panel's update button)
 set -euo pipefail
 
 REPO="KaanBahaSever/panda"
@@ -23,6 +24,7 @@ VERSION="latest"
 FILE=""
 UNINSTALL=0
 PURGE=0
+UPGRADE=0
 
 green() { printf '\033[32m%s\033[0m\n' "$*"; }
 bold()  { printf '\033[1m%s\033[0m\n' "$*"; }
@@ -37,7 +39,8 @@ while [ $# -gt 0 ]; do
 		--file) FILE="$2"; shift 2 ;;
 		--uninstall) UNINSTALL=1; shift ;;
 		--purge) PURGE=1; shift ;;
-		-h|--help) sed -n '2,14p' "$0"; exit 0 ;;
+		--upgrade) UPGRADE=1; shift ;;
+		-h|--help) sed -n '2,15p' "$0"; exit 0 ;;
 		*) die "unknown option: $1" ;;
 	esac
 done
@@ -75,8 +78,13 @@ esac
 
 bold "🐼 Installing Panda"
 
+# $DATA_DIR belongs to the panda user, and the panel's update button runs this script as root, so
+# nothing in there may be followed as a link: a link instead of config.json would make root write
+# to (and hand over) any file it points at.
+[ -L "$DATA_DIR/config.json" ] && die "$DATA_DIR/config.json is a symbolic link; refusing to continue"
 FIRST_INSTALL=0
 [ -f "$DATA_DIR/config.json" ] || FIRST_INSTALL=1
+[ "$UPGRADE" = 1 ] && [ "$FIRST_INSTALL" = 1 ] && die "--upgrade: Panda is not installed in $DATA_DIR"
 
 info "Installing system packages (ffmpeg, curl, unzip)…"
 if command -v apt-get >/dev/null; then
@@ -130,15 +138,15 @@ if [ "$FIRST_INSTALL" = 1 ]; then
 	case "$PORT" in ''|*[!0-9]*) die "invalid port: $PORT" ;; esac
 	# Plain JSON; quotes and backslashes in the address are not valid anyway.
 	case "$SERVER" in *[\"\\]*) die "invalid server address" ;; esac
-	cat > "$DATA_DIR/config.json" <<-EOF
+	cat > "$TMP/config.json" <<-EOF
 	{
 	  "bots": [ { "id": "1", "server": { "address": "$SERVER" } } ],
 	  "panel": { "port": $PORT },
 	  "youTube": { "ytDlpPath": "$APP_DIR/bin/yt-dlp" }
 	}
 	EOF
-	chown panda:panda "$DATA_DIR/config.json"
-	chmod 600 "$DATA_DIR/config.json"
+	# install replaces whatever is there (never writes through a link) and sets owner and mode at once.
+	install -o panda -g panda -m 600 "$TMP/config.json" "$DATA_DIR/config.json"
 	PANEL_PASSWORD=$(tr -dc 'A-Za-z0-9' < /dev/urandom | head -c 14 || true)
 	runuser -u panda -- env HOME="$DATA_DIR" "$APP_DIR/panda" --data "$DATA_DIR" set-password "$PANEL_PASSWORD" >/dev/null
 fi
@@ -179,7 +187,7 @@ Description=Update Panda to the latest release
 [Service]
 Type=oneshot
 ExecStartPre=-/bin/rm -f $DATA_DIR/.upgrade
-ExecStart=/bin/bash $APP_DIR/install.sh
+ExecStart=/bin/bash $APP_DIR/install.sh --upgrade
 EOF
 	cat > /etc/systemd/system/panda-upgrade.path <<EOF
 [Unit]

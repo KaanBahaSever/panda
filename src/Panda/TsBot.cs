@@ -43,6 +43,7 @@ public sealed class TsBot : BackgroundService
 	// server, says so, or the connection drops. Only touched on the scheduler thread.
 	ClientId? following;
 	string? followingName;
+	volatile bool disposed;
 
 	public event Action? StatusChanged;
 
@@ -76,7 +77,18 @@ public sealed class TsBot : BackgroundService
 	/// <summary>Drops the connection and connects again with the current settings.</summary>
 	public void Reconnect() => reconnect.TrySetResult();
 
-	public Task<BotStatus> GetStatusAsync() => scheduler.Invoke(() =>
+	public async Task<BotStatus> GetStatusAsync()
+	{
+		// A removed bot's scheduler no longer runs anything, so never wait on it for long.
+		if (!disposed)
+		{
+			try { return await scheduler.Invoke(StatusOnScheduler).WaitAsync(TimeSpan.FromSeconds(5)); }
+			catch (Exception ex) when (ex is TimeoutException or InvalidOperationException or ObjectDisposedException) { }
+		}
+		return new BotStatus("disconnected", lastError, null, null, Bot.Nickname, 0);
+	}
+
+	BotStatus StatusOnScheduler()
 	{
 		var book = client?.Book;
 		var self = state == "connected" ? book?.Self() : null;
@@ -89,7 +101,7 @@ public sealed class TsBot : BackgroundService
 				c.Channel == self.Channel && c.Id != self.Id && c.ClientType == ClientType.Full);
 		}
 		return new BotStatus(state, lastError, book?.Server?.Name, channelName, self?.Name ?? Bot.Nickname, listeners, followingName);
-	});
+	}
 
 	protected override async Task ExecuteAsync(CancellationToken ct)
 	{
@@ -517,6 +529,7 @@ public sealed class TsBot : BackgroundService
 
 	public override void Dispose()
 	{
+		disposed = true;
 		base.Dispose();
 		client?.Dispose();
 		scheduler.Dispose();

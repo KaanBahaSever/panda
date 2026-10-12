@@ -92,13 +92,29 @@ public sealed class Updates(PandaConfig config, DataPaths paths, SystemInfo syst
 	/// otherwise yt-dlp updates itself, and if it can't (no write access, or a package manager's copy)
 	/// Panda downloads its own copy into the data folder and uses that from then on.
 	/// </summary>
-	/// <returns>"started" (systemd, takes a few seconds), "updated", or "installed" (own copy).</returns>
+	/// <returns>
+	/// "started" (systemd, takes a few seconds), "updated", "installed" (own copy), or "reinstall"
+	/// (an install.sh install from before one-click updates: its yt-dlp belongs to root and is kept up
+	/// to date daily; running the installer once more enables the button).
+	/// </returns>
 	public async Task<string> UpdateYtDlpAsync()
 	{
-		if (InstallKind() == "systemd")
+		switch (InstallKind())
 		{
+		case "systemd":
+			// The daily timer and this trigger update the installer's copy; make sure that is the one in use.
+			const string installed = "/opt/panda/bin/yt-dlp";
+			if (config.YouTube.YtDlpPath != installed && File.Exists(installed)
+				&& Path.GetFullPath(config.YouTube.YtDlpPath).StartsWith(Path.GetFullPath(paths.Data)))
+			{
+				config.YouTube.YtDlpPath = installed;
+				config.Save();
+			}
 			File.WriteAllText(YtDlpTrigger, DateTimeOffset.UtcNow.ToString("o"));
 			return "started";
+		case "systemd-old":
+			// Downloading a private copy here would leave the daily updates behind for good.
+			return "reinstall";
 		}
 		var (code, output) = await RunAsync(config.YouTube.YtDlpPath, "-U");
 		log.LogInformation("yt-dlp -U: {Output}", output.Trim());

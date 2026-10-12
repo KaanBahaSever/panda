@@ -69,12 +69,13 @@ public sealed class PandaConfig
 	}
 
 	/// <summary>Adds a bot with default settings (connection copied from <paramref name="like"/>) and saves.</summary>
-	public BotConfig AddBot(BotConfig? like)
+	/// <param name="taken">Ids that are not free although no bot has them (a removed bot's folder still there).</param>
+	public BotConfig AddBot(BotConfig? like, IEnumerable<string> taken)
 	{
 		BotConfig bot;
 		lock (saveLock)
 		{
-			var id = NextBotId([]);
+			var id = NextBotId(taken);
 			bot = new BotConfig
 			{
 				Id = id,
@@ -124,7 +125,10 @@ public sealed class PandaConfig
 
 	static readonly string DummyHash = PasswordHasher.Hash(PasswordHasher.Generate());
 
-	/// <summary>Adds a user or, when the name exists, gives it a new password (and role). Saves.</summary>
+	/// <summary>
+	/// Adds a user or, when the name exists, gives it a new password (and role). Saves. Only for
+	/// "add user" and `panda set-password`; requests about an existing user use <see cref="SetPassword"/>.
+	/// </summary>
 	public PanelUser SetUser(string name, string password, string? role = null)
 	{
 		PanelUser user;
@@ -136,6 +140,38 @@ public sealed class PandaConfig
 			user.PasswordHash = PasswordHasher.Hash(password);
 			user.Stamp = PasswordHasher.Generate(); // logs out the user's other sessions
 			if (!Panel.Users.Contains(user)) Panel.Users = [.. Panel.Users, user];
+		}
+		Save();
+		return user;
+	}
+
+	/// <summary>Adds a new user; false when the name is taken.</summary>
+	public bool AddUser(string name, string password, string role)
+	{
+		var user = new PanelUser { Name = name, Role = role, PasswordHash = PasswordHasher.Hash(password), Stamp = PasswordHasher.Generate() };
+		lock (saveLock)
+		{
+			if (Panel.Users.Any(u => u.Name.Equals(name, StringComparison.OrdinalIgnoreCase))) return false;
+			Panel.Users = [.. Panel.Users, user];
+		}
+		Save();
+		return true;
+	}
+
+	/// <summary>
+	/// New password for an existing user (logs out their other sessions). Null when the user is gone,
+	/// e.g. removed while their request was on its way: that must not bring them back.
+	/// </summary>
+	public PanelUser? SetPassword(string name, string password)
+	{
+		var hash = PasswordHasher.Hash(password);
+		PanelUser? user;
+		lock (saveLock)
+		{
+			user = Panel.Users.FirstOrDefault(u => u.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+			if (user is null) return null;
+			user.PasswordHash = hash;
+			user.Stamp = PasswordHasher.Generate();
 		}
 		Save();
 		return user;

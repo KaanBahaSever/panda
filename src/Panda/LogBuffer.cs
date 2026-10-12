@@ -34,7 +34,8 @@ public sealed class LogBuffer : ILoggerProvider
 	{
 		lock (gate)
 		{
-			var from = Math.Max(after + 1, next - Size);
+			if (after >= next) return [];
+			var from = Math.Max(Math.Max(after, 0) + 1, next - Size);
 			var list = new List<LogEntry>((int)Math.Max(0, next - from));
 			for (var s = from; s < next; s++)
 				if (ring[s % Size] is { } e) list.Add(e);
