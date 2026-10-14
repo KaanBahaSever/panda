@@ -7,6 +7,29 @@ using Panda;
 
 Console.OutputEncoding = System.Text.Encoding.UTF8; // emoji in logs on Windows consoles
 
+const string Usage = "usage: panda [--data <dir>] [version | set-password <password> [user]]";
+// Anything unknown stops here: it must not start a full Panda (with a new data folder) by accident.
+for (int i = 0; i < args.Length; i++)
+{
+	if (args[i] == "--data" && i + 1 < args.Length) i++;
+	else if (args[i] is "version" or "--version" or "-v")
+	{
+		Console.WriteLine(PanelApi.Version);
+		return 0;
+	}
+	else if (args[i] is "-h" or "--help")
+	{
+		Console.WriteLine(Usage);
+		return 0;
+	}
+	else if (args[i] == "set-password") break;   // what follows is its own (a password may start with "-")
+	else
+	{
+		Console.Error.WriteLine(Usage);
+		return 1;
+	}
+}
+
 var dataDir = Path.GetFullPath(
 	ArgValue(args, "--data") ?? Environment.GetEnvironmentVariable("PANDA_DATA") ?? "data");
 Directory.CreateDirectory(dataDir);
@@ -15,9 +38,6 @@ var config = PandaConfig.Load(configPath);
 
 switch (args.FirstOrDefault(a => !a.StartsWith("--") && a != ArgValue(args, "--data")))
 {
-case "version":
-	Console.WriteLine(PanelApi.Version);
-	return 0;
 case "set-password":
 {
 	// panda set-password <password> [user]: also creates the user (as an admin) when it doesn't exist,
@@ -37,7 +57,7 @@ case "set-password":
 case null:
 	break;
 default:
-	Console.Error.WriteLine("usage: panda [--data <dir>] [version | set-password <password> [user]]");
+	Console.Error.WriteLine(Usage);
 	return 1;
 }
 

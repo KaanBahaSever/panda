@@ -1239,11 +1239,13 @@ async function waitForUpgrade(from) {
   upgradeWatch = true;
   updMsg.panda = { kind: 'busy', text: t('updStarted') }; renderUpdate();
   try {
-    for (let i = 0, idle = 0; i < 60; i++) {
+    // Up to 16 minutes while the installer runs (systemd stops it after 15), 5 without any answer.
+    for (let i = 0, idle = 0, gone = 0; i < 192 && gone < 60; i++) {
       await new Promise(r => setTimeout(r, 5000));
       // Fails while Panda restarts; the new Panda answers with its version.
       const p = await api('GET', '/api/update/progress').catch(() => null);
-      if (!p) continue;
+      if (!p) { gone++; continue; }
+      gone = 0;
       if (p.version !== from) {
         updMsg.panda = { kind: 'ok', text: t('updDone', p.version) }; renderUpdate();
         setTimeout(() => location.reload(), 2000); return;

@@ -30,6 +30,11 @@ green() { printf '\033[32m%s\033[0m\n' "$*"; }
 bold()  { printf '\033[1m%s\033[0m\n' "$*"; }
 info()  { printf '  %s\n' "$*"; }
 die()   { printf '\033[31merror:\033[0m %s\n' "$*" >&2; exit 1; }
+# A stalled download (open connection, no data) fails after 30 s and is retried, instead of hanging
+# the panel's update forever. Dropped connections are retried too where curl can (7.71 and later).
+RETRY_ALL=""
+case "$(curl --help all 2>/dev/null)" in *--retry-all-errors*) RETRY_ALL=--retry-all-errors ;; esac
+fetch() { curl -fsSL --retry 3 $RETRY_ALL --retry-delay 5 --connect-timeout 15 --speed-limit 10240 --speed-time 30 "$1" -o "$2"; }
 
 while [ $# -gt 0 ]; do
 	case "$1" in
@@ -86,17 +91,23 @@ FIRST_INSTALL=0
 [ -f "$DATA_DIR/config.json" ] || FIRST_INSTALL=1
 [ "$UPGRADE" = 1 ] && [ "$FIRST_INSTALL" = 1 ] && die "--upgrade: Panda is not installed in $DATA_DIR"
 
-info "Installing system packages (ffmpeg, curl, unzip)…"
-if command -v apt-get >/dev/null; then
-	export DEBIAN_FRONTEND=noninteractive
-	apt-get update -qq
-	apt-get install -y -qq ffmpeg curl unzip ca-certificates >/dev/null
-elif command -v dnf >/dev/null; then
-	dnf install -y -q ffmpeg-free curl unzip ca-certificates >/dev/null || dnf install -y -q ffmpeg curl unzip >/dev/null
-elif command -v pacman >/dev/null; then
-	pacman -Sy --noconfirm --needed ffmpeg curl unzip >/dev/null
-else
-	command -v ffmpeg >/dev/null || die "please install ffmpeg, curl and unzip first"
+# An update skips this when the tools are there: the package manager can wait on a lock or fail on
+# someone else's broken repository, and the update would fail for nothing.
+NEED_PACKAGES=1
+[ "$UPGRADE" = 1 ] && command -v ffmpeg >/dev/null && command -v unzip >/dev/null && NEED_PACKAGES=0
+if [ "$NEED_PACKAGES" = 1 ]; then
+	info "Installing system packages (ffmpeg, curl, unzip)…"
+	if command -v apt-get >/dev/null; then
+		export DEBIAN_FRONTEND=noninteractive
+		apt-get update -qq
+		apt-get install -y -qq ffmpeg curl unzip ca-certificates >/dev/null
+	elif command -v dnf >/dev/null; then
+		dnf install -y -q ffmpeg-free curl unzip ca-certificates >/dev/null || dnf install -y -q ffmpeg curl unzip >/dev/null
+	elif command -v pacman >/dev/null; then
+		pacman -Sy --noconfirm --needed ffmpeg curl unzip >/dev/null
+	else
+		command -v ffmpeg >/dev/null || die "please install ffmpeg, curl and unzip first"
+	fi
 fi
 
 id panda >/dev/null 2>&1 || useradd --system --home-dir "$DATA_DIR" --shell /usr/sbin/nologin panda
@@ -114,22 +125,47 @@ else
 fi
 if [ -n "$FILE" ]; then
 	cp "$FILE" "$TMP/panda.tar.gz"
+	# Started by the previous release's installer (below), whose temporary folder is done with now.
+	case "${PANDA_PREVIOUS_TMP:-}" in /tmp/tmp.*) rm -rf "$PANDA_PREVIOUS_TMP" ;; esac
 else
 	info "Downloading Panda ($RID)…"
-	curl -fsSL --retry 3 --retry-delay 5 "$URL" -o "$TMP/panda.tar.gz" || die "download failed: $URL"
+	fetch "$URL" "$TMP/panda.tar.gz" || die "download failed: $URL"
 fi
 tar -xzf "$TMP/panda.tar.gz" -C "$TMP"
-install -m 755 "$TMP/panda" "$APP_DIR/panda"
-# Kept for the panel's one-click update (releases from 0.3 on carry it).
-[ -f "$TMP/install.sh" ] && install -m 755 "$TMP/install.sh" "$APP_DIR/install.sh"
+
+# An update carries on with the new release's installer, so its fixes (and the services it sets up)
+# count from this update on, not from the next one.
+if [ "$UPGRADE" = 1 ] && [ -z "${PANDA_PREVIOUS_TMP:-}" ] && [ -f "$TMP/install.sh" ]; then
+	PANDA_PREVIOUS_TMP="$TMP" exec bash "$TMP/install.sh" --upgrade --file "$TMP/panda.tar.gz"
+fi
 
 # yt-dlp talks to YouTube; deno lets it solve YouTube's JavaScript challenges.
+# An update keeps the installed ones when GitHub doesn't deliver (yt-dlp also updates itself daily).
 info "Downloading yt-dlp and deno…"
-curl -fsSL --retry 3 --retry-delay 5 "https://github.com/yt-dlp/yt-dlp/releases/latest/download/$YTDLP" -o "$TMP/yt-dlp"
-install -m 755 "$TMP/yt-dlp" "$APP_DIR/bin/yt-dlp"
-curl -fsSL --retry 3 --retry-delay 5 "https://github.com/denoland/deno/releases/latest/download/$DENO" -o "$TMP/deno.zip"
-unzip -o -q "$TMP/deno.zip" -d "$TMP"
-install -m 755 "$TMP/deno" "$APP_DIR/bin/deno"
+tool() {   # <url> <file> <installed copy>
+	fetch "$1" "$2" && return 0
+	[ "$UPGRADE" = 1 ] && [ -x "$3" ] || die "download failed: $1"
+	info "Could not download $(basename "$3"); keeping the installed one."
+	return 1
+}
+NEW_YTDLP=0
+NEW_DENO=0
+if tool "https://github.com/yt-dlp/yt-dlp/releases/latest/download/$YTDLP" "$TMP/yt-dlp" "$APP_DIR/bin/yt-dlp"; then
+	NEW_YTDLP=1
+fi
+if tool "https://github.com/denoland/deno/releases/latest/download/$DENO" "$TMP/deno.zip" "$APP_DIR/bin/deno"; then
+	unzip -o -q "$TMP/deno.zip" -d "$TMP"
+	NEW_DENO=1
+fi
+
+# Everything is here; swap it in. Each file is renamed over the old one, so a stop at any moment
+# leaves the old or the new program, never half of one.
+put() { install -m 755 "$1" "$2.new" && mv -f "$2.new" "$2"; }
+put "$TMP/panda" "$APP_DIR/panda"
+# Kept for the panel's one-click update (releases from 0.3 on carry it).
+if [ -f "$TMP/install.sh" ]; then put "$TMP/install.sh" "$APP_DIR/install.sh"; fi
+if [ "$NEW_YTDLP" = 1 ]; then put "$TMP/yt-dlp" "$APP_DIR/bin/yt-dlp"; fi
+if [ "$NEW_DENO" = 1 ]; then put "$TMP/deno" "$APP_DIR/bin/deno"; fi
 
 PANEL_PASSWORD=""
 if [ "$FIRST_INSTALL" = 1 ]; then
@@ -186,6 +222,8 @@ Description=Update Panda to the latest release
 
 [Service]
 Type=oneshot
+# A stuck installer gives up instead of keeping the panel waiting; the old Panda keeps running.
+TimeoutStartSec=15min
 ExecStartPre=-/bin/rm -f $DATA_DIR/.upgrade
 ExecStart=/bin/bash $APP_DIR/install.sh --upgrade
 EOF
