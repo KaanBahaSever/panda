@@ -331,7 +331,8 @@ public static class PanelApi
 		return user != null && user.Stamp == ctx.User.FindFirst("stamp")?.Value && (!admin || user.Role == Roles.Admin);
 	}
 
-	static async Task Events(HttpContext ctx, BotInstance b, BotManager bots, Library library, Playlists lists, PandaConfig config)
+	static async Task Events(HttpContext ctx, BotInstance b, BotManager bots, Library library, Playlists lists, PandaConfig config,
+		IHostApplicationLifetime life)
 	{
 		ctx.Response.Headers.ContentType = "text/event-stream";
 		ctx.Response.Headers.CacheControl = "no-cache";
@@ -342,7 +343,9 @@ public static class PanelApi
 		bots.Changed += Poke; // covers this bot's player and connection too
 		library.Changed += Poke;
 		lists.Changed += Poke;
-		var ct = ctx.RequestAborted;
+		// Ends when Panda stops, too: an open stream otherwise holds the shutdown for 30 s.
+		using var stop = CancellationTokenSource.CreateLinkedTokenSource(ctx.RequestAborted, life.ApplicationStopping);
+		var ct = stop.Token;
 		try
 		{
 			while (!ct.IsCancellationRequested)
@@ -368,7 +371,7 @@ public static class PanelApi
 
 	/// <param name="Name">Empty = "admin" (logins from before there were user names).</param>
 	/// <summary>Log lines as they come: first everything after <paramref name="after"/>, then each new batch.</summary>
-	static async Task LogEvents(HttpContext ctx, LogBuffer logs, PandaConfig config, long after = 0)
+	static async Task LogEvents(HttpContext ctx, LogBuffer logs, PandaConfig config, IHostApplicationLifetime life, long after = 0)
 	{
 		ctx.Response.Headers.ContentType = "text/event-stream";
 		ctx.Response.Headers.CacheControl = "no-cache";
@@ -377,7 +380,9 @@ public static class PanelApi
 		var signal = new SemaphoreSlim(1);
 		void Poke() { if (signal.CurrentCount == 0) signal.Release(); }
 		logs.Added += Poke;
-		var ct = ctx.RequestAborted;
+		// Ends when Panda stops, too: an open stream otherwise holds the shutdown for 30 s.
+		using var stop = CancellationTokenSource.CreateLinkedTokenSource(ctx.RequestAborted, life.ApplicationStopping);
+		var ct = stop.Token;
 		try
 		{
 			while (!ct.IsCancellationRequested)

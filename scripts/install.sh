@@ -140,20 +140,20 @@ if [ "$UPGRADE" = 1 ] && [ -z "${PANDA_PREVIOUS_TMP:-}" ] && [ -f "$TMP/install.
 fi
 
 # yt-dlp talks to YouTube; deno lets it solve YouTube's JavaScript challenges.
-# An update keeps the installed ones when GitHub doesn't deliver (yt-dlp also updates itself daily).
-info "Downloading yt-dlp and deno…"
-tool() {   # <url> <file> <installed copy>
-	fetch "$1" "$2" && return 0
-	[ "$UPGRADE" = 1 ] && [ -x "$3" ] || die "download failed: $1"
-	info "Could not download $(basename "$3"); keeping the installed one."
-	return 1
-}
+# The panel's update leaves them alone when they're there: yt-dlp updates itself (daily, and from
+# the panel), and some servers reach GitHub slowly, so the update stays a single download.
 NEW_YTDLP=0
 NEW_DENO=0
-if tool "https://github.com/yt-dlp/yt-dlp/releases/latest/download/$YTDLP" "$TMP/yt-dlp" "$APP_DIR/bin/yt-dlp"; then
+if [ "$UPGRADE" = 0 ] || [ ! -x "$APP_DIR/bin/yt-dlp" ]; then
+	info "Downloading yt-dlp…"
+	URL="https://github.com/yt-dlp/yt-dlp/releases/latest/download/$YTDLP"
+	fetch "$URL" "$TMP/yt-dlp" || die "download failed: $URL"
 	NEW_YTDLP=1
 fi
-if tool "https://github.com/denoland/deno/releases/latest/download/$DENO" "$TMP/deno.zip" "$APP_DIR/bin/deno"; then
+if [ "$UPGRADE" = 0 ] || [ ! -x "$APP_DIR/bin/deno" ]; then
+	info "Downloading deno…"
+	URL="https://github.com/denoland/deno/releases/latest/download/$DENO"
+	fetch "$URL" "$TMP/deno.zip" || die "download failed: $URL"
 	unzip -o -q "$TMP/deno.zip" -d "$TMP"
 	NEW_DENO=1
 fi
