@@ -11,6 +11,8 @@ to talk to TeamSpeak 6 servers. All changes are in [`tslib-ts6.patch`](tslib-ts6
   [tsclientlib](https://github.com/ReSpeak/tsclientlib/blob/master/tsproto/src/license.rs)).
   Without this the client can't derive the shared secret and fails with
   `Invalid license block type 8`.
+- **`Full/TsFullClient.cs`** – when the server turns the connection down (wrong server password, too low
+  identity security level, …) the error is passed on; before, `Connect` never finished.
 - **`Generated/M2B.cs`** – `initserver` also carries the client's own `client_nickname`; it no longer
   overwrites the server name.
 - **`TSLib.csproj`** – builds only for `netstandard2.1`.

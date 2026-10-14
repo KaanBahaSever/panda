@@ -19,7 +19,8 @@ const I18N = {
     noResults: 'No results 🐾', close: 'Close', queue: 'Queue', clear: 'Clear', queueEmpty: 'The queue is empty. Search for something above!',
     history: 'Recently played', historyEmpty: 'Nothing played yet.', today: 'Today', yesterday: 'Yesterday', addAgain: 'Add again', remove: 'Remove', moveUp: 'Move up', moveDown: 'Move down',
     requestedBy: 'requested by', songs: n => n === 1 ? '1 song' : `${n} songs`,
-    connected: 'Connected', connecting: 'Connecting…', disconnected: 'Disconnected', listeners: n => n === 1 ? '1 listener' : `${n} listeners`,
+    connected: 'Connected', connecting: 'Connecting…', disconnected: 'Disconnected',
+    raisingId: n => `Raising identity security to level ${n}…`, listeners: n => n === 1 ? '1 listener' : `${n} listeners`,
     sConn: 'Connection', sConnHint: 'Changing these makes the bot reconnect.', sAddress: 'Server address', sServerPw: 'Server password',
     sChannel: 'Channel', sChannelHint: 'Path like "Music/Lounge" or an id like "/5". Empty = default channel.', sChannelPw: 'Channel password',
     sNick: 'Nickname', removePw: 'Remove password', unchanged: 'unchanged', sBot: 'Bot', sLang: 'Chat language', sPrefix: 'Command prefix',
@@ -100,7 +101,8 @@ const I18N = {
     noResults: 'Sonuç yok 🐾', close: 'Kapat', queue: 'Sıra', clear: 'Temizle', queueEmpty: 'Sıra boş. Yukarıdan bir şey ara!',
     history: 'Son çalınanlar', historyEmpty: 'Henüz bir şey çalınmadı.', today: 'Bugün', yesterday: 'Dün', addAgain: 'Tekrar ekle', remove: 'Kaldır', moveUp: 'Yukarı taşı', moveDown: 'Aşağı taşı',
     requestedBy: 'İsteyen:', songs: n => `${n} şarkı`,
-    connected: 'Bağlı', connecting: 'Bağlanıyor…', disconnected: 'Bağlı değil', listeners: n => `${n} dinleyici`,
+    connected: 'Bağlı', connecting: 'Bağlanıyor…', disconnected: 'Bağlı değil',
+    raisingId: n => `Kimlik güvenliği yükseltiliyor (seviye ${n})…`, listeners: n => `${n} dinleyici`,
     sConn: 'Bağlantı', sConnHint: 'Bunları değiştirmek botun yeniden bağlanmasına yol açar.', sAddress: 'Sunucu adresi', sServerPw: 'Sunucu şifresi',
     sChannel: 'Kanal', sChannelHint: '"Müzik/Lounge" gibi bir yol ya da "/5" gibi bir id. Boş = varsayılan kanal.', sChannelPw: 'Kanal şifresi',
     sNick: 'Takma ad', removePw: 'Şifreyi kaldır', unchanged: 'değişmedi', sBot: 'Bot', sLang: 'Sohbet dili', sPrefix: 'Komut öneki',
@@ -427,7 +429,7 @@ function renderBot() {
   st.dataset.state = b.state;
   let text;
   if (b.state === 'connected') text = [b.serverName, b.channelName, t('listeners', b.listeners), b.following && '🐾 ' + b.following].filter(Boolean).join(' · ');
-  else text = stateText(b.state);
+  else text = b.raisingLevel ? t('raisingId', b.raisingLevel) : stateText(b.state);
   // With several bots the pill also says which one is shown.
   $('status-name').hidden = !manyBots();
   $('status-name').textContent = botName();

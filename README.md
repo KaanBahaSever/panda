@@ -49,6 +49,7 @@ Panda talks to the server directly, so it stays light: the bot itself uses about
 - 💬 **Chat commands** in English and Turkish. `!follow` makes the bot follow you between channels.
 - 🍪 **YouTube bot check?** Paste your cookies in the panel and you're done.
 - 🔁 Reconnects by itself, keeps its identity (so permissions stick), shows the song in its description.
+- 🔐 Servers that ask for a higher identity security level work too: Panda raises its own once (a few seconds to a few minutes).
 - 📦 One file, one command to install. Runs on Linux (x64/ARM), Windows, macOS and Docker.
 - 🔑 **No YouTube API key needed.**
 

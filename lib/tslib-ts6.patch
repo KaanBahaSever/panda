@@ -54,6 +54,23 @@ index 92ab27f..51f0129 100644
  		Ephemeral = 32,
  	}
  
+diff --git a/TSLib/Full/TsFullClient.cs b/TSLib/Full/TsFullClient.cs
+index fade0b4..b1d8d0e 100644
+--- a/TSLib/Full/TsFullClient.cs
++++ b/TSLib/Full/TsFullClient.cs
+@@ -186,11 +186,11 @@ namespace TSLib.Full
+ 			case (TsClientStatus.Connecting, TsClientStatus.Disconnected):
+ 			case (TsClientStatus.Connected, TsClientStatus.Disconnected):
+ 			case (TsClientStatus.Disconnecting, TsClientStatus.Disconnected):
++				var statusBefore = status;
+ 				status = TsClientStatus.Disconnected;
+ 				ctx.PacketHandler.Stop();
+ 				msgProc.DropQueue();
+ 
+-				var statusBefore = status;
+ 				context = null;
+ 				if (statusBefore == TsClientStatus.Connecting)
+ 					ctx.ConnectEvent.SetResult(error ?? CommandError.ConnectionClosed); // TODO: Set exception maybe ?
 diff --git a/TSLib/Generated/M2B.cs b/TSLib/Generated/M2B.cs
 index b625460..f662e35 100644
 --- a/TSLib/Generated/M2B.cs

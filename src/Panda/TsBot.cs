@@ -18,7 +18,9 @@ public sealed record BotStatus(
 	string Nickname,
 	int Listeners,
 	/// <summary>Nickname of the client the bot follows around, if any.</summary>
-	string? Following = null);
+	string? Following = null,
+	/// <summary>While connecting: the identity security level the bot is raising its identity to.</summary>
+	int? RaisingLevel = null);
 
 /// <summary>
 /// Keeps the bot connected to TeamSpeak (reconnecting when needed) and handles chat commands.
@@ -44,6 +46,9 @@ public sealed class TsBot : BackgroundService
 	ClientId? following;
 	string? followingName;
 	volatile bool disposed;
+	// Set when the server turned the identity down for a too low security level (scheduler thread).
+	int neededLevel;
+	volatile int raisingTo;
 
 	public event Action? StatusChanged;
 
@@ -85,7 +90,8 @@ public sealed class TsBot : BackgroundService
 			try { return await scheduler.Invoke(StatusOnScheduler).WaitAsync(TimeSpan.FromSeconds(5)); }
 			catch (Exception ex) when (ex is TimeoutException or InvalidOperationException or ObjectDisposedException) { }
 		}
-		return new BotStatus("disconnected", lastError, null, null, Bot.Nickname, 0);
+		return new BotStatus(raisingTo > 0 ? "connecting" : "disconnected", lastError, null, null, Bot.Nickname, 0,
+			RaisingLevel: raisingTo > 0 ? raisingTo : null);
 	}
 
 	BotStatus StatusOnScheduler()
@@ -100,7 +106,8 @@ public sealed class TsBot : BackgroundService
 			listeners = book.Clients.Values.Count(c =>
 				c.Channel == self.Channel && c.Id != self.Id && c.ClientType == ClientType.Full);
 		}
-		return new BotStatus(state, lastError, book?.Server?.Name, channelName, self?.Name ?? Bot.Nickname, listeners, followingName);
+		return new BotStatus(state, lastError, book?.Server?.Name, channelName, self?.Name ?? Bot.Nickname, listeners, followingName,
+			raisingTo > 0 ? raisingTo : null);
 	}
 
 	protected override async Task ExecuteAsync(CancellationToken ct)
@@ -133,6 +140,10 @@ public sealed class TsBot : BackgroundService
 					if (done == reconnect.Task) continue;
 					break;
 				}
+			}
+			else if (neededLevel > 0 && await RaiseIdentityAsync(ct))
+			{
+				continue;   // connect again right away with the stronger identity
 			}
 			else
 			{
@@ -192,7 +203,13 @@ public sealed class TsBot : BackgroundService
 		}
 		var result = await connect;
 		if (!result.Ok)
+		{
+			// The server wants a stronger identity; extra_msg says how strong.
+			if (result.Error.Id == TsErrorCode.client_could_not_validate_identity
+				&& int.TryParse(result.Error.ExtraMessage, out var level))
+				neededLevel = level;
 			return result.Error.ErrorFormat();
+		}
 
 		log.LogInformation("Connected to {Server}", c.Book.Server?.Name);
 		player.AttachOutput(c);
@@ -514,8 +531,44 @@ public sealed class TsBot : BackgroundService
 		}
 		log.LogInformation("Creating a new TeamSpeak identity");
 		var id = TsCrypt.GenerateNewIdentity(8);
-		SafeFile.Write(identityPath, JsonSerializer.Serialize(new SavedIdentity(id.PrivateKeyString, id.ValidKeyOffset)), ownerOnly: true);
+		SaveIdentity(id);
 		return id;
+	}
+
+	void SaveIdentity(IdentityData id) =>
+		SafeFile.Write(identityPath, JsonSerializer.Serialize(new SavedIdentity(id.PrivateKeyString, id.ValidKeyOffset)), ownerOnly: true);
+
+	/// <summary>
+	/// Raises the identity to the security level the server asked for, once; the key and so the unique
+	/// ID stay the same. False when that isn't possible or Panda is stopping.
+	/// </summary>
+	async Task<bool> RaiseIdentityAsync(CancellationToken ct)
+	{
+		var level = neededLevel;
+		neededLevel = 0;
+		var id = identity!;
+		if (IdentityLevel.Of(id.PublicKeyString, id.ValidKeyOffset) >= level) return false;
+		if (level > IdentityLevel.Max)
+		{
+			log.LogWarning("The server needs identity security level {Level}; Panda goes up to {Max}", level, IdentityLevel.Max);
+			return false;
+		}
+
+		log.LogInformation("The server needs identity security level {Level}; raising it (only once, can take a minute)", level);
+		raisingTo = level;
+		SetState("connecting", null);
+		var time = System.Diagnostics.Stopwatch.StartNew();
+		try
+		{
+			var offset = await Task.Run(() => IdentityLevel.Find(id.PublicKeyString, level, ct));
+			if (offset is null || IdentityLevel.Of(id.PublicKeyString, offset.Value) < level) return false;
+			id.ValidKeyOffset = id.LastCheckedKeyOffset = offset.Value;
+			SaveIdentity(id);
+			log.LogInformation("Identity security level is now {Level} ({Seconds:0} s)",
+				IdentityLevel.Of(id.PublicKeyString, id.ValidKeyOffset), time.Elapsed.TotalSeconds);
+			return true;
+		}
+		finally { raisingTo = 0; }
 	}
 
 	sealed record SavedIdentity(string Key, ulong Offset);

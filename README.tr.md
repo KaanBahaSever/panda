@@ -44,6 +44,7 @@ programı yok: Panda sunucuyla doğrudan konuşur, bu yüzden hafiftir (bot ~130
 - 💬 Türkçe ve İngilizce **sohbet komutları**. `!takip` ile bot seni kanaldan kanala takip eder.
 - 🍪 **YouTube bot kontrolü mü?** Cookies'i panele yapıştır, bitti.
 - 🔁 Kendi kendine yeniden bağlanır, kimliğini korur (yetkiler kalıcı olur), çalan şarkıyı açıklamasında gösterir.
+- 🔐 Yüksek kimlik güvenlik seviyesi isteyen sunucularda da çalışır: Panda kendi seviyesini bir kez yükseltir (birkaç saniye ile birkaç dakika arası).
 - 📦 Tek dosya, tek komutla kurulum. Linux (x64/ARM), Windows, macOS ve Docker'da çalışır.
 - 🔑 **YouTube API anahtarı gerekmez.**
 
