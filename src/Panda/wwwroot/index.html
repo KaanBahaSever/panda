@@ -273,7 +273,9 @@
             <input name="commandPrefix" type="text" maxlength="3" required></label>
         </div>
         <p class="hint js-many" hidden data-i18n="sPrefixHint">Bots in the same channel need different prefixes.</p>
-        <label class="switch"><input type="checkbox" name="announce"><span class="track" aria-hidden="true"></span><span data-i18n="sAnnounce">Announce songs in chat</span></label>
+        <label class="switch"><input type="checkbox" name="announce"><span class="track" aria-hidden="true"></span><span data-i18n="sAnnounce">Announce each song in chat</span></label>
+        <label class="switch"><input type="checkbox" name="confirmCommands"><span class="track" aria-hidden="true"></span><span data-i18n="sConfirm">Confirm chat commands</span></label>
+        <p class="hint" data-i18n="sChatHint">Announcing posts every song as it starts. Confirmations are the short replies to commands like !play and !skip. Questions (!np, !queue, !help) and errors are always answered.</p>
         <label class="switch"><input type="checkbox" name="showSongInDescription"><span class="track" aria-hidden="true"></span><span data-i18n="sDesc">Show song in bot description</span></label>
         <div class="row2">
           <label class="field"><span data-i18n="sMaxQueue">Max queue length</span>
@@ -282,6 +284,7 @@
             <input name="maxDurationMinutes" type="number" min="0" max="1440" required></label>
         </div>
         <p class="hint" data-i18n="sMaxDurHint">0 = unlimited.</p>
+        <p class="hint js-many" hidden data-i18n="sMaxDurShared">Max song length is shared by all bots.</p>
         <label class="field"><span data-i18n="sUsers">Allowed users</span>
           <textarea name="allowedUsers" rows="3" spellcheck="false" placeholder="abc123XYZ+/=…"></textarea></label>
         <p class="hint" data-i18n="sUsersHint">One TeamSpeak unique ID per line. Empty = everyone.</p>

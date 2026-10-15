@@ -161,6 +161,7 @@ public sealed class Player : IDisposable
 			DropRadioPicksLocked();
 			foreach (var t in tracks)
 			{
+				if (youtube.TooLong(t)) continue;   // a playlist song over the length limit
 				if (current is null) StartLocked(t, 0);
 				else if (queue.Count < settings.Bot.MaxQueueLength) queue.Add(t);
 				else break;
@@ -180,6 +181,8 @@ public sealed class Player : IDisposable
 			DropRadioPicksLocked();
 			queue.Insert(0, track);
 			AdvanceLocked(finished: false);
+			// Loop "all" put the song that was playing back at the end; that may not pass the limit.
+			while (queue.Count > settings.Bot.MaxQueueLength) queue.RemoveAt(queue.Count - 1);
 		}
 		RaiseChanged();
 	}

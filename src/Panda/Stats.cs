@@ -74,14 +74,16 @@ public sealed class Stats(BotManager bots)
 			.Select(g => { var latest = g.MaxBy(p => p.PlayedAt)!; return new StatsSong(g.Key, latest.Title, latest.Channel, latest.Duration, g.Count(), g.Sum(p => (long)p.Listened)); })
 			.OrderByDescending(s => s.Plays).ThenByDescending(s => s.Listened)
 			.Take(Top).ToList();
-		var topPeople = plays.GroupBy(p => p.RequestedBy)
+		// Radio picks ("📻 Radio", or "📻 Radyo" in Turkish) are nobody's request.
+		var people = plays.Where(p => !p.RequestedBy.StartsWith("📻 ")).ToList();
+		var topPeople = people.GroupBy(p => p.RequestedBy)
 			.Select(g => new StatsPerson(g.Key, g.Count(), g.Sum(p => (long)p.Listened)))
 			.OrderByDescending(s => s.Plays).ThenByDescending(s => s.Listened)
 			.Take(Top).ToList();
 
 		return new StatsInfo(
 			plays.Count, plays.Sum(p => (long)p.Listened),
-			plays.Select(p => p.Id).Distinct().Count(), plays.Select(p => p.RequestedBy).Distinct().Count(),
+			plays.Select(p => p.Id).Distinct().Count(), people.Select(p => p.RequestedBy).Distinct().Count(),
 			byDay ? "day" : "month", timeline, hours, topSongs, topPeople);
 	}
 }

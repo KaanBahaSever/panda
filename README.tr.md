@@ -58,8 +58,8 @@ Bir şarkı kütüphanedeyken:
 - `!çal` onu adıyla da bulur — `!çal şımarık` kayıtlı *Şımarık*'ı çalar,
 - panelin **Kütüphane** bölümünde görünür; oradan çalabilir, sıraya ekleyebilir ya da silebilirsin.
 
-Kaydetme **Ayarlar → Kütüphane** kısmından kapatılabilir; o zaman Panda sadece sıradaki şarkıyı önceden
-indirir ve çaldıktan sonra siler.
+Kaydetme **Ayarlar → Kütüphane** kısmından kapatılabilir; o zaman Panda sadece sıradaki iki şarkıyı
+önceden indirir ve çaldıktan sonra siler.
 
 ![Koyu temada kütüphane](docs/library.png)
 
@@ -154,6 +154,10 @@ Botun kanalına ya da bota özel mesaj olarak yaz. İngilizce karşılıkları d
 
 Varsayılan olarak herkes botu kullanabilir. Sınırlamak için **Ayarlar → Bot** kısmına TeamSpeak
 UID'leri ya da sunucu grubu ID'leri ekle.
+
+Kanal sessiz kalsın istersen **Ayarlar → Bot** kısmında **Her şarkıyı sohbette duyur** (her şarkı
+başlarken bir mesaj) ve **Sohbet komutlarını onayla** (“Sıraya eklendi …”, “Geçildi.” gibi kısa cevaplar)
+seçeneklerini kapat. `!şimdi` gibi sorular ve hatalar yine cevaplanır.
 
 ## "Sign in to confirm you're not a bot" hatası
 

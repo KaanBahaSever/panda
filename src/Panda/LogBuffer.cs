@@ -13,7 +13,9 @@ public sealed class LogBuffer : ILoggerProvider
 
 	readonly LogEntry?[] ring = new LogEntry?[Size];
 	readonly object gate = new();
-	long next = 1;
+	// Numbers keep growing across restarts (they start from the clock), so a panel that was showing
+	// the previous run's lines just carries on with the new ones.
+	long next = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() * 1000;
 
 	/// <summary>New lines arrived. Raised outside the lock.</summary>
 	public event Action? Added;

@@ -95,10 +95,20 @@ public sealed partial class YouTube(PandaConfig config, ILogger<YouTube> log)
 			track = results.FirstOrDefault() ?? throw new YouTubeException("not-found");
 		}
 
-		var max = config.YouTube.MaxDurationMinutes;
-		if (max > 0 && track.Duration > max * 60)
-			throw new YouTubeException("too-long");
+		CheckLength(track);
 		return track;
+	}
+
+	/// <summary>Turns down songs over the "max song length" setting, wherever they come from.</summary>
+	public void CheckLength(Track track)
+	{
+		if (TooLong(track)) throw new YouTubeException("too-long");
+	}
+
+	public bool TooLong(Track track)
+	{
+		var max = config.YouTube.MaxDurationMinutes;
+		return max > 0 && track.Duration > max * 60;
 	}
 
 	public async Task<List<Track>> SearchAsync(string query, int count, string requestedBy, CancellationToken ct = default)

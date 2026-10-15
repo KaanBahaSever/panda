@@ -14,7 +14,8 @@ public sealed record LibraryItem(
 
 public sealed record LibraryInfo(bool Enabled, long UsedBytes, long LimitBytes, int Count, IReadOnlyList<LibraryItem> Items);
 
-public sealed record LibrarySummary(bool Enabled, long UsedBytes, long LimitBytes, int Count);
+/// <param name="Plays">Goes up with every play, so the panel knows the play counts changed.</param>
+public sealed record LibrarySummary(bool Enabled, long UsedBytes, long LimitBytes, int Count, long Plays);
 
 /// <summary>
 /// Songs saved on disk. Every requested song is downloaded in the background (the next ones in the
@@ -120,8 +121,13 @@ public sealed class Library : IDisposable
 	{
 		var clean = YouTube.CleanInput(input);
 		var id = YouTube.ParseVideoId(clean);
-		if (id != null && Find(id, requestedBy) is { } saved) return saved;
-		if (id == null && !YouTube.LooksLikeUrl(clean) && Search(clean, requestedBy) is { } found) return found;
+		var local = id != null ? Find(id, requestedBy)
+			: !YouTube.LooksLikeUrl(clean) ? Search(clean, requestedBy) : null;
+		if (local != null)
+		{
+			youtube.CheckLength(local);   // saved before the limit was lowered
+			return local;
+		}
 		return await youtube.ResolveAsync(clean, requestedBy, ct);
 	}
 
@@ -148,7 +154,7 @@ public sealed class Library : IDisposable
 	/// <summary>Counts only, for the live panel updates (no sorting).</summary>
 	public LibrarySummary GetSummary()
 	{
-		lock (gate) return new(Enabled, UsedLocked(), ShownLimit, songs.Count);
+		lock (gate) return new(Enabled, UsedLocked(), ShownLimit, songs.Count, playsSeen);
 	}
 
 	long ShownLimit => config.Library.MaxSizeMb <= 0 ? 0 : LimitBytes;
@@ -160,6 +166,7 @@ public sealed class Library : IDisposable
 	}
 
 	int PlaysOf(string id) => stats.GetValueOrDefault(id)?.Plays ?? 0;
+	long playsSeen;
 	long UsedLocked() => songs.Values.Sum(s => s.Size);
 
 	// ---- play statistics ----
@@ -172,6 +179,7 @@ public sealed class Library : IDisposable
 			if (!stats.TryGetValue(t.Id, out var st)) stats[t.Id] = st = new Stat();
 			st.Plays++;
 			st.LastPlayed = DateTimeOffset.UtcNow;
+			playsSeen++;
 		}
 		SaveSoon();
 	}

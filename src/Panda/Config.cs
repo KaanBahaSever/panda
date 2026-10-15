@@ -329,6 +329,11 @@ public sealed class BotSettings
 	public int Volume { get; set; } = 50;
 	/// <summary>Post "Now playing" in the channel when a song starts.</summary>
 	public bool Announce { get; set; } = true;
+	/// <summary>
+	/// Confirm chat commands that change something ("Added …", "Skipped"). Questions (!np, !queue,
+	/// !help) and errors are always answered.
+	/// </summary>
+	public bool ConfirmCommands { get; set; } = true;
 	/// <summary>Show the current song in the bot's description.</summary>
 	public bool ShowSongInDescription { get; set; } = true;
 	/// <summary>Leave empty to let everyone use the bot. Otherwise only these client UIDs or server group IDs may.</summary>

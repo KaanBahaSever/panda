@@ -58,7 +58,7 @@ public static class Strings
 		["fav-added"] = ("⭐ Saved to [b]{1}[/b]: {0}", "⭐ [b]{1}[/b] listesine eklendi: {0}"),
 		["help"] = (
 			"🐼 [b]Panda[/b] commands:\n" +
-			"[b]{0}play[/b] <song or link> – play / add to queue\n" +
+			"[b]{0}play[/b] <song or link> – play / add to queue · [b]{0}playnow[/b] <song> – play right away\n" +
 			"[b]{0}skip[/b] – next song · [b]{0}stop[/b] – stop & clear\n" +
 			"[b]{0}pause[/b] · [b]{0}resume[/b]\n" +
 			"[b]{0}queue[/b] – show queue · [b]{0}np[/b] – now playing\n" +
@@ -67,7 +67,7 @@ public static class Strings
 			"[b]{0}radio[/b] <on|off> – keep playing similar songs when the queue ends\n" +
 			"[b]{0}playlist[/b] <name> – queue a saved playlist · [b]{0}playlists[/b] · [b]{0}fav[/b] – save this song to Favorites",
 			"🐼 [b]Panda[/b] komutları:\n" +
-			"[b]{0}çal[/b] <şarkı veya link> – çal / sıraya ekle\n" +
+			"[b]{0}çal[/b] <şarkı veya link> – çal / sıraya ekle · [b]{0}şimdiçal[/b] <şarkı> – hemen çal\n" +
 			"[b]{0}geç[/b] – sonraki şarkı · [b]{0}dur[/b] – durdur ve sırayı temizle\n" +
 			"[b]{0}duraklat[/b] · [b]{0}devam[/b]\n" +
 			"[b]{0}sıra[/b] – sırayı göster · [b]{0}şimdi[/b] – çalan şarkı\n" +

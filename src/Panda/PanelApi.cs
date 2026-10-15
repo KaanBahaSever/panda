@@ -102,6 +102,7 @@ public static class PanelApi
 			config.Save();
 			library.SettingsChanged();
 			if (reconnect) b.Ts.Reconnect();
+			else b.Ts.SettingsChanged();
 			return Results.Ok(SettingsDto.From(config, b.Config));
 		});
 		botAdmin.MapPost("/reconnect", (BotInstance b) => Done(Run(b.Ts.Reconnect)));
@@ -338,6 +339,7 @@ public static class PanelApi
 		ctx.Response.Headers.CacheControl = "no-cache";
 		ctx.Response.Headers["X-Accel-Buffering"] = "no";
 
+		var role = ctx.User.FindFirst(ClaimTypes.Role)?.Value;
 		var signal = new SemaphoreSlim(1);
 		void Poke() { if (signal.CurrentCount == 0) signal.Release(); }
 		bots.Changed += Poke; // covers this bot's player and connection too
@@ -355,6 +357,8 @@ public static class PanelApi
 				await Task.Delay(100, ct); // coalesce bursts of changes
 				if (bots.Get(b.Id) != b) break; // removed: the panel then picks another bot
 				if (!StillAllowed(ctx, config, admin: false)) break;
+				// Made admin or "dj" meanwhile: the panel reconnects and shows the controls that go with it.
+				if (config.FindUser(ctx.User.Identity?.Name ?? "")?.Role != role) break;
 				var json = JsonSerializer.Serialize(await Snapshot(b, bots, library, lists), SseJson);
 				await ctx.Response.WriteAsync($"data: {json}\n\n", ct);
 				await ctx.Response.Body.FlushAsync(ct);
@@ -433,6 +437,7 @@ public sealed class SettingsDto
 	public string CommandPrefix { get; set; } = "!";
 	public string Language { get; set; } = "en";
 	public bool Announce { get; set; }
+	public bool ConfirmCommands { get; set; } = true;
 	public bool ShowSongInDescription { get; set; }
 	public List<string> AllowedUsers { get; set; } = [];
 	public List<ulong> AllowedServerGroups { get; set; } = [];
@@ -454,6 +459,7 @@ public sealed class SettingsDto
 		CommandPrefix = b.Bot.CommandPrefix,
 		Language = b.Bot.Language,
 		Announce = b.Bot.Announce,
+		ConfirmCommands = b.Bot.ConfirmCommands,
 		ShowSongInDescription = b.Bot.ShowSongInDescription,
 		AllowedUsers = b.Bot.AllowedUsers,
 		AllowedServerGroups = b.Bot.AllowedServerGroups,
@@ -483,6 +489,7 @@ public sealed class SettingsDto
 		if (CommandPrefix.Trim().Length is > 0 and <= 3) b.Bot.CommandPrefix = CommandPrefix.Trim();
 		if (Language is "en" or "tr") b.Bot.Language = Language;
 		b.Bot.Announce = Announce;
+		b.Bot.ConfirmCommands = ConfirmCommands;
 		b.Bot.ShowSongInDescription = ShowSongInDescription;
 		b.Bot.AllowedUsers = AllowedUsers.Select(u => u.Trim()).Where(u => u.Length > 0).Distinct().ToList();
 		b.Bot.AllowedServerGroups = AllowedServerGroups.Distinct().ToList();

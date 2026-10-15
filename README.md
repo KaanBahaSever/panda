@@ -63,8 +63,8 @@ the least, so your favourites stay. While a song is in the library:
 - `!play` finds it by name too — `!play bohemian` plays your saved *Bohemian Rhapsody*,
 - it shows up in the panel's **Library**, where you can play, queue or delete it.
 
-Saving can be turned off in **Settings → Library**; Panda then only downloads the next song ahead of
-time and deletes it after playing.
+Saving can be turned off in **Settings → Library**; Panda then only downloads the next two songs ahead
+of time and deletes them after playing.
 
 ![The library in dark mode](docs/library.png)
 
@@ -153,6 +153,10 @@ Write them in the bot's channel or in a private message to the bot.
 By default everyone can use the bot. To limit it, add TeamSpeak UIDs or server group IDs under
 **Settings → Bot**.
 
+For a quiet channel, turn off **Announce each song in chat** (a message whenever a song starts) and
+**Confirm chat commands** (short replies like "Added to the queue …" or "Skipped.") under **Settings → Bot**.
+Questions such as `!np` and errors are still answered.
+
 ## "Sign in to confirm you're not a bot"
 
 YouTube sometimes blocks server IPs. Fix it with cookies from a YouTube account:
@@ -182,7 +186,9 @@ Everything is editable in the panel; the file is `/var/lib/panda/config.json` (o
       "server": { "address": "127.0.0.1:9987", "password": "", "channel": "Music", "channelPassword": "" },
       "bot": {
         "nickname": "Panda 🐼", "commandPrefix": "!", "language": "en",   // chat replies: "en" or "tr"
-        "volume": 50, "announce": true, "showSongInDescription": true, "radio": false,
+        "volume": 50, "showSongInDescription": true, "radio": false,
+        "announce": true,          // post every song in the channel as it starts
+        "confirmCommands": true,   // short replies to !play, !skip…; questions and errors are always answered
         "allowedUsers": [], "allowedServerGroups": [], "maxQueueLength": 100
       }
     }

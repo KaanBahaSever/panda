@@ -213,6 +213,8 @@ public sealed class TsBot : BackgroundService
 
 		log.LogInformation("Connected to {Server}", c.Book.Server?.Name);
 		player.AttachOutput(c);
+		descriptionWarned = false;
+		description = null;
 		await UploadAvatarIfNeeded(c);
 		var now = player.Current;
 		await SetDescription(now is null ? "" : "♪ " + now.Title);
@@ -241,11 +243,35 @@ public sealed class TsBot : BackgroundService
 
 	async Task SetDescription(string text)
 	{
-		if (!Bot.ShowSongInDescription || client is not { Connected: true } c) return;
+		if (client is not { Connected: true } c) return;
+		// What Panda last wrote: the client's own view of itself doesn't follow its own edits.
+		var current = description ??= c.Book.Self()?.Description ?? "";
+		if (!Bot.ShowSongInDescription)
+		{
+			// Turned off: clear the song Panda put there, but leave a description someone else wrote.
+			if (!current.StartsWith("♪ ")) return;
+			text = "";
+		}
 		if (text.Length > 80) text = text[..79] + "…";
-		if (c.Book.Self()?.Description == text) return;
-		await c.ChangeDescription(text);
+		if (current == text) return;
+		var r = await c.ChangeDescription(text);
+		if (r.Ok) description = text;
+		// Said once per connection: the setting looks on in the panel, so the reason must be findable.
+		else if (!descriptionWarned)
+		{
+			descriptionWarned = true;
+			if (r.Error.Id == TsErrorCode.permissions_client_insufficient)
+				log.LogWarning("Could not show the song in the bot's description: {Error}. On the TeamSpeak server, give the bot's group the permission b_client_modify_own_description", r.Error.ErrorFormat());
+			else
+				log.LogWarning("Could not show the song in the bot's description: {Error}", r.Error.ErrorFormat());
+		}
 	}
+	bool descriptionWarned;
+	string? description;   // null: not known yet on this connection
+
+	/// <summary>The panel saved this bot's settings: what can change without reconnecting does so now.</summary>
+	public void SettingsChanged() =>
+		_ = scheduler.InvokeAsync(() => SetDescription(player.Current is { } t ? "♪ " + t.Title : ""));
 
 	async Task OnTrackStarted(Track t)
 	{
@@ -309,7 +335,9 @@ public sealed class TsBot : BackgroundService
 			var command = Commands.Find(cmd);
 			if (command is null)
 			{
-				await Reply(Strings.Get(Lang, "unknown-command", Prefix));
+				// In the channel it may be meant for another bot ("!!play" for one on "!!"); stay quiet there.
+				if (msg.Target == TextMessageTargetMode.Private)
+					await Reply(Strings.Get(Lang, "unknown-command", Prefix));
 				return;
 			}
 			if (!IsAllowed(c, msg))
@@ -338,6 +366,9 @@ public sealed class TsBot : BackgroundService
 		return false;
 	}
 
+	/// <summary>A reply that only confirms what the command did; left out when the bot is set not to.</summary>
+	string? Confirm(string text) => Bot.ConfirmCommands ? text : null;
+
 	async Task<string?> RunCommand(TsFullClient c, string command, string arg, TextMessage msg)
 	{
 		var who = msg.InvokerName.ToString();
@@ -349,32 +380,34 @@ public sealed class TsBot : BackgroundService
 			try
 			{
 				var track = await library.ResolveAsync(arg, who);
+				// A song that starts now is announced in the bot's channel; that answers a command written
+				// there, not one sent privately (maybe from another channel).
+				var announced = Bot.Announce && msg.Target == TextMessageTargetMode.Channel;
 				if (command == "playnow")
 				{
 					player.PlayNow(track);
-					return Bot.Announce ? null : Strings.Get(Lang, "now-playing", Link(track), Strings.Duration(Lang, track));
+					return announced ? null : Confirm(Strings.Get(Lang, "now-playing", Link(track), Strings.Duration(Lang, track)));
 				}
 				var pos = player.Enqueue(track);
-				// Position 0 started playing; the "now playing" announcement covers it.
-				return pos == 0 && Bot.Announce ? null
-					: pos == 0 ? Strings.Get(Lang, "now-playing", Link(track), Strings.Duration(Lang, track))
-					: Strings.Get(Lang, "added", Link(track), pos, Strings.Duration(Lang, track));
+				return pos == 0 && announced ? null
+					: Confirm(pos == 0 ? Strings.Get(Lang, "now-playing", Link(track), Strings.Duration(Lang, track))
+						: Strings.Get(Lang, "added", Link(track), pos, Strings.Duration(Lang, track)));
 			}
 			catch (YouTubeException ex) { return Strings.Error(Lang, ex.Message); }
 			catch (QueueFullException) { return Strings.Get(Lang, "queue-full"); }
 
 		case "skip":
-			return player.Skip() ? Strings.Get(Lang, "skipped") : Strings.Get(Lang, "nothing-playing");
+			return player.Skip() ? Confirm(Strings.Get(Lang, "skipped")) : Strings.Get(Lang, "nothing-playing");
 
 		case "stop":
 			player.Stop();
-			return Strings.Get(Lang, "stopped");
+			return Confirm(Strings.Get(Lang, "stopped"));
 
 		case "pause":
-			return player.Pause() ? Strings.Get(Lang, "paused") : Strings.Get(Lang, "nothing-playing");
+			return player.Pause() ? Confirm(Strings.Get(Lang, "paused")) : Strings.Get(Lang, "nothing-playing");
 
 		case "resume":
-			return player.Resume() ? Strings.Get(Lang, "resumed") : Strings.Get(Lang, "nothing-playing");
+			return player.Resume() ? Confirm(Strings.Get(Lang, "resumed")) : Strings.Get(Lang, "nothing-playing");
 
 		case "np":
 		{
@@ -410,22 +443,22 @@ public sealed class TsBot : BackgroundService
 			if (arg.Length == 0) return Strings.Get(Lang, "volume", player.Volume);
 			if (!int.TryParse(arg.TrimEnd('%'), out var v)) return Strings.Get(Lang, "volume", player.Volume);
 			player.SetVolume(v);
-			return Strings.Get(Lang, "volume-set", player.Volume);
+			return Confirm(Strings.Get(Lang, "volume-set", player.Volume));
 
 		case "remove":
 		{
 			if (!int.TryParse(arg, out var n)) return Strings.Get(Lang, "bad-index", arg);
 			var removed = player.Remove(n - 1);
-			return removed is null ? Strings.Get(Lang, "bad-index", n) : Strings.Get(Lang, "removed", Escape(removed.Title));
+			return removed is null ? Strings.Get(Lang, "bad-index", n) : Confirm(Strings.Get(Lang, "removed", Escape(removed.Title)));
 		}
 
 		case "clear":
 			player.ClearQueue();
-			return Strings.Get(Lang, "cleared");
+			return Confirm(Strings.Get(Lang, "cleared"));
 
 		case "shuffle":
 			player.Shuffle();
-			return Strings.Get(Lang, "shuffled");
+			return Confirm(Strings.Get(Lang, "shuffled"));
 
 		case "loop":
 		{
@@ -437,7 +470,7 @@ public sealed class TsBot : BackgroundService
 				_ => player.Loop switch { LoopMode.Off => LoopMode.All, LoopMode.All => LoopMode.One, _ => LoopMode.Off },
 			};
 			player.SetLoop(mode);
-			return Strings.Get(Lang, mode switch { LoopMode.One => "loop-one", LoopMode.All => "loop-all", _ => "loop-off" });
+			return Confirm(Strings.Get(Lang, mode switch { LoopMode.One => "loop-one", LoopMode.All => "loop-all", _ => "loop-off" }));
 		}
 
 		case "playlist":
@@ -447,7 +480,7 @@ public sealed class TsBot : BackgroundService
 				return Strings.Get(Lang, "playlist-not-found", Escape(arg), PlaylistNames());
 			var added = player.EnqueueMany(list.Songs.Select(s => s.ToTrack(who)));
 			return added == 0 && list.Songs.Count > 0 ? Strings.Get(Lang, "queue-full")
-				: Strings.Get(Lang, "playlist-added", added, Escape(list.Name));
+				: Confirm(Strings.Get(Lang, "playlist-added", added, Escape(list.Name)));
 		}
 
 		case "playlists":
@@ -460,7 +493,7 @@ public sealed class TsBot : BackgroundService
 			var name = playlists.Find(Strings.Get("tr", "favorites"))?.Name ?? playlists.Find(Strings.Get("en", "favorites"))?.Name
 				?? Strings.Get(Lang, "favorites");
 			playlists.Save(name, [PlaylistSong.From(now)]);
-			return Strings.Get(Lang, "fav-added", Link(now), Escape(name));
+			return Confirm(Strings.Get(Lang, "fav-added", Link(now), Escape(name)));
 		}
 
 		case "radio":
@@ -472,7 +505,7 @@ public sealed class TsBot : BackgroundService
 				_ => !player.Radio,
 			};
 			player.SetRadio(on);
-			return Strings.Get(Lang, on ? "radio-on" : "radio-off");
+			return Confirm(Strings.Get(Lang, on ? "radio-on" : "radio-off"));
 		}
 
 		case "follow":
@@ -483,14 +516,14 @@ public sealed class TsBot : BackgroundService
 			{
 				if (following is null) return Strings.Get(Lang, "not-following");
 				Unfollow();
-				return Strings.Get(Lang, "follow-off");
+				return Confirm(Strings.Get(Lang, "follow-off"));
 			}
 			if (!c.Book.Clients.TryGetValue(msg.InvokerId, out var invoker)) return Strings.Get(Lang, "join-failed");
 			following = msg.InvokerId;
 			followingName = who;
 			StatusChanged?.Invoke();
 			await FollowAsync(c, invoker.Channel);
-			return Strings.Get(Lang, "follow-on", Escape(who), Prefix);
+			return Confirm(Strings.Get(Lang, "follow-on", Escape(who), Prefix));
 		}
 
 		case "join":
@@ -498,7 +531,7 @@ public sealed class TsBot : BackgroundService
 			if (!c.Book.Clients.TryGetValue(msg.InvokerId, out var invoker)) return Strings.Get(Lang, "join-failed");
 			var r = await c.ClientMove(c.ClientId, invoker.Channel);
 			StatusChanged?.Invoke();
-			return r.Ok ? Strings.Get(Lang, "joined") : Strings.Get(Lang, "join-failed");
+			return r.Ok ? Confirm(Strings.Get(Lang, "joined")) : Strings.Get(Lang, "join-failed");
 		}
 
 		case "help":

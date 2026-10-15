@@ -244,7 +244,6 @@ body.playing .eq { display: inline-flex; }
 .acts { display: flex; align-items: center; gap: 2px; flex: none; }
 .lbl { display: none; }
 @media (min-width: 480px) { .lbl { display: inline; } .thumb { width: 80px; height: 45px; } }
-.track.done { opacity: .6; }
 .track.done .tt::before { content: "✓ "; color: var(--accent-text); }
 
 .queue .num { width: 1.6em; flex: none; text-align: center; font-weight: 800; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }

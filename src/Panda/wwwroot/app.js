@@ -24,8 +24,9 @@ const I18N = {
     sConn: 'Connection', sConnHint: 'Changing these makes the bot reconnect.', sAddress: 'Server address', sServerPw: 'Server password',
     sChannel: 'Channel', sChannelHint: 'Path like "Music/Lounge" or an id like "/5". Empty = default channel.', sChannelPw: 'Channel password',
     sNick: 'Nickname', removePw: 'Remove password', unchanged: 'unchanged', sBot: 'Bot', sLang: 'Chat language', sPrefix: 'Command prefix',
-    sAnnounce: 'Announce songs in chat', sDesc: 'Show song in bot description', sMaxQueue: 'Max queue length', sMaxDur: 'Max song length (min)',
-    sMaxDurHint: '0 = unlimited.', sUsers: 'Allowed users', sUsersHint: 'One TeamSpeak unique ID per line. Empty = everyone.',
+    sAnnounce: 'Announce each song in chat', sConfirm: 'Confirm chat commands',
+    sChatHint: 'Announcing posts every song as it starts. Confirmations are the short replies to commands like !play and !skip. Questions (!np, !queue, !help) and errors are always answered.', sDesc: 'Show song in bot description', sMaxQueue: 'Max queue length', sMaxDur: 'Max song length (min)',
+    sMaxDurHint: '0 = unlimited.', sMaxDurShared: 'Max song length is shared by all bots.', sUsers: 'Allowed users', sUsersHint: 'One TeamSpeak unique ID per line. Empty = everyone.',
     sGroups: 'Allowed server groups', sGroupsHint: 'Comma-separated group ids. Empty = no group restriction.', save: 'Save', reconnect: 'Reconnect bot',
     sCookies: 'YouTube cookies', sCookiesHelp: 'If YouTube says "confirm you\'re not a bot": open a private/incognito window, log in to YouTube, export cookies with a "cookies.txt" browser extension, paste them here, then close that window.',
     chooseFile: 'Choose file', saveCookies: 'Save cookies', removeCookies: 'Remove cookies', cookiesOn: 'Cookies set ✓', cookiesOff: 'No cookies',
@@ -46,7 +47,7 @@ const I18N = {
     usage: (a, b) => `${a} of ${b}`, libOff: 'Saving is off — turn it on in Settings.', libEmpty: 'No saved songs yet. Songs are saved as they are requested.',
     libNoMatch: 'No saved songs match.', libCapped: 'Showing the 500 most played songs — use the filter to find others.', showMore: 'Show more',
     plays: n => n === 1 ? '1 play' : `${n} plays`, requests: n => n === 1 ? '1 song' : `${n} songs`, delete: 'Delete', deleted: 'Deleted', confirmLibDelete: x => `Delete "${x}" from the library?`,
-    sLib: 'Library', sLibOn: 'Save every requested song', sLibOnHint: 'When off, only the next song is downloaded ahead of time.',
+    sLib: 'Library', sLibOn: 'Save every requested song', sLibOnHint: 'When off, only the next two songs are downloaded ahead of time.',
     sLibMax: 'Size limit (GB)', sLibMaxHint: 'When full, the least played songs are deleted first. 0 = no limit.', sLibMaxBad: 'Use 0 (no limit) or at least 0.1 GB.',
     sNorm: 'Play songs equally loud', sNormHint: 'Each saved song is measured once and played at the same loudness. A song\'s very first play, before it is saved, plays as it is.',
     bots: 'Bots', addBot: 'Add a bot', botAdded: 'Bot added — now set its channel', idle: 'Idle',
@@ -106,8 +107,9 @@ const I18N = {
     sConn: 'Bağlantı', sConnHint: 'Bunları değiştirmek botun yeniden bağlanmasına yol açar.', sAddress: 'Sunucu adresi', sServerPw: 'Sunucu şifresi',
     sChannel: 'Kanal', sChannelHint: '"Müzik/Lounge" gibi bir yol ya da "/5" gibi bir id. Boş = varsayılan kanal.', sChannelPw: 'Kanal şifresi',
     sNick: 'Takma ad', removePw: 'Şifreyi kaldır', unchanged: 'değişmedi', sBot: 'Bot', sLang: 'Sohbet dili', sPrefix: 'Komut öneki',
-    sAnnounce: 'Şarkıları sohbette duyur', sDesc: 'Şarkıyı bot açıklamasında göster', sMaxQueue: 'En fazla sıra uzunluğu', sMaxDur: 'En uzun şarkı (dk)',
-    sMaxDurHint: '0 = sınırsız.', sUsers: 'İzinli kullanıcılar', sUsersHint: 'Her satıra bir TeamSpeak benzersiz kimliği. Boş = herkes.',
+    sAnnounce: 'Her şarkıyı sohbette duyur', sConfirm: 'Sohbet komutlarını onayla',
+    sChatHint: 'Duyuru, her şarkı başlarken kanala yazılır. Onay, !çal ve !geç gibi komutlara verilen kısa cevaptır. Sorular (!şimdi, !sıra, !yardım) ve hatalar her zaman cevaplanır.', sDesc: 'Şarkıyı bot açıklamasında göster', sMaxQueue: 'En fazla sıra uzunluğu', sMaxDur: 'En uzun şarkı (dk)',
+    sMaxDurHint: '0 = sınırsız.', sMaxDurShared: 'En uzun şarkı süresi tüm botlar için geçerli.', sUsers: 'İzinli kullanıcılar', sUsersHint: 'Her satıra bir TeamSpeak benzersiz kimliği. Boş = herkes.',
     sGroups: 'İzinli sunucu grupları', sGroupsHint: 'Virgülle ayrılmış grup id\'leri. Boş = grup kısıtlaması yok.', save: 'Kaydet', reconnect: 'Botu yeniden bağla',
     sCookies: 'YouTube çerezleri', sCookiesHelp: 'YouTube "bot olmadığınızı doğrulayın" derse: gizli/özel bir pencere açın, YouTube\'a giriş yapın, bir "cookies.txt" tarayıcı eklentisiyle çerezleri dışa aktarın, buraya yapıştırın ve o pencereyi kapatın.',
     chooseFile: 'Dosya seç', saveCookies: 'Çerezleri kaydet', removeCookies: 'Çerezleri kaldır', cookiesOn: 'Çerezler var ✓', cookiesOff: 'Çerez yok',
@@ -128,7 +130,7 @@ const I18N = {
     usage: (a, b) => `${a} / ${b}`, libOff: 'Kaydetme kapalı — Ayarlar\'dan açabilirsin.', libEmpty: 'Henüz kayıtlı şarkı yok. Şarkılar istendikçe kaydedilir.',
     libNoMatch: 'Eşleşen kayıtlı şarkı yok.', libCapped: 'En çok dinlenen 500 şarkı gösteriliyor — diğerleri için aramayı kullan.', showMore: 'Daha fazla göster',
     plays: n => `${n} kez çalındı`, requests: n => `${n} şarkı`, delete: 'Sil', deleted: 'Silindi', confirmLibDelete: x => `"${x}" kütüphaneden silinsin mi?`,
-    sLib: 'Kütüphane', sLibOn: 'İstenen her şarkıyı kaydet', sLibOnHint: 'Kapalıyken sadece sıradaki şarkı önceden indirilir.',
+    sLib: 'Kütüphane', sLibOn: 'İstenen her şarkıyı kaydet', sLibOnHint: 'Kapalıyken sadece sıradaki iki şarkı önceden indirilir.',
     sLibMax: 'Boyut sınırı (GB)', sLibMaxHint: 'Dolduğunda en az dinlenen şarkılar önce silinir. 0 = sınırsız.', sLibMaxBad: '0 (sınırsız) ya da en az 0,1 GB girin.',
     sNorm: 'Şarkıları aynı yükseklikte çal', sNormHint: 'Kaydedilen her şarkının ses seviyesi bir kez ölçülür ve hepsi aynı yükseklikte çalar. Bir şarkı kaydedilmeden önceki ilk çalınışında olduğu gibi çalar.',
     bots: 'Botlar', addBot: 'Bot ekle', botAdded: 'Bot eklendi — şimdi kanalını ayarla', idle: 'Boşta',
@@ -319,6 +321,8 @@ function applyLang() {
   lastQueueSig = lastHistorySig = '';
   if (S) { render(); if (libBox.open) loadLib(); if (statsBox.open) loadStats(); }
   if (settings) fillSettings(settings);
+  if (shownResults[0]) showResults(...shownResults);
+  if ($('system').open) renderUpdate();
 }
 
 document.querySelectorAll('.js-theme').forEach(b => b.addEventListener('click', () => {
@@ -331,6 +335,7 @@ document.querySelectorAll('.js-lang').forEach(b => b.addEventListener('click', (
 /* ---------------- login / logout ---------------- */
 function showLogin() {
   stopStream();
+  searchSeq++; showResults(null);
   $('app').hidden = true; $('login').hidden = false;
   if ($('settings').open) $('settings').close();
   if ($('system').open) $('system').close();
@@ -386,12 +391,21 @@ function applyRole() {
 }
 
 /** Loads the chosen bot's state and follows its live updates. */
+const pageVersion = new URL(document.currentScript?.src || location.href).searchParams.get('v');
 async function loadBot() {
+  // Updated meanwhile (from another tab, or on the server): load the new panel once.
+  const v = await api('GET', '/api/version').catch(() => null);
+  if (v && pageVersion && v.version !== pageVersion && store.get('panda.reloadedFor') !== v.version) {
+    store.set('panda.reloadedFor', v.version);
+    location.reload();
+    return new Promise(() => {});
+  }
   const m = await api('GET', '/api/me');
   if (m.role !== me.role) lastQueueSig = lastHistorySig = lastBotsSig = '';   // rows have role-specific buttons
   me = m; applyRole();
   try { setState(await api('GET', B('/state'))); }
   catch (e) { if (e.status !== 404) throw e; await pickBot(); setState(await api('GET', B('/state'))); }   // it was removed
+  if ($('settings').open && settings && settingsBot !== botId) $('settings').close();
   startStream();
   if (statsBox.open) loadStats();   // open since the last visit: its "toggle" came before there was a state
 }
@@ -412,6 +426,7 @@ function selectBot(id) {
   closeBotMenu();
   if (id === botId) return;
   botId = id; store.set('panda.bot', id);
+  if ($('settings').open) $('settings').close();
   lastQueueSig = lastHistorySig = ''; shownTrackId = null;
   stopStream(); backoff = 1000; recover();
   if (statsBox.open) loadStats();
@@ -543,12 +558,12 @@ $('btn-clear').addEventListener('click', async () => { if (await confirmBox(t('c
 $('btn-loop').addEventListener('click', () => {
   const next = { Off: 'All', All: 'One', One: 'Off' }[S.player.loop] || 'All';
   S.player.loop = next; renderNow();                       // optimistic
-  act(() => api('POST', B('/loop'), { mode: next }));
+  act(() => api('POST', B('/loop'), { mode: next })).then(r => { if (r === undefined) resync(); });
 });
 $('btn-radio').addEventListener('click', () => {
   const on = !S.player.radio;
   S.player.radio = on; renderNow();                         // optimistic
-  act(() => api('POST', B('/radio'), { on }), on ? t('radioToast') : null);
+  act(() => api('POST', B('/radio'), { on }), on ? t('radioToast') : null).then(r => { if (r === undefined) resync(); });
 });
 
 // Seek bar: preview while dragging, commit on change.
@@ -607,7 +622,9 @@ $('add-form').addEventListener('submit', async e => {
 $('results-close').addEventListener('click', () => { searchSeq++; showResults(null); });
 
 /** saved: library hits (shown first, null = reset), yt: YouTube results (undefined = still loading). */
+let shownResults = [null];
 function showResults(saved, yt) {
+  shownResults = [saved, yt];
   $('results-wrap').hidden = !saved;
   if (!saved) { $('lib-results').replaceChildren(); $('results').replaceChildren(); return; }
   const ids = new Set(saved.map(x => x.id));
@@ -635,7 +652,9 @@ function playButtons(tr, labelled, ...more) {
 async function addTrack(btn, tr, now) {
   await busy(btn, async () => {
     const r = await act(() => api('POST', B('/play'), { query: tr.url, now }), r => `${now ? t('playNow') : t('added')}: ${r.title}`);
-    if (r) btn.closest('li')?.classList.add('done');
+    // A short tick on the row (the toast says the rest); a lasting one stuck on lists that rarely redraw.
+    const li = btn.closest('li');
+    if (r && li) { li.classList.add('done'); setTimeout(() => li.classList.remove('done'), 2500); }
   });
 }
 
@@ -671,7 +690,7 @@ function renderLib() {
   $('lib-meter').firstElementChild.style.width = pct + '%';
   $('lib-meter').classList.toggle('full', pct >= 90);
   $('lib-off').hidden = L.enabled;
-  const key = `${L.count}|${L.usedBytes}`;
+  const key = `${L.count}|${L.usedBytes}|${L.plays}`;   // plays: the counts and the order change
   if (key !== libKey) { libKey = key; if (libBox.open) reloadLib(); }
 }
 
@@ -778,10 +797,12 @@ function remove(i, id) {
 async function queueEdit(fn) {
   try { await fn(); }
   catch (e) {
-    if (e.status === 409) { const s = await api('GET', B('/state')).catch(() => null); if (s) setState(s); }
-    else if (e.status !== 401) toast(errText(e), 'err');
+    if (e.status !== 409 && e.status !== 401) toast(errText(e), 'err');
+    resync();   // the queue changed meanwhile (409) or the edit failed: show what is really there
   }
 }
+/** Takes the server's state again, after an optimistic change it didn't accept. */
+async function resync() { const s = await api('GET', B('/state')).catch(() => null); if (s) setState(s); }
 
 /* ---------------- history ---------------- */
 /** "Today 21:14", "Yesterday 23:02", "10 Oct 18:30" (+ year when not this year), in the viewer's time zone. */
@@ -816,6 +837,10 @@ function renderHistory() {
 
 /* ---------------- settings ---------------- */
 let settings = null, pwTouched = {};
+// The bot the sheet was opened for: saving, reconnecting and removing go to it, even if the panel
+// meanwhile switched to another bot (say, because another admin removed this one).
+let settingsBot = '';
+const SB = path => `/api/bots/${encodeURIComponent(settingsBot)}${path}`;
 const F = () => $('set-form').elements;
 
 /** Settings of the bot shown in the panel (plus the shared ones). Others only get their password. */
@@ -824,8 +849,9 @@ async function openSettings() {
   $('set-bot').textContent = isAdmin() ? botName() : '';
   const v = api('GET', '/api/version').then(v => { $('version').textContent = 'v' + v.version; }).catch(() => {});
   if (isAdmin()) {
-    const s = await act(() => api('GET', B('/settings')));
-    if (s) fillSettings(s);
+    settingsBot = botId; settings = null;   // nothing to save until this bot's settings are in
+    const s = await act(() => api('GET', SB('/settings')));
+    if (s && settingsBot === botId) fillSettings(s);
     loadUsers();
   }
   await v;
@@ -875,13 +901,20 @@ $('bot-remove').addEventListener('click', async e => {
   const btn = e.currentTarget, name = settings?.nickname || botName();
   if (!(await confirmBox(t('confirmBotRemove', name)))) return;
   busy(btn, async () => {
-    const ok = await act(() => api('DELETE', B('')).then(() => true), `${t('botRemoved')}: ${name}`);
+    const ok = await act(() => api('DELETE', SB('')).then(() => true), `${t('botRemoved')}: ${name}`);
     if (!ok) return;
     $('settings').close();
     stopStream(); lastQueueSig = lastHistorySig = ''; shownTrackId = null;
     await act(pickBot);
     recover();
   });
+});
+// Typed passwords and cookies don't stay in the form for the next opening (or the next user).
+$('settings').addEventListener('close', () => {
+  const pw = $('pw-form').elements;
+  pw.current.value = pw.new.value = '';
+  $('user-form').reset();
+  $('cookie-text').value = '';
 });
 $('settings').addEventListener('click', e => {
   if (e.target === $('settings') || e.target.closest('[data-close]')) $('settings').close();   // backdrop / close button
@@ -892,7 +925,8 @@ function fillSettings(s) {
   $('set-bot').textContent = s.nickname;
   const f = F();
   for (const k of ['serverAddress', 'channel', 'nickname', 'commandPrefix', 'language', 'maxQueueLength', 'maxDurationMinutes']) f[k].value = s[k] ?? '';
-  f.announce.checked = !!s.announce; f.showSongInDescription.checked = !!s.showSongInDescription;
+  f.announce.checked = !!s.announce; f.confirmCommands.checked = s.confirmCommands !== false;
+  f.showSongInDescription.checked = !!s.showSongInDescription;
   f.allowedUsers.value = (s.allowedUsers || []).join('\n');
   f.allowedServerGroups.value = (s.allowedServerGroups || []).join(', ');
   f.libraryEnabled.checked = !!s.libraryEnabled; f.normalizeVolume.checked = !!s.normalizeVolume;
@@ -930,7 +964,7 @@ $('set-form').addEventListener('submit', async e => {
     serverAddress: f.serverAddress.value.trim(), serverPassword: pwValue('serverPassword'),
     channel: f.channel.value.trim(), channelPassword: pwValue('channelPassword'),
     nickname: f.nickname.value.trim(), commandPrefix: f.commandPrefix.value.trim(), language: f.language.value,
-    announce: f.announce.checked, showSongInDescription: f.showSongInDescription.checked,
+    announce: f.announce.checked, confirmCommands: f.confirmCommands.checked, showSongInDescription: f.showSongInDescription.checked,
     maxQueueLength: +f.maxQueueLength.value, maxDurationMinutes: +f.maxDurationMinutes.value,
     allowedUsers: f.allowedUsers.value.split(/\r?\n/).map(x => x.trim()).filter(Boolean),
     libraryEnabled: f.libraryEnabled.checked, libraryMaxSizeMb: Math.round(gb * 1024), normalizeVolume: f.normalizeVolume.checked,
@@ -940,11 +974,11 @@ $('set-form').addEventListener('submit', async e => {
   const reconnects = body.serverAddress !== old.serverAddress || body.channel !== old.channel || body.nickname !== old.nickname ||
     body.serverPassword !== null || body.channelPassword !== null;
   await busy($('set-save'), async () => {
-    const s = await act(() => api('PUT', B('/settings'), body), t(reconnects ? 'reconnecting' : 'saved'));
+    const s = await act(() => api('PUT', SB('/settings'), body), t(reconnects ? 'reconnecting' : 'saved'));
     if (s) fillSettings(s);
   });
 });
-$('set-reconnect').addEventListener('click', e => busy(e.currentTarget, () => act(() => api('POST', B('/reconnect')), t('reconnectSent'))));
+$('set-reconnect').addEventListener('click', e => busy(e.currentTarget, () => act(() => api('POST', SB('/reconnect')), t('reconnectSent'))));
 
 // Cookies
 $('cookie-file').addEventListener('change', async e => {
@@ -1032,8 +1066,8 @@ function playPlaylist(btn, name, shuffle) {
 async function renamePlaylist(name) {
   const v = await promptBox(t('plName'), { type: 'text', value: name });
   if (v == null || v.trim() === name) return;
-  if (openPl === name) openPl = v.trim();
-  await act(() => api('PUT', plUrl(name), { name: v.trim() }), t('plRenamed'));
+  const ok = await act(() => api('PUT', plUrl(name), { name: v.trim() }).then(() => true), t('plRenamed'));
+  if (ok && openPl === name) openPl = v.trim();
 }
 async function deletePlaylist(name) {
   if (await confirmBox(t('confirmPlDelete', name))) act(() => api('DELETE', plUrl(name)), t('plDeleted'));
@@ -1198,7 +1232,7 @@ function renderUpdate() {
       : el('span', { class: 'upd-pill ok' }, icon('check'), el('span', { text: t('updOk') }));
     const status = msg && el('p', { class: 'upd-msg ' + msg.kind, role: 'status' },
       msg.kind === 'busy' ? el('span', { class: 'spin', 'aria-hidden': 'true' }) : icon(msg.kind === 'err' ? 'alert' : 'check'),
-      el('span', { text: msg.text }));
+      el('span', { text: typeof msg.text === 'function' ? msg.text() : msg.text }));
     return el('div', { class: 'upd-item' },
       el('div', { class: 'upd-top' }, el('strong', { text: name }), pill),
       el('p', { class: 'hint', text: what }),
@@ -1227,9 +1261,9 @@ function renderUpdate() {
 
 async function startUpgrade() {
   if (upgradeWatch) return;
-  updMsg.panda = { kind: 'busy', text: t('updStarted') }; renderUpdate();
+  updMsg.panda = { kind: 'busy', text: () => t('updStarted') }; renderUpdate();
   try { await api('POST', '/api/update'); }
-  catch (e) { updMsg.panda = { kind: 'err', text: errText(e) }; return renderUpdate(); }
+  catch (e) { updMsg.panda = { kind: 'err', text: () => errText(e) }; return renderUpdate(); }
   await waitForUpgrade(updateInfo?.current);
 }
 
@@ -1237,7 +1271,7 @@ async function startUpgrade() {
 async function waitForUpgrade(from) {
   if (upgradeWatch) return;
   upgradeWatch = true;
-  updMsg.panda = { kind: 'busy', text: t('updStarted') }; renderUpdate();
+  updMsg.panda = { kind: 'busy', text: () => t('updStarted') }; renderUpdate();
   try {
     // Up to 16 minutes while the installer runs (systemd stops it after 15), 5 without any answer.
     for (let i = 0, idle = 0, gone = 0; i < 192 && gone < 60; i++) {
@@ -1247,30 +1281,30 @@ async function waitForUpgrade(from) {
       if (!p) { gone++; continue; }
       gone = 0;
       if (p.version !== from) {
-        updMsg.panda = { kind: 'ok', text: t('updDone', p.version) }; renderUpdate();
+        updMsg.panda = { kind: 'ok', text: () => t('updDone', p.version) }; renderUpdate();
         setTimeout(() => location.reload(), 2000); return;
       }
       // "idle" twice in a row: the installer finished without bringing a new Panda.
       idle = p.state === 'idle' ? idle + 1 : 0;
       if (p.state === 'failed' || idle >= 2) {
-        updMsg.panda = { kind: 'err', text: t('updFailed') }; renderUpdate(); return;
+        updMsg.panda = { kind: 'err', text: () => t('updFailed') }; renderUpdate(); return;
       }
     }
-    updMsg.panda = { kind: 'err', text: t('updSlow') }; renderUpdate();
+    updMsg.panda = { kind: 'err', text: () => t('updSlow') }; renderUpdate();
   } finally { upgradeWatch = false; }
 }
 
 async function updateYtDlp() {
   if (updMsg.yt?.kind === 'busy') return;
-  updMsg.yt = { kind: 'busy', text: t('ytBusy') }; renderUpdate();
+  updMsg.yt = { kind: 'busy', text: () => t('ytBusy') }; renderUpdate();
   try {
     const r = await api('POST', '/api/update/yt-dlp');
-    updMsg.yt = r.result === 'updated' || r.result === 'installed' ? { kind: 'ok', text: t('ytDone', r.from, r.to) }
-      : r.result === 'current' ? { kind: 'ok', text: t('ytCurrent', r.to) }
-      : r.result === 'pending' ? { kind: 'busy', text: t('ytPending') }
-      : r.result === 'reinstall' ? { kind: 'err', text: t('updHow.systemd-old') }
-      : { kind: 'err', text: t('err.ytdlp-update-failed') };
-  } catch (e) { updMsg.yt = { kind: 'err', text: errText(e) }; }
+    updMsg.yt = r.result === 'updated' || r.result === 'installed' ? { kind: 'ok', text: () => t('ytDone', r.from, r.to) }
+      : r.result === 'current' ? { kind: 'ok', text: () => t('ytCurrent', r.to) }
+      : r.result === 'pending' ? { kind: 'busy', text: () => t('ytPending') }
+      : r.result === 'reinstall' ? { kind: 'err', text: () => t('updHow.systemd-old') }
+      : { kind: 'err', text: () => t('err.ytdlp-update-failed') };
+  } catch (e) { updMsg.yt = { kind: 'err', text: () => errText(e) }; }
   if (updMsg.yt.kind === 'busy') updMsg.yt.kind = 'ok';   // nothing runs here any more; just a note
   await checkUpdate(false, false);   // following again would start the update again if systemd never picked it up
 }
@@ -1352,6 +1386,9 @@ function startLogs() {
   stopLogs();
   logEs = new EventSource('/api/system/logs?after=' + logLast);
   logEs.onmessage = ev => { try { addLogs(JSON.parse(ev.data)); } catch {} };
+  // The browser retries by itself, but not after an error page (a proxy's 502 while Panda restarts).
+  const mine = logEs;
+  logEs.onerror = () => { if (mine.readyState === EventSource.CLOSED) setTimeout(() => { if (logEs === mine) startLogs(); }, 3000); };
   renderLogs();
 }
 function stopLogs() { if (logEs) { logEs.close(); logEs = null; } }
