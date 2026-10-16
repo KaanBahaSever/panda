@@ -2,7 +2,7 @@ using System.Text.Json;
 
 namespace Panda;
 
-public sealed record BotSummary(string Id, string Nickname, string State, string? Song);
+public sealed record BotSummary(string Id, string Nickname, string State, string? Song, long Played);
 
 /// <summary>One bot: its TeamSpeak connection, its player and its play history.</summary>
 public sealed class BotInstance : IDisposable
@@ -65,7 +65,7 @@ public sealed class BotInstance : IDisposable
 		}
 	}
 
-	public BotSummary Summary() => new(Id, Config.Bot.Nickname, Ts.State, Player.Current?.Title);
+	public BotSummary Summary() => new(Id, Config.Bot.Nickname, Ts.State, Player.Current?.Title, History.Added);
 
 	/// <summary>Lets panel endpoints take the bot named in the route (/api/bots/{bot}/...) as a parameter.</summary>
 	public static ValueTask<BotInstance?> BindAsync(HttpContext ctx) =>

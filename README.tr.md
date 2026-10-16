@@ -36,12 +36,12 @@ programı yok: Panda sunucuyla doğrudan konuşur, bu yüzden hafiftir (bot ~130
   şarkı kütüphanesi ortaktır.
 - 🐼 **TeamSpeak 6 için yapıldı** (TS3 sunucularında da çalışır).
 - 🌐 **Web paneli** — şimdi çalan, sürükle-bırak sıra, arama, kütüphane, çalma listeleri, saatli geçmiş,
-  istatistikler, ses, tekrar, ileri/geri sarma, açık/koyu tema, Türkçe/İngilizce.
+  istatistikler, ses, tekrar, ileri/geri sarma, açık/koyu tema, Türkçe/İngilizce/Fransızca.
 - 👥 **Panel kullanıcıları** — yöneticiler her şeyi yapar; "sadece şarkı ekler" kullanıcıları izler ve
   şarkı ekler.
 - 🩺 **Sistem ekranı** — işlemci, bellek ve disk, her botun bağlantısı, aranabilir canlı kayıtlar ve
   güncellemeler (Linux kurulumunda tek tık).
-- 💬 Türkçe ve İngilizce **sohbet komutları**. `!takip` ile bot seni kanaldan kanala takip eder.
+- 💬 Türkçe, İngilizce ve Fransızca **sohbet komutları**. `!takip` ile bot seni kanaldan kanala takip eder.
 - 🍪 **YouTube bot kontrolü mü?** Cookies'i panele yapıştır, bitti.
 - 🔁 Kendi kendine yeniden bağlanır, kimliğini korur (yetkiler kalıcı olur), çalan şarkıyı açıklamasında gösterir.
 - 🔐 Yüksek kimlik güvenlik seviyesi isteyen sunucularda da çalışır: Panda kendi seviyesini bir kez yükseltir (birkaç saniye ile birkaç dakika arası).
@@ -131,26 +131,26 @@ yerdeki `data` klasöründe tutulur.
 
 Botun kanalına ya da bota özel mesaj olarak yaz. İngilizce karşılıkları da çalışır.
 
-| Komut | İngilizce | Ne yapar |
-|---|---|---|
-| `!çal <ad veya link>` | `!play` / `!p` | Hemen çalar ya da sıraya ekler |
-| `!şimdiçal <ad veya link>` | `!playnow` | Sırayı atlayıp hemen çalar |
-| `!geç` | `!skip` / `!next` | Sonraki şarkı |
-| `!dur` | `!stop` | Durdurur ve sırayı temizler |
-| `!duraklat` / `!devam` | `!pause` / `!resume` | Duraklat / devam |
-| `!sıra` | `!queue` / `!q` | Sırayı gösterir |
-| `!şimdi` | `!np` | Ne çalıyor |
-| `!ses <0-100>` | `!vol` | Ses seviyesi |
-| `!tekrar <kapalı\|şarkı\|hepsi>` | `!loop <off\|one\|all>` | Tekrar |
-| `!karıştır` | `!shuffle` | Sırayı karıştırır |
-| `!sil <#>` / `!temizle` | `!remove` / `!clear` | Şarkı siler / sırayı temizler |
-| `!gel` | `!join` | Kanalıma gel |
-| `!takip` | `!follow` | Beni kanaldan kanala takip et (tekrar yazınca bırakır) |
-| `!radyo <aç\|kapat>` | `!radio <on\|off>` | Sıra bitince benzer şarkılar çalmaya devam et |
-| `!liste <ad>` | `!playlist` / `!pl` | Kayıtlı bir listeyi sıraya ekle |
-| `!listeler` | `!playlists` | Kayıtlı listeleri göster |
-| `!fav` | `!fav` | Çalan şarkıyı Favoriler'e kaydet |
-| `!yardım` | `!help` | Komut listesi |
+| Komut | İngilizce | Fransızca | Ne yapar |
+|---|---|---|---|
+| `!çal <ad veya link>` | `!play` / `!p` | `!jouer` | Hemen çalar ya da sıraya ekler |
+| `!şimdiçal <ad veya link>` | `!playnow` | `!jouermaintenant` | Sırayı atlayıp hemen çalar |
+| `!geç` | `!skip` / `!next` | `!passer` / `!suivant` | Sonraki şarkı |
+| `!dur` | `!stop` | `!arrêt` | Durdurur ve sırayı temizler |
+| `!duraklat` / `!devam` | `!pause` / `!resume` | `!pause` / `!reprendre` | Duraklat / devam |
+| `!sıra` | `!queue` / `!q` | `!file` | Sırayı gösterir |
+| `!şimdi` | `!np` | `!encours` | Ne çalıyor |
+| `!ses <0-100>` | `!vol` | `!volume` | Ses seviyesi |
+| `!tekrar <kapalı\|şarkı\|hepsi>` | `!loop <off\|one\|all>` | `!boucle <non\|un\|tout>` | Tekrar |
+| `!karıştır` | `!shuffle` | `!mélanger` | Sırayı karıştırır |
+| `!sil <#>` / `!temizle` | `!remove` / `!clear` | `!retirer` / `!vider` | Şarkı siler / sırayı temizler |
+| `!gel` | `!join` | `!viens` | Kanalıma gel |
+| `!takip` | `!follow` | `!suivre` | Beni kanaldan kanala takip et (tekrar yazınca bırakır) |
+| `!radyo <aç\|kapat>` | `!radio <on\|off>` | `!radio <oui\|non>` | Sıra bitince benzer şarkılar çalmaya devam et |
+| `!liste <ad>` | `!playlist` / `!pl` | `!playlist` | Kayıtlı bir listeyi sıraya ekle |
+| `!listeler` | `!playlists` | `!playlists` | Kayıtlı listeleri göster |
+| `!fav` | `!fav` | `!fav` | Çalan şarkıyı Favoriler'e kaydet |
+| `!yardım` | `!help` | `!aide` | Komut listesi |
 
 Varsayılan olarak herkes botu kullanabilir. Sınırlamak için **Ayarlar → Bot** kısmına TeamSpeak
 UID'leri ya da sunucu grubu ID'leri ekle.

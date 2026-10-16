@@ -71,17 +71,22 @@ public sealed class Playlists
 		lists.FirstOrDefault(p => Library.Normalize(p.Name).Trim() == Library.Normalize(name).Trim());
 
 	/// <summary>Creates a list, or adds the songs to the list with that name. Returns the list.</summary>
-	public Playlist Save(string name, IEnumerable<PlaylistSong> songs)
+	public Playlist Save(string name, IEnumerable<PlaylistSong> songs) => Save(name, songs, out _);
+
+	/// <summary>Like Save; <paramref name="left"/> counts the new songs that didn't fit in the full list.</summary>
+	public Playlist Save(string name, IEnumerable<PlaylistSong> songs, out int left)
 	{
 		Playlist list;
+		left = 0;
 		lock (gate)
 		{
 			name = name.Trim();
 			var old = ExactLocked(name);
 			var merged = (old?.Songs ?? []).ToList();
 			foreach (var s in songs)
-				if (merged.Count < MaxSongs && merged.All(x => x.Id != s.Id))
-					merged.Add(s);
+				if (merged.Any(x => x.Id == s.Id)) continue;
+				else if (merged.Count < MaxSongs) merged.Add(s);
+				else left++;
 			list = new Playlist(old?.Name ?? name, merged, DateTimeOffset.UtcNow);
 			lists = old is null ? [.. lists, list] : lists.Select(p => p == old ? list : p).ToList();
 		}

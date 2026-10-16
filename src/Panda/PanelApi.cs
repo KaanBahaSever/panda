@@ -156,7 +156,8 @@ public static class PanelApi
 				var s = b.Player.GetState();
 				songs.AddRange(new[] { s.Current?.Track }.Concat(s.Queue).OfType<Track>().Where(t => !t.IsLive).Select(PlaylistSong.From));
 			}
-			return Results.Ok(lists.Save(name, songs));
+			var list = lists.Save(name, songs, out var left);
+			return Results.Ok(new { list.Name, list.Songs, list.Updated, Left = left });
 		});
 		admin.MapPut("/playlists/{name}", (string name, PlaylistRequest req, Playlists lists) =>
 			!Playlists.IsValidName(req.Name ?? "") ? Problem("bad-playlist-name")
@@ -345,6 +346,7 @@ public static class PanelApi
 		bots.Changed += Poke; // covers this bot's player and connection too
 		library.Changed += Poke;
 		lists.Changed += Poke;
+		config.UsersChanged += Poke;
 		// Ends when Panda stops, too: an open stream otherwise holds the shutdown for 30 s.
 		using var stop = CancellationTokenSource.CreateLinkedTokenSource(ctx.RequestAborted, life.ApplicationStopping);
 		var ct = stop.Token;
@@ -370,6 +372,7 @@ public static class PanelApi
 			bots.Changed -= Poke;
 			library.Changed -= Poke;
 			lists.Changed -= Poke;
+			config.UsersChanged -= Poke;
 		}
 	}
 
@@ -384,6 +387,7 @@ public static class PanelApi
 		var signal = new SemaphoreSlim(1);
 		void Poke() { if (signal.CurrentCount == 0) signal.Release(); }
 		logs.Added += Poke;
+		config.UsersChanged += Poke;
 		// Ends when Panda stops, too: an open stream otherwise holds the shutdown for 30 s.
 		using var stop = CancellationTokenSource.CreateLinkedTokenSource(ctx.RequestAborted, life.ApplicationStopping);
 		var ct = stop.Token;
@@ -402,7 +406,7 @@ public static class PanelApi
 			}
 		}
 		catch (OperationCanceledException) { }
-		finally { logs.Added -= Poke; }
+		finally { logs.Added -= Poke; config.UsersChanged -= Poke; }
 	}
 
 	public sealed record LoginRequest(string? Name, string? Password);
@@ -487,7 +491,7 @@ public sealed class SettingsDto
 		if (nick.Length is >= 3 and <= 30) { Set(ref reconnect, b.Bot.Nickname, nick); b.Bot.Nickname = nick; }
 
 		if (CommandPrefix.Trim().Length is > 0 and <= 3) b.Bot.CommandPrefix = CommandPrefix.Trim();
-		if (Language is "en" or "tr") b.Bot.Language = Language;
+		if (Strings.Languages.Contains(Language)) b.Bot.Language = Language;
 		b.Bot.Announce = Announce;
 		b.Bot.ConfirmCommands = ConfirmCommands;
 		b.Bot.ShowSongInDescription = ShowSongInDescription;

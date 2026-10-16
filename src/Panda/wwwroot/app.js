@@ -13,6 +13,7 @@ const I18N = {
     playlists: 'Playlists', plEmpty: 'No saved playlists yet.', plSaveQueue: 'Save the queue as a playlist', plAdd: 'Add to playlist', plNew: 'New playlist…',
     plName: 'Name of the playlist:', plPlay: 'Add to the queue', plShuffle: 'Add shuffled', plRename: 'Rename', plDelete: 'Delete playlist',
     confirmPlDelete: x => `Delete the playlist "${x}"?`, plQueued: (n, x) => `${n} songs from "${x}" added`, plSaved: x => `Saved to "${x}"`,
+    plFull: (x, n) => `"${x}" is full (500 songs): ${n === 1 ? '1 song' : `${n} songs`} didn't fit.`,
     plRenamed: 'Playlist renamed', plDeleted: 'Playlist deleted', 'err.bad-playlist-name': 'Playlist names are 1–40 characters with at least one letter or digit, and no slashes.',
     'err.playlist-exists': 'There is already a playlist with that name.',
     addSong: 'Add a song', addPh: 'Song name or YouTube link', add: 'Add', playNow: 'Play now', added: 'Added', results: 'Results',
@@ -42,7 +43,7 @@ const I18N = {
     'err.queue-full': 'The queue is full.', 'err.wrong-password': 'Wrong password.', 'err.too-many-attempts': 'Too many attempts — wait a few minutes.',
     'err.password-too-short': 'The new password needs at least 6 characters.', 'err.cookies-invalid': 'That doesn\'t look like a YouTube cookies.txt.',
     'err.too-large': 'That file is too large.', 'err.missing': 'Missing tool on the server: ',
-    'err.timeout': 'YouTube didn\'t answer in time — try again.',
+    'err.timeout': 'YouTube didn\'t answer in time — try again.', 'err.no-bot': 'That bot no longer exists.',
     library: 'Library', savedBadge: 'saved', fromLibrary: 'From your library', fromYouTube: 'From YouTube', libFilter: 'Filter saved songs',
     usage: (a, b) => `${a} of ${b}`, libOff: 'Saving is off — turn it on in Settings.', libEmpty: 'No saved songs yet. Songs are saved as they are requested.',
     libNoMatch: 'No saved songs match.', libCapped: 'Showing the 500 most played songs — use the filter to find others.', showMore: 'Show more',
@@ -87,7 +88,7 @@ const I18N = {
     sSongs: 'different songs', sPeople: 'people', topSongs: 'Most played', topPeople: 'Who asked the most', activity: 'Activity', byHour: 'By hour of day',
   },
   tr: {
-    loginHint: 'Sevimli TeamSpeak DJ\'in', password: 'Şifre', login: 'Giriş yap', language: 'Dil: Türkçe (English\'e geç)',
+    loginHint: 'Sevimli TeamSpeak DJ\'in', password: 'Şifre', login: 'Giriş yap', language: 'Dil: Türkçe (Français\'ya geç)',
     theme: 'Karanlık modu aç/kapat', settings: 'Ayarlar', logout: 'Çıkış yap', offline: 'Panda ile bağlantı koptu — yeniden bağlanılıyor…',
     nowPlaying: 'Şimdi çalıyor', live: 'CANLI', napping: 'Panda uyukluyor 💤 — bir şarkı ekle!', seek: 'Sar',
     shuffle: 'Sırayı karıştır', stop: 'Durdur', play: 'Oynat', pause: 'Duraklat', skip: 'Geç', mute: 'Sessize al', unmute: 'Sesi aç', volume: 'Ses',
@@ -96,6 +97,7 @@ const I18N = {
     playlists: 'Çalma listeleri', plEmpty: 'Henüz kayıtlı liste yok.', plSaveQueue: 'Sırayı liste olarak kaydet', plAdd: 'Listeye ekle', plNew: 'Yeni liste…',
     plName: 'Listenin adı:', plPlay: 'Sıraya ekle', plShuffle: 'Karışık ekle', plRename: 'Adını değiştir', plDelete: 'Listeyi sil',
     confirmPlDelete: x => `"${x}" listesi silinsin mi?`, plQueued: (n, x) => `"${x}" listesinden ${n} şarkı eklendi`, plSaved: x => `"${x}" listesine kaydedildi`,
+    plFull: (x, n) => `"${x}" dolu (500 şarkı): ${n} şarkı eklenemedi.`,
     plRenamed: 'Listenin adı değişti', plDeleted: 'Liste silindi', 'err.bad-playlist-name': 'Liste adı 1–40 karakter olmalı, en az bir harf ya da rakam içermeli ve eğik çizgi içermemeli.',
     'err.playlist-exists': 'Bu adda bir liste zaten var.',
     addSong: 'Şarkı ekle', addPh: 'Şarkı adı ya da YouTube linki', add: 'Ekle', playNow: 'Hemen çal', added: 'Eklendi', results: 'Sonuçlar',
@@ -125,7 +127,7 @@ const I18N = {
     'err.queue-full': 'Sıra dolu.', 'err.wrong-password': 'Şifre yanlış.', 'err.too-many-attempts': 'Çok fazla deneme — birkaç dakika bekleyin.',
     'err.password-too-short': 'Yeni şifre en az 6 karakter olmalı.', 'err.cookies-invalid': 'Bu bir YouTube cookies.txt dosyasına benzemiyor.',
     'err.too-large': 'Dosya çok büyük.', 'err.missing': 'Sunucuda eksik araç: ',
-    'err.timeout': 'YouTube zamanında cevap vermedi — tekrar dene.',
+    'err.timeout': 'YouTube zamanında cevap vermedi — tekrar dene.', 'err.no-bot': 'Bu bot artık yok.',
     library: 'Kütüphane', savedBadge: 'kayıtlı', fromLibrary: 'Kütüphanenden', fromYouTube: 'YouTube\'dan', libFilter: 'Kayıtlı şarkılarda ara',
     usage: (a, b) => `${a} / ${b}`, libOff: 'Kaydetme kapalı — Ayarlar\'dan açabilirsin.', libEmpty: 'Henüz kayıtlı şarkı yok. Şarkılar istendikçe kaydedilir.',
     libNoMatch: 'Eşleşen kayıtlı şarkı yok.', libCapped: 'En çok dinlenen 500 şarkı gösteriliyor — diğerleri için aramayı kullan.', showMore: 'Daha fazla göster',
@@ -169,13 +171,99 @@ const I18N = {
     thisBot: 'Bu bot', allBots: 'Tüm botlar', statsEmpty: 'Bu aralıkta bir şey çalınmadı.', sPlays: 'çalma', sListened: 'dinlendi',
     sSongs: 'farklı şarkı', sPeople: 'kişi', topSongs: 'En çok çalınanlar', topPeople: 'En çok isteyenler', activity: 'Hareketlilik', byHour: 'Saatlere göre',
   },
+  fr: {
+    loginHint: 'Votre DJ TeamSpeak douillet', password: 'Mot de passe', login: 'Se connecter', language: 'Langue : français (passer à English)',
+    theme: 'Activer/désactiver le mode sombre', settings: 'Paramètres', logout: 'Se déconnecter', offline: 'Connexion à Panda perdue — reconnexion…',
+    nowPlaying: 'En cours de lecture', live: 'EN DIRECT', napping: 'Panda fait la sieste 💤 — ajoutez un morceau !', seek: 'Position',
+    shuffle: 'Mélanger la file', stop: 'Arrêter', play: 'Lecture', pause: 'Pause', skip: 'Passer', mute: 'Couper le son', unmute: 'Rétablir le son', volume: 'Volume',
+    loopOff: 'Répétition : désactivée', loopAll: 'Répétition : toute la file', loopOne: 'Répétition : ce morceau',
+    radioOn: 'Radio : activée — des morceaux similaires suivent quand la file est finie', radioOff: 'Radio : désactivée', radioToast: '📻 Radio activée : des morceaux similaires suivent quand la file est finie',
+    playlists: 'Playlists', plEmpty: 'Aucune playlist enregistrée pour l\'instant.', plSaveQueue: 'Enregistrer la file comme playlist', plAdd: 'Ajouter à une playlist', plNew: 'Nouvelle playlist…',
+    plName: 'Nom de la playlist :', plPlay: 'Ajouter à la file', plShuffle: 'Ajouter dans le désordre', plRename: 'Renommer', plDelete: 'Supprimer la playlist',
+    confirmPlDelete: x => `Supprimer la playlist « ${x} » ?`, plQueued: (n, x) => `${n} morceaux de « ${x} » ajoutés`, plSaved: x => `Enregistré dans « ${x} »`,
+    plFull: (x, n) => `« ${x} » est pleine (500 morceaux) : ${n <= 1 ? '1 morceau n\'a pas pu être ajouté' : `${n} morceaux n'ont pas pu être ajoutés`}.`,
+    plRenamed: 'Playlist renommée', plDeleted: 'Playlist supprimée', 'err.bad-playlist-name': 'Un nom de playlist fait 1 à 40 caractères, avec au moins une lettre ou un chiffre, et sans barre oblique.',
+    'err.playlist-exists': 'Une playlist porte déjà ce nom.',
+    addSong: 'Ajouter un morceau', addPh: 'Nom du morceau ou lien YouTube', add: 'Ajouter', playNow: 'Lire maintenant', added: 'Ajouté', results: 'Résultats',
+    noResults: 'Aucun résultat 🐾', close: 'Fermer', queue: 'File d\'attente', clear: 'Vider', queueEmpty: 'La file est vide. Cherchez quelque chose ci-dessus !',
+    history: 'Écoutés récemment', historyEmpty: 'Rien n\'a encore été joué.', today: 'Aujourd\'hui', yesterday: 'Hier', addAgain: 'Rajouter', remove: 'Retirer', moveUp: 'Monter', moveDown: 'Descendre',
+    requestedBy: 'demandé par', songs: n => n <= 1 ? `${n} morceau` : `${n} morceaux`,
+    connected: 'Connecté', connecting: 'Connexion…', disconnected: 'Déconnecté',
+    raisingId: n => `Passage de la sécurité de l'identité au niveau ${n}…`, listeners: n => n <= 1 ? `${n} auditeur` : `${n} auditeurs`,
+    sConn: 'Connexion', sConnHint: 'Modifier ces champs reconnecte le bot.', sAddress: 'Adresse du serveur', sServerPw: 'Mot de passe du serveur',
+    sChannel: 'Canal', sChannelHint: 'Un chemin comme « Musique/Salon » ou un id comme « /5 ». Vide = canal par défaut.', sChannelPw: 'Mot de passe du canal',
+    sNick: 'Pseudo', removePw: 'Supprimer le mot de passe', unchanged: 'inchangé', sBot: 'Bot', sLang: 'Langue du chat', sPrefix: 'Préfixe des commandes',
+    sAnnounce: 'Annoncer chaque morceau dans le chat', sConfirm: 'Confirmer les commandes du chat',
+    sChatHint: 'L\'annonce publie chaque morceau quand il commence. Les confirmations sont les réponses courtes aux commandes comme !jouer et !passer. Les questions (!encours, !file, !aide) et les erreurs reçoivent toujours une réponse.', sDesc: 'Afficher le morceau dans la description du bot', sMaxQueue: 'Longueur max. de la file', sMaxDur: 'Durée max. d\'un morceau (min)',
+    sMaxDurHint: '0 = illimitée.', sMaxDurShared: 'La durée max. d\'un morceau est commune à tous les bots.', sUsers: 'Utilisateurs autorisés', sUsersHint: 'Un identifiant unique TeamSpeak par ligne. Vide = tout le monde.',
+    sGroups: 'Groupes de serveur autorisés', sGroupsHint: 'Ids de groupes séparés par des virgules. Vide = aucune restriction de groupe.', save: 'Enregistrer', reconnect: 'Reconnecter le bot',
+    sCookies: 'Cookies YouTube', sCookiesHelp: 'Si YouTube demande de « confirmer que vous n\'êtes pas un robot » : ouvrez une fenêtre de navigation privée, connectez-vous à YouTube, exportez les cookies avec une extension « cookies.txt », collez-les ici, puis fermez cette fenêtre.',
+    chooseFile: 'Choisir un fichier', saveCookies: 'Enregistrer les cookies', removeCookies: 'Supprimer les cookies', cookiesOn: 'Cookies présents ✓', cookiesOff: 'Aucun cookie',
+    sPanelPw: 'Mot de passe du panneau', pwCurrent: 'Mot de passe actuel', pwNew: 'Nouveau mot de passe (6 caractères min.)', pwChange: 'Changer le mot de passe',
+    cancel: 'Annuler', ok: 'OK', saved: 'Paramètres enregistrés', reconnecting: 'Enregistré — le bot se reconnecte…', reconnectSent: 'Reconnexion du bot…',
+    cookiesSaved: 'Cookies enregistrés 🍪', cookiesRemoved: 'Cookies supprimés', cookiesEmpty: 'Collez ou choisissez d\'abord un cookies.txt', pwChanged: 'Mot de passe changé',
+    confirmStop: 'Arrêter la lecture et vider la file ?', confirmClear: 'Vider toute la file ?', confirmCookies: 'Supprimer les cookies YouTube enregistrés ?',
+    nothing: 'Rien à faire pour le moment', invalid: 'Vérifiez les champs en surbrillance', netError: 'Erreur réseau — Panda est-il lancé ?',
+    'err.not-found': 'Aucun morceau trouvé pour cette recherche.', 'err.empty': 'Tapez un nom de morceau ou collez un lien.',
+    'err.playlist-empty': 'Cette playlist est vide.', 'err.not-youtube': 'Seuls les liens YouTube fonctionnent.',
+    'err.too-long': 'Ce morceau est trop long.', 'err.bot-check': 'YouTube demande une vérification anti-robot — ajoutez des cookies dans les Paramètres.',
+    'err.unavailable': 'Cette vidéo n\'est pas disponible.', 'err.age': 'Cette vidéo est soumise à une limite d\'âge — ajoutez des cookies dans les Paramètres.',
+    'err.queue-full': 'La file est pleine.', 'err.wrong-password': 'Mot de passe incorrect.', 'err.too-many-attempts': 'Trop de tentatives — patientez quelques minutes.',
+    'err.password-too-short': 'Le nouveau mot de passe doit faire au moins 6 caractères.', 'err.cookies-invalid': 'Ça ne ressemble pas à un cookies.txt de YouTube.',
+    'err.too-large': 'Ce fichier est trop volumineux.', 'err.missing': 'Outil manquant sur le serveur : ',
+    'err.timeout': 'YouTube n\'a pas répondu à temps — réessayez.', 'err.no-bot': 'Ce bot n\'existe plus.',
+    library: 'Bibliothèque', savedBadge: 'enregistré', fromLibrary: 'Dans votre bibliothèque', fromYouTube: 'Sur YouTube', libFilter: 'Filtrer les morceaux enregistrés',
+    usage: (a, b) => `${a} sur ${b}`, libOff: 'L\'enregistrement est désactivé — activez-le dans les Paramètres.', libEmpty: 'Aucun morceau enregistré pour l\'instant. Les morceaux sont enregistrés à mesure qu\'ils sont demandés.',
+    libNoMatch: 'Aucun morceau enregistré ne correspond.', libCapped: 'Affichage des 500 morceaux les plus joués — utilisez le filtre pour trouver les autres.', showMore: 'Afficher plus',
+    plays: n => n <= 1 ? `${n} écoute` : `${n} écoutes`, requests: n => n <= 1 ? `${n} morceau` : `${n} morceaux`, delete: 'Supprimer', deleted: 'Supprimé', confirmLibDelete: x => `Supprimer « ${x} » de la bibliothèque ?`,
+    sLib: 'Bibliothèque', sLibOn: 'Enregistrer chaque morceau demandé', sLibOnHint: 'Désactivé, seuls les deux prochains morceaux sont téléchargés à l\'avance.',
+    sLibMax: 'Taille max. (Go)', sLibMaxHint: 'Une fois pleine, les morceaux les moins joués sont supprimés en premier. 0 = pas de limite.', sLibMaxBad: 'Mettez 0 (pas de limite) ou au moins 0,1 Go.',
+    sNorm: 'Jouer les morceaux au même volume', sNormHint: 'Chaque morceau enregistré est mesuré une fois et joué au même niveau sonore. La toute première écoute d\'un morceau, avant son enregistrement, est jouée telle quelle.',
+    bots: 'Bots', addBot: 'Ajouter un bot', botAdded: 'Bot ajouté — choisissez maintenant son canal', idle: 'Inactif',
+    sPrefixHint: 'Les bots d\'un même canal doivent avoir des préfixes différents, sinon ils répondent tous.', sShared: 'Commun à tous les bots.',
+    sRemoveBot: 'Supprimer ce bot', sRemoveBotHint: 'Le déconnecte et supprime son identité TeamSpeak et son historique.', removeBot: 'Supprimer le bot',
+    confirmBotRemove: x => `Supprimer « ${x} » ? Son identité et son historique seront effacés.`, botRemoved: 'Bot supprimé',
+    userName: 'Nom d\'utilisateur', role: 'Rôle', roleAdmin: 'Admin', roleDj: 'Peut seulement ajouter des morceaux', sUsers2: 'Utilisateurs du panneau',
+    sUsersHint2: 'Les admins peuvent tout faire. Les utilisateurs « Peut seulement ajouter des morceaux » peuvent regarder et ajouter des morceaux, rien d\'autre.',
+    addUser: 'Ajouter un utilisateur', userAdded: 'Utilisateur ajouté', userRemoved: 'Utilisateur supprimé', roleChanged: 'Rôle modifié', you: '(vous)',
+    confirmUserRemove: x => `Supprimer l'utilisateur « ${x} » ?`, resetPw: 'Définir un nouveau mot de passe', resetPwFor: x => `Nouveau mot de passe pour « ${x} » (6 caractères min.) :`, pwReset: 'Mot de passe défini',
+    forbidden: 'Vous n\'avez pas le droit de faire ça.', 'err.bad-name': 'Un nom d\'utilisateur fait 2 à 32 caractères : lettres, chiffres, « . », « _ » ou « - ».',
+    'err.user-exists': 'Ce nom d\'utilisateur est déjà pris.', 'err.bad-role': 'Rôle inconnu.', 'err.last-admin': 'Il doit rester au moins un admin.',
+    'err.self': 'Vous ne pouvez pas vous supprimer vous-même.',
+    system: 'Système', health: 'État', logs: 'Journaux', logLevel: 'Niveau', lvlAll: 'Tout', lvlWarn: 'Avertissements et erreurs', lvlError: 'Erreurs seulement',
+    logSearch: 'Rechercher dans le journal', logFollow: 'Suivre', download: 'Télécharger', logNote: 'Les 2000 dernières lignes depuis le démarrage de Panda.', logEmpty: 'Aucune ligne ne correspond.',
+    hPanda: 'Panda', hVersion: 'Version', hUptime: 'En marche depuis', hRuntime: 'Environnement', hOs: 'Système', hTs: 'TeamSpeak', hCpu: 'Processeur', hRam: 'Mémoire',
+    hDisk: 'Disque', hThis: 'Panda', hMachine: 'Tout le serveur', hFree: 'libre', hLib: 'Bibliothèque',
+    hUsed: (a, b) => `${a} sur ${b} utilisés`, hLibUsed: a => `${a} sur le disque`, hLibOff: 'Enregistrement désactivé', hLimit: 'Limite', hNoLimit: 'aucune', missingTool: 'introuvable',
+    updates: 'Mises à jour', updCheck: 'Vérifier', updChecked: x => `Dernière vérification : ${x}`, updNotes: 'Nouveautés',
+    updUnreachable: 'Impossible de joindre GitHub ; réessayez plus tard.', updRelease: 'Page de la version',
+    updInstalled: 'Installée', updNewest: 'La plus récente', updOk: 'À jour', updNew: 'Nouvelle version',
+    updPandaWhat: 'Le bot lui-même. Vos morceaux, l\'historique, les playlists et les paramètres sont conservés ; la file reprend après le redémarrage.',
+    updYtWhat: 'L\'outil qui récupère les morceaux sur YouTube. YouTube change souvent ; le serveur le met aussi à jour chaque jour.',
+    updNow: 'Mettre à jour Panda', updStarted: 'Mise à jour… Panda redémarre dans une ou deux minutes.', updDone: x => `Panda est passé en v${x}. Rechargement…`,
+    updSlow: 'Panda n\'est pas encore revenu ; consultez les journaux sur le serveur.',
+    updFailed: 'La mise à jour n\'a pas abouti (GitHub a peut-être eu un souci). Panda continue de tourner comme avant ; réessayez dans une minute.',
+    'updHow.docker': 'Docker : dans le dossier de Panda, lancez « git pull && docker compose up -d --build ».',
+    'updHow.systemd-old': 'Relancez une fois l\'installateur sur le serveur (la commande du README) ; ensuite vous pourrez mettre à jour d\'ici.',
+    'updHow.manual': 'Téléchargez la nouvelle version sur GitHub et remplacez le programme.',
+    ytUpdate: 'Mettre à jour yt-dlp', ytBusy: 'Mise à jour… cela peut prendre une minute.', ytDone: (a, b) => `Mis à jour : ${a || '?'} → ${b || '?'}`,
+    ytCurrent: x => `Déjà la dernière version (${x || '?'}).`, ytPending: 'Le serveur est encore en train de le mettre à jour ; appuyez sur Vérifier dans une minute.',
+    'err.ytdlp-update-failed': 'Impossible de mettre à jour yt-dlp ; consultez les journaux.',
+    'err.cannot-update': 'Cette installation ne peut pas se mettre à jour elle-même.',
+    cores: n => n <= 1 ? `${n} cœur` : `${n} cœurs`, uptime: (d, h, m) => d ? `${d} j ${h} h` : h ? `${h} h ${m} min` : `${m} min`,
+    stats: 'Statistiques', statsRange: 'Période', last7: '7 derniers jours', last30: '30 derniers jours', last365: 'Dernière année', allTime: 'Depuis le début',
+    thisBot: 'Ce bot', allBots: 'Tous les bots', statsEmpty: 'Rien n\'a été joué sur cette période.', sPlays: 'écoutes', sListened: 'd\'écoute',
+    sSongs: 'morceaux différents', sPeople: 'personnes', topSongs: 'Les plus joués', topPeople: 'Ceux qui en demandent le plus', activity: 'Activité', byHour: 'Par heure de la journée',
+  },
 };
 
 /* ---------------- helpers ---------------- */
 const $ = id => document.getElementById(id);
 const store = { get: k => { try { return localStorage.getItem(k); } catch { return null; } },
                 set: (k, v) => { try { localStorage.setItem(k, v); } catch {} } };
-let lang = store.get('panda.lang') || ((navigator.language || '').toLowerCase().startsWith('tr') ? 'tr' : 'en');
+const LANGS = Object.keys(I18N);
+const savedLang = store.get('panda.lang');
+let lang = LANGS.includes(savedLang) ? savedLang : LANGS.find(l => (navigator.language || '').toLowerCase().startsWith(l)) || 'en';
 const t = (k, ...a) => { const v = I18N[lang][k] ?? I18N.en[k] ?? k; return typeof v === 'function' ? v(...a) : v; };
 
 /** Only http(s) URLs are allowed into href/src. */
@@ -329,7 +417,7 @@ document.querySelectorAll('.js-theme').forEach(b => b.addEventListener('click', 
   store.set('panda.theme', document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'); applyTheme();
 }));
 document.querySelectorAll('.js-lang').forEach(b => b.addEventListener('click', () => {
-  lang = lang === 'en' ? 'tr' : 'en'; store.set('panda.lang', lang); applyLang();
+  lang = LANGS[(LANGS.indexOf(lang) + 1) % LANGS.length]; store.set('panda.lang', lang); applyLang();
 }));
 
 /* ---------------- login / logout ---------------- */
@@ -433,7 +521,15 @@ function selectBot(id) {
 }
 
 /* ---------------- rendering ---------------- */
-function render() { renderBot(); renderNow(); renderQueue(); renderPlaylists(); renderHistory(); renderLib(); }
+function render() { renderBot(); renderNow(); renderQueue(); renderPlaylists(); renderHistory(); renderLib(); watchPlays(); }
+
+/** "All bots" statistics change when any bot finishes a song, not only the one on screen. */
+let lastPlaysSig = '';
+function watchPlays() {
+  const s = JSON.stringify(S.bots.map(b => [b.id, b.played]));
+  if (lastPlaysSig && s !== lastPlaysSig && manyBots() && $('stats-bot').value === 'all') reloadStats();
+  lastPlaysSig = s;
+}
 
 const stateText = st => t(st === 'connected' ? 'connected' : st === 'connecting' ? 'connecting' : 'disconnected');
 const manyBots = () => !!S && S.bots.length > 1;
@@ -1073,7 +1169,7 @@ async function deletePlaylist(name) {
   if (await confirmBox(t('confirmPlDelete', name))) act(() => api('DELETE', plUrl(name)), t('plDeleted'));
 }
 /** Adds songs to a playlist (made when it doesn't exist yet). */
-const saveToPlaylist = (name, body) => act(() => api('POST', '/api/playlists', { name, ...body }), r => t('plSaved', r.name));
+const saveToPlaylist = (name, body) => act(() => api('POST', '/api/playlists', { name, ...body }), r => r.left ? t('plFull', r.name, r.left) : t('plSaved', r.name));
 
 $('pl-save-queue').addEventListener('click', async () => {
   const name = await promptBox(t('plName'), { type: 'text' });

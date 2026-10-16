@@ -42,11 +42,11 @@ Panda talks to the server directly, so it stays light: the bot itself uses about
   one song library.
 - 🐼 **Made for TeamSpeak 6** (TS3 servers work too).
 - 🌐 **Web panel** — now playing, queue with drag & drop, search, library, playlists, history with
-  times, statistics, volume, loop, seek, light/dark theme, English/Turkish.
+  times, statistics, volume, loop, seek, light/dark theme, English/Turkish/French.
 - 👥 **Panel users** — admins can do everything; "can only add songs" users watch and add songs.
 - 🩺 **System screen** — CPU, memory and disk, each bot's connection, live logs with search, and
   updates (one click on Linux installs).
-- 💬 **Chat commands** in English and Turkish. `!follow` makes the bot follow you between channels.
+- 💬 **Chat commands** in English, Turkish and French. `!follow` makes the bot follow you between channels.
 - 🍪 **YouTube bot check?** Paste your cookies in the panel and you're done.
 - 🔁 Reconnects by itself, keeps its identity (so permissions stick), shows the song in its description.
 - 🔐 Servers that ask for a higher identity security level work too: Panda raises its own once (a few seconds to a few minutes).
@@ -129,26 +129,26 @@ in a `data` folder next to where you start it.
 
 Write them in the bot's channel or in a private message to the bot.
 
-| Command | Turkish | What it does |
-|---|---|---|
-| `!play <name or link>` / `!p` | `!çal` | Play now, or add to the queue |
-| `!playnow <name or link>` | `!şimdiçal` | Skip the queue and play right away |
-| `!skip` / `!next` | `!geç` | Next song |
-| `!stop` | `!dur` | Stop and clear the queue |
-| `!pause` / `!resume` | `!duraklat` / `!devam` | Pause / continue |
-| `!queue` / `!q` | `!sıra` | Show the queue |
-| `!np` | `!şimdi` | What's playing |
-| `!vol <0-100>` | `!ses` | Volume |
-| `!loop <off\|one\|all>` | `!tekrar <kapalı\|şarkı\|hepsi>` | Repeat |
-| `!shuffle` | `!karıştır` | Shuffle the queue |
-| `!remove <#>` / `!clear` | `!sil` / `!temizle` | Remove a song / clear the queue |
-| `!join` | `!gel` | Come to my channel |
-| `!follow` | `!takip` | Follow me between channels (again to stop) |
-| `!radio <on\|off>` | `!radyo <aç\|kapat>` | Keep playing similar songs when the queue ends |
-| `!playlist <name>` / `!pl` | `!liste <ad>` | Queue a saved playlist |
-| `!playlists` | `!listeler` | List saved playlists |
-| `!fav` | `!fav` | Save the song playing to Favorites |
-| `!help` | `!yardım` | List commands |
+| Command | Turkish | French | What it does |
+|---|---|---|---|
+| `!play <name or link>` / `!p` | `!çal` | `!jouer` | Play now, or add to the queue |
+| `!playnow <name or link>` | `!şimdiçal` | `!jouermaintenant` | Skip the queue and play right away |
+| `!skip` / `!next` | `!geç` | `!passer` / `!suivant` | Next song |
+| `!stop` | `!dur` | `!arrêt` | Stop and clear the queue |
+| `!pause` / `!resume` | `!duraklat` / `!devam` | `!pause` / `!reprendre` | Pause / continue |
+| `!queue` / `!q` | `!sıra` | `!file` | Show the queue |
+| `!np` | `!şimdi` | `!encours` | What's playing |
+| `!vol <0-100>` | `!ses` | `!volume` | Volume |
+| `!loop <off\|one\|all>` | `!tekrar <kapalı\|şarkı\|hepsi>` | `!boucle <non\|un\|tout>` | Repeat |
+| `!shuffle` | `!karıştır` | `!mélanger` | Shuffle the queue |
+| `!remove <#>` / `!clear` | `!sil` / `!temizle` | `!retirer` / `!vider` | Remove a song / clear the queue |
+| `!join` | `!gel` | `!viens` | Come to my channel |
+| `!follow` | `!takip` | `!suivre` | Follow me between channels (again to stop) |
+| `!radio <on\|off>` | `!radyo <aç\|kapat>` | `!radio <oui\|non>` | Keep playing similar songs when the queue ends |
+| `!playlist <name>` / `!pl` | `!liste <ad>` | `!playlist` | Queue a saved playlist |
+| `!playlists` | `!listeler` | `!playlists` | List saved playlists |
+| `!fav` | `!fav` | `!fav` | Save the song playing to Favorites |
+| `!help` | `!yardım` | `!aide` | List commands |
 
 By default everyone can use the bot. To limit it, add TeamSpeak UIDs or server group IDs under
 **Settings → Bot**.
@@ -185,7 +185,7 @@ Everything is editable in the panel; the file is `/var/lib/panda/config.json` (o
       "id": "1",
       "server": { "address": "127.0.0.1:9987", "password": "", "channel": "Music", "channelPassword": "" },
       "bot": {
-        "nickname": "Panda 🐼", "commandPrefix": "!", "language": "en",   // chat replies: "en" or "tr"
+        "nickname": "Panda 🐼", "commandPrefix": "!", "language": "en",   // chat replies: "en", "tr" or "fr"
         "volume": 50, "showSongInDescription": true, "radio": false,
         "announce": true,          // post every song in the channel as it starts
         "confirmCommands": true,   // short replies to !play, !skip…; questions and errors are always answered

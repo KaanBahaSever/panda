@@ -40,6 +40,9 @@ public sealed class PlayHistory
 			recent.Add(all[i]);
 	}
 
+	/// <summary>Plays added since Panda started; the panel refreshes "All bots" statistics when it moves.</summary>
+	public long Added { get; private set; }
+
 	public IReadOnlyList<PlayedTrack> Recent()
 	{
 		lock (gate) return recent.ToArray();
@@ -49,6 +52,7 @@ public sealed class PlayHistory
 	{
 		lock (gate)
 		{
+			Added++;
 			recent.Insert(0, played);
 			if (recent.Count > RecentSize) recent.RemoveAt(recent.Count - 1);
 			try

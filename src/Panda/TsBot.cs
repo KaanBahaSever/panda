@@ -464,9 +464,9 @@ public sealed class TsBot : BackgroundService
 		{
 			var mode = arg.ToLowerInvariant() switch
 			{
-				"off" or "kapalı" or "kapali" or "0" => LoopMode.Off,
-				"one" or "song" or "şarkı" or "sarki" or "1" => LoopMode.One,
-				"all" or "queue" or "hepsi" or "tümü" => LoopMode.All,
+				"off" or "kapalı" or "kapali" or "non" or "désactivé" or "desactive" or "0" => LoopMode.Off,
+				"one" or "song" or "şarkı" or "sarki" or "un" or "morceau" or "1" => LoopMode.One,
+				"all" or "queue" or "hepsi" or "tümü" or "tout" or "file" => LoopMode.All,
 				_ => player.Loop switch { LoopMode.Off => LoopMode.All, LoopMode.All => LoopMode.One, _ => LoopMode.Off },
 			};
 			player.SetLoop(mode);
@@ -490,9 +490,10 @@ public sealed class TsBot : BackgroundService
 		{
 			if (player.Current is not { } now) return Strings.Get(Lang, "nothing-playing");
 			// One shared list; it is named in the bot's chat language when it's first made.
-			var name = playlists.Find(Strings.Get("tr", "favorites"))?.Name ?? playlists.Find(Strings.Get("en", "favorites"))?.Name
+			var name = Strings.Languages.Select(l => playlists.Find(Strings.Get(l, "favorites"))?.Name).FirstOrDefault(n => n != null)
 				?? Strings.Get(Lang, "favorites");
-			playlists.Save(name, [PlaylistSong.From(now)]);
+			playlists.Save(name, [PlaylistSong.From(now)], out var left);
+			if (left > 0) return Strings.Get(Lang, "playlist-full", Escape(name), Playlists.MaxSongs);
 			return Confirm(Strings.Get(Lang, "fav-added", Link(now), Escape(name)));
 		}
 
@@ -500,8 +501,8 @@ public sealed class TsBot : BackgroundService
 		{
 			var on = arg.ToLowerInvariant() switch
 			{
-				"on" or "aç" or "ac" or "açık" or "acik" or "1" => true,
-				"off" or "kapat" or "kapalı" or "kapali" or "0" => false,
+				"on" or "aç" or "ac" or "açık" or "acik" or "oui" or "activer" or "1" => true,
+				"off" or "kapat" or "kapalı" or "kapali" or "non" or "désactiver" or "desactiver" or "0" => false,
 				_ => !player.Radio,
 			};
 			player.SetRadio(on);
@@ -628,26 +629,26 @@ public static class Commands
 {
 	static readonly Dictionary<string, string> Aliases = new()
 	{
-		["play"] = "play", ["p"] = "play", ["çal"] = "play", ["cal"] = "play", ["oynat"] = "play",
-		["playnow"] = "playnow", ["şimdiçal"] = "playnow", ["simdical"] = "playnow",
-		["skip"] = "skip", ["next"] = "skip", ["s"] = "skip", ["geç"] = "skip", ["gec"] = "skip", ["atla"] = "skip",
-		["stop"] = "stop", ["dur"] = "stop",
+		["play"] = "play", ["p"] = "play", ["çal"] = "play", ["cal"] = "play", ["oynat"] = "play", ["jouer"] = "play", ["joue"] = "play",
+		["playnow"] = "playnow", ["şimdiçal"] = "playnow", ["simdical"] = "playnow", ["jouermaintenant"] = "playnow",
+		["skip"] = "skip", ["next"] = "skip", ["s"] = "skip", ["geç"] = "skip", ["gec"] = "skip", ["atla"] = "skip", ["passer"] = "skip", ["suivant"] = "skip",
+		["stop"] = "stop", ["dur"] = "stop", ["arrêt"] = "stop", ["arret"] = "stop", ["arrêter"] = "stop", ["arreter"] = "stop",
 		["pause"] = "pause", ["duraklat"] = "pause",
-		["resume"] = "resume", ["unpause"] = "resume", ["devam"] = "resume",
-		["queue"] = "queue", ["q"] = "queue", ["list"] = "queue", ["sıra"] = "queue", ["sira"] = "queue", ["liste"] = "queue",
-		["np"] = "np", ["now"] = "np", ["nowplaying"] = "np", ["şimdi"] = "np", ["simdi"] = "np", ["çalan"] = "np",
+		["resume"] = "resume", ["unpause"] = "resume", ["devam"] = "resume", ["reprendre"] = "resume",
+		["queue"] = "queue", ["q"] = "queue", ["list"] = "queue", ["sıra"] = "queue", ["sira"] = "queue", ["liste"] = "queue", ["file"] = "queue",
+		["np"] = "np", ["now"] = "np", ["nowplaying"] = "np", ["şimdi"] = "np", ["simdi"] = "np", ["çalan"] = "np", ["encours"] = "np",
 		["vol"] = "vol", ["volume"] = "vol", ["v"] = "vol", ["ses"] = "vol",
-		["remove"] = "remove", ["rm"] = "remove", ["sil"] = "remove",
-		["clear"] = "clear", ["temizle"] = "clear",
-		["shuffle"] = "shuffle", ["karıştır"] = "shuffle", ["karistir"] = "shuffle",
-		["loop"] = "loop", ["repeat"] = "loop", ["tekrar"] = "loop",
-		["join"] = "join", ["come"] = "join", ["gel"] = "join",
+		["remove"] = "remove", ["rm"] = "remove", ["sil"] = "remove", ["retirer"] = "remove", ["supprimer"] = "remove",
+		["clear"] = "clear", ["temizle"] = "clear", ["vider"] = "clear",
+		["shuffle"] = "shuffle", ["karıştır"] = "shuffle", ["karistir"] = "shuffle", ["mélanger"] = "shuffle", ["melanger"] = "shuffle",
+		["loop"] = "loop", ["repeat"] = "loop", ["tekrar"] = "loop", ["boucle"] = "loop", ["répéter"] = "loop", ["repeter"] = "loop",
+		["join"] = "join", ["come"] = "join", ["gel"] = "join", ["viens"] = "join", ["rejoindre"] = "join",
 		["radio"] = "radio", ["radyo"] = "radio",
-		["follow"] = "follow", ["followme"] = "follow", ["takip"] = "follow", ["takipet"] = "follow",
+		["follow"] = "follow", ["followme"] = "follow", ["takip"] = "follow", ["takipet"] = "follow", ["suivre"] = "follow",
 		["playlist"] = "playlist", ["pl"] = "playlist", ["çalmalistesi"] = "playlist", ["calmalistesi"] = "playlist",
 		["playlists"] = "playlists", ["lists"] = "playlists", ["listeler"] = "playlists",
 		["fav"] = "fav", ["favorite"] = "fav", ["favori"] = "fav",
-		["help"] = "help", ["h"] = "help", ["yardım"] = "help", ["yardim"] = "help", ["komutlar"] = "help",
+		["help"] = "help", ["h"] = "help", ["yardım"] = "help", ["yardim"] = "help", ["komutlar"] = "help", ["aide"] = "help",
 	};
 
 	public static string? Find(string name) => Aliases.GetValueOrDefault(name);

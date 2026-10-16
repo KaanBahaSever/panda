@@ -101,6 +101,9 @@ public sealed class PandaConfig
 
 	// ---- panel users ----
 
+	/// <summary>A user was added, removed or got a new role or password here (open panel streams recheck theirs).</summary>
+	public event Action? UsersChanged;
+
 	public PanelUser? FindUser(string name)
 	{
 		lock (saveLock) return Panel.Users.FirstOrDefault(u => u.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
@@ -142,6 +145,7 @@ public sealed class PandaConfig
 			if (!Panel.Users.Contains(user)) Panel.Users = [.. Panel.Users, user];
 		}
 		Save();
+		UsersChanged?.Invoke();
 		return user;
 	}
 
@@ -155,6 +159,7 @@ public sealed class PandaConfig
 			Panel.Users = [.. Panel.Users, user];
 		}
 		Save();
+		UsersChanged?.Invoke();
 		return true;
 	}
 
@@ -174,6 +179,7 @@ public sealed class PandaConfig
 			user.Stamp = PasswordHasher.Generate();
 		}
 		Save();
+		UsersChanged?.Invoke();
 		return user;
 	}
 
@@ -187,6 +193,7 @@ public sealed class PandaConfig
 			user.Role = role;
 		}
 		Save();
+		UsersChanged?.Invoke();
 		return true;
 	}
 
@@ -200,6 +207,7 @@ public sealed class PandaConfig
 			Panel.Users = Panel.Users.Where(u => u != user).ToList();
 		}
 		Save();
+		UsersChanged?.Invoke();
 		return true;
 	}
 
@@ -324,7 +332,7 @@ public sealed class BotSettings
 {
 	public string Nickname { get; set; } = "Panda 🐼";
 	public string CommandPrefix { get; set; } = "!";
-	/// <summary>Language of chat replies: "en" or "tr".</summary>
+	/// <summary>Language of chat replies: "en", "tr" or "fr".</summary>
 	public string Language { get; set; } = "en";
 	public int Volume { get; set; } = 50;
 	/// <summary>Post "Now playing" in the channel when a song starts.</summary>
