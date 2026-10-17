@@ -1,0 +1,18 @@
+# Turkish replies and command names.
+s language=tr announce=false
+c !yardım
+e komutları
+c !çal test tone
+e Şimdi çalıyor
+c !tekrar hepsi
+e Tüm sıra tekrar edecek.
+c !tekrar kapalı
+e Tekrar kapalı.
+c !ses 35
+e Ses %35 yapıldı.
+c !şimdi
+e Şimdi çalıyor
+c !geç
+e Geçildi.
+p !xyz
+e Bilinmeyen komut

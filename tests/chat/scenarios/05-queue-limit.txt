@@ -1,0 +1,16 @@
+# Max queue 2 with loop "all": play-now never grows the queue past the limit.
+s maxQueueLength=2 announce=false
+c !play test tone
+c !play test tone
+e Added to the queue (#1)
+c !play test tone
+e Added to the queue (#2)
+c !play test tone
+e The queue is full.
+c !loop all
+p !playnow test tone
+p !playnow test tone
+p !playnow test tone
+c !queue
+e Queue (2 songs)
+c !loop off

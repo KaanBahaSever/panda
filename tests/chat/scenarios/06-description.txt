@@ -1,0 +1,13 @@
+# The song shows in the bot's description; turning the setting off clears it, on brings it back.
+c !play test tone
+w 2
+d ♪ Test Tone Song
+s showSongInDescription=false
+w 2
+d !
+s showSongInDescription=true
+w 2
+d ♪ Test Tone Song
+c !stop
+w 2
+d !

@@ -1,0 +1,22 @@
+# Announce and confirm off: silence, except questions and errors.
+s announce=false confirmCommands=false
+c !play test tone
+x
+c !play test tone
+x
+c !vol 40
+x
+c !shuffle
+x
+c !np
+e Now playing
+c !queue
+e Queue (1 songs)
+c !skip
+x
+c !stop
+x
+c !skip
+e Nothing is playing.
+c !remove 9
+e There is no song #9 in the queue.

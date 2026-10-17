@@ -1,0 +1,8 @@
+# !fav into a full list (500 songs) says so instead of "saved".
+L Favorites 500
+c !play test tone
+c !fav
+e is full (500 songs)
+L Favorites 0
+c !fav
+e Saved to [b]Favorites[/b]

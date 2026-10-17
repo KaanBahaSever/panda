@@ -1,0 +1,10 @@
+# Announce off, confirm on: "now playing" is the reply to !play.
+s announce=false
+c !play test tone
+e Now playing
+c !play test tone
+e Added to the queue (#1)
+c !skip
+e Skipped.
+c !stop
+e Stopped

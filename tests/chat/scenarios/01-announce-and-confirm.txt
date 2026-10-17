@@ -1,0 +1,22 @@
+# Defaults: songs are announced, commands confirmed. The announcement is the only reply to !play.
+c !play test tone
+e Now playing
+e requested by Tester
+c !vol 30
+e Volume set to 30%
+c !loop
+e Repeating the whole queue.
+c !loop off
+e Loop off.
+c !np
+e Now playing
+# Unknown commands: quiet in the channel (another bot may use the prefix), answered in private.
+c !xyz
+x
+p !xyz
+e Unknown command
+# A private !playnow is answered privately: the requester may not see the channel.
+p !playnow test tone
+e [Private]
+c !stop
+e Stopped and cleared the queue.

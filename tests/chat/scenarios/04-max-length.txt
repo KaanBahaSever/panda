@@ -1,0 +1,6 @@
+# Max song length 1 min: the saved 1:30 song is turned down too.
+s maxDurationMinutes=1
+c !play test tone
+e That video is too long.
+c !np
+e Nothing is playing.
