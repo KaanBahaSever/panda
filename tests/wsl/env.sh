@@ -1,6 +1,6 @@
 #!/bin/bash
 # WSL: starts the TeamSpeak 6 test server and a Panda (panel on port 8097) whose library holds one
-# generated test song, so chat commands work without YouTube.
+# generated test song, with a yt-dlp stand-in (fake-yt-dlp.sh): the tests never reach YouTube.
 # usage: env.sh <linux panda binary>      env.sh ts (only the TeamSpeak server)      env.sh stop
 set -eu
 T=$HOME/panda-test-env
@@ -31,10 +31,15 @@ rm -rf "$T"; mkdir -p "$T/data/library"
 cp "$1" "$T/panda"; chmod +x "$T/panda"
 ffmpeg -loglevel error -f lavfi -i "sine=frequency=440:duration=90" -c:a libopus -b:a 48k -f webm "$T/data/library/tstTone0001.audio"
 SIZE=$(stat -c %s "$T/data/library/tstTone0001.audio")
+# yt-dlp stand-in: any other song is the same tone, and YouTube's failures can be acted out.
+mkdir -p "$T/fake-yt-dlp"
+cp "$T/data/library/tstTone0001.audio" "$T/fake-yt-dlp/tone.webm"
+cp "$(dirname "$0")/fake-yt-dlp.sh" "$T/fake-yt-dlp/yt-dlp"; chmod +x "$T/fake-yt-dlp/yt-dlp"
 cat > "$T/data/library/library.json" <<EOF
 { "songs": [ { "id": "tstTone0001", "title": "Test Tone Song", "channel": "Tester", "duration": 90, "size": $SIZE, "added": "2026-10-15T00:00:00Z" } ], "stats": {} }
 EOF
-printf '{ "bots": [ { "id": "1", "server": { "address": "127.0.0.1" } } ], "panel": { "port": 8097 } }\n' > "$T/data/config.json"
+printf '{ "bots": [ { "id": "1", "server": { "address": "127.0.0.1" } } ], "panel": { "port": 8097 }, "youTube": { "ytDlpPath": "%s" } }\n' \
+	"$T/fake-yt-dlp/yt-dlp" > "$T/data/config.json"
 "$T/panda" --data "$T/data" set-password testpass123 admin >/dev/null
 setsid nohup "$T/panda" --data "$T/data" > "$T/log.txt" 2>&1 < /dev/null &
 for _ in $(seq 40); do grep -q "Connected to" "$T/log.txt" 2>/dev/null && break; sleep 1; done

@@ -1,0 +1,47 @@
+# !search lists five results; !1 … !5 picks one.
+s announce=false
+c !1
+e Search first
+c !search some song
+e Pick one with
+e 5.[/b]
+c !3
+e Fake some song 3
+c !2
+e Added to the queue (#1)
+c !9
+e There is no result #9.
+# Moving and jumping in the queue.
+c !play test tone
+e Added to the queue (#2)
+c !move 2 1
+e Moved [b]Test Tone Song[/b] to #1.
+c !queue
+e 1.[/b] Test Tone Song
+c !skipto 2
+e Fake some song 2
+c !queue
+e ▶
+n Queue (
+# Winding the song.
+c !seek 1:00
+e Jumped to 1:00.
+c !seek +10
+e Jumped to 1:1
+c !seek soon
+e Usage:
+# !back plays the song before this one again; this one comes right after.
+c !back
+e Playing the previous song again
+e Fake some song 3
+c !queue
+e Fake some song 2
+c !skip
+c !back
+e Fake some song 3
+# Turkish names.
+s language=tr
+c !ara başka şarkı
+e ile seç
+c !1
+e Sıraya eklendi

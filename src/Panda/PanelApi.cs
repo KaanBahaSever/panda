@@ -66,13 +66,14 @@ public static class PanelApi
 			try
 			{
 				var by = isAdmin && req.RequestedBy is { Length: > 0 } r ? r : "🌐 " + ctx.User.Identity?.Name;
-				var track = await library.ResolveAsync(req.Query ?? "", by);
+				var track = await library.ResolveAsync(req.Query ?? "", by) with { RequesterId = "panel:" + ctx.User.Identity?.Name };
 				if (req.Now) b.Player.PlayNow(track);
-				else b.Player.Enqueue(track);
+				else b.Player.Enqueue(track, exempt: isAdmin);
 				return Results.Ok(track);
 			}
 			catch (YouTubeException ex) { return Problem(ex.Message); }
 			catch (QueueFullException) { return Problem("queue-full"); }
+			catch (UserLimitException) { return Problem("user-limit"); }
 		});
 
 		botAdmin.MapPost("/control/{action}", (string action, BotInstance b) => action switch
@@ -168,10 +169,10 @@ public static class PanelApi
 		bot.MapPost("/playlist", (PlayPlaylistRequest req, BotInstance b, Playlists lists, HttpContext ctx) =>
 		{
 			if (lists.Find(req.Name ?? "") is not { } p) return Results.NotFound();
-			var songs = p.Songs.Select(s => s.ToTrack("🌐 " + ctx.User.Identity?.Name));
+			var songs = p.Songs.Select(s => s.ToTrack("🌐 " + ctx.User.Identity?.Name) with { RequesterId = "panel:" + ctx.User.Identity?.Name });
 			if (req.Shuffle) songs = songs.OrderBy(_ => Random.Shared.Next());
-			var added = b.Player.EnqueueMany(songs.ToList());
-			return added == 0 && p.Songs.Count > 0 ? Problem("queue-full") : Results.Ok(new { added });
+			var added = b.Player.EnqueueMany(songs.ToList(), exempt: ctx.User.IsInRole(Roles.Admin), out var limited);
+			return added == 0 && p.Songs.Count > 0 ? Problem(limited ? "user-limit" : "queue-full") : Results.Ok(new { added });
 		});
 
 		// --- health and logs ---
@@ -446,6 +447,8 @@ public sealed class SettingsDto
 	public List<string> AllowedUsers { get; set; } = [];
 	public List<ulong> AllowedServerGroups { get; set; } = [];
 	public int MaxQueueLength { get; set; }
+	public int MaxSongsPerUser { get; set; }
+	public bool VoteSkip { get; set; }
 	public int MaxDurationMinutes { get; set; }
 	public bool LibraryEnabled { get; set; }
 	public int LibraryMaxSizeMb { get; set; }
@@ -468,6 +471,8 @@ public sealed class SettingsDto
 		AllowedUsers = b.Bot.AllowedUsers,
 		AllowedServerGroups = b.Bot.AllowedServerGroups,
 		MaxQueueLength = b.Bot.MaxQueueLength,
+		MaxSongsPerUser = b.Bot.MaxSongsPerUser,
+		VoteSkip = b.Bot.VoteSkip,
 		MaxDurationMinutes = c.YouTube.MaxDurationMinutes,
 		LibraryEnabled = c.Library.Enabled,
 		LibraryMaxSizeMb = c.Library.MaxSizeMb,
@@ -498,6 +503,8 @@ public sealed class SettingsDto
 		b.Bot.AllowedUsers = AllowedUsers.Select(u => u.Trim()).Where(u => u.Length > 0).Distinct().ToList();
 		b.Bot.AllowedServerGroups = AllowedServerGroups.Distinct().ToList();
 		if (MaxQueueLength is >= 1 and <= 1000) b.Bot.MaxQueueLength = MaxQueueLength;
+		if (MaxSongsPerUser is >= 0 and <= 1000) b.Bot.MaxSongsPerUser = MaxSongsPerUser;
+		b.Bot.VoteSkip = VoteSkip;
 		if (MaxDurationMinutes is >= 0 and <= 1440) c.YouTube.MaxDurationMinutes = MaxDurationMinutes;
 		c.Library.Enabled = LibraryEnabled;
 		if (LibraryMaxSizeMb is 0 or (>= 100 and <= 1_000_000)) c.Library.MaxSizeMb = LibraryMaxSizeMb;

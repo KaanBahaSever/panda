@@ -36,12 +36,12 @@ programı yok: Panda sunucuyla doğrudan konuşur, bu yüzden hafiftir (bot ~130
   şarkı kütüphanesi ortaktır.
 - 🐼 **TeamSpeak 6 için yapıldı** (TS3 sunucularında da çalışır).
 - 🌐 **Web paneli** — şimdi çalan, sürükle-bırak sıra, arama, kütüphane, çalma listeleri, saatli geçmiş,
-  istatistikler, ses, tekrar, ileri/geri sarma, açık/koyu tema, Türkçe/İngilizce/Fransızca.
+  istatistikler, ses, tekrar, ileri/geri sarma, açık/koyu tema, Türkçe/İngilizce/Fransızca/Almanca.
 - 👥 **Panel kullanıcıları** — yöneticiler her şeyi yapar; "sadece şarkı ekler" kullanıcıları izler ve
   şarkı ekler.
 - 🩺 **Sistem ekranı** — işlemci, bellek ve disk, her botun bağlantısı, aranabilir canlı kayıtlar ve
   güncellemeler (Linux kurulumunda tek tık).
-- 💬 Türkçe, İngilizce ve Fransızca **sohbet komutları**. `!takip` ile bot seni kanaldan kanala takip eder.
+- 💬 Türkçe, İngilizce, Fransızca ve Almanca **sohbet komutları**. `!takip` ile bot seni kanaldan kanala takip eder.
 - 🍪 **YouTube bot kontrolü mü?** Cookies'i panele yapıştır, bitti.
 - 🔁 Kendi kendine yeniden bağlanır, kimliğini korur (yetkiler kalıcı olur), çalan şarkıyı açıklamasında gösterir.
 - 🔐 Yüksek kimlik güvenlik seviyesi isteyen sunucularda da çalışır: Panda kendi seviyesini bir kez yükseltir (birkaç saniye ile birkaç dakika arası).
@@ -131,26 +131,32 @@ yerdeki `data` klasöründe tutulur.
 
 Botun kanalına ya da bota özel mesaj olarak yaz. İngilizce karşılıkları da çalışır.
 
-| Komut | İngilizce | Fransızca | Ne yapar |
-|---|---|---|---|
-| `!çal <ad veya link>` | `!play` / `!p` | `!jouer` | Hemen çalar ya da sıraya ekler |
-| `!şimdiçal <ad veya link>` | `!playnow` | `!jouermaintenant` | Sırayı atlayıp hemen çalar |
-| `!geç` | `!skip` / `!next` | `!passer` / `!suivant` | Sonraki şarkı |
-| `!dur` | `!stop` | `!arrêt` | Durdurur ve sırayı temizler |
-| `!duraklat` / `!devam` | `!pause` / `!resume` | `!pause` / `!reprendre` | Duraklat / devam |
-| `!sıra` | `!queue` / `!q` | `!file` | Sırayı gösterir |
-| `!şimdi` | `!np` | `!encours` | Ne çalıyor |
-| `!ses <0-100>` | `!vol` | `!volume` | Ses seviyesi |
-| `!tekrar <kapalı\|şarkı\|hepsi>` | `!loop <off\|one\|all>` | `!boucle <non\|un\|tout>` | Tekrar |
-| `!karıştır` | `!shuffle` | `!mélanger` | Sırayı karıştırır |
-| `!sil <#>` / `!temizle` | `!remove` / `!clear` | `!retirer` / `!vider` | Şarkı siler / sırayı temizler |
-| `!gel` | `!join` | `!viens` | Kanalıma gel |
-| `!takip` | `!follow` | `!suivre` | Beni kanaldan kanala takip et (tekrar yazınca bırakır) |
-| `!radyo <aç\|kapat>` | `!radio <on\|off>` | `!radio <oui\|non>` | Sıra bitince benzer şarkılar çalmaya devam et |
-| `!liste <ad>` | `!playlist` / `!pl` | `!playlist` | Kayıtlı bir listeyi sıraya ekle |
-| `!listeler` | `!playlists` | `!playlists` | Kayıtlı listeleri göster |
-| `!fav` | `!fav` | `!fav` | Çalan şarkıyı Favoriler'e kaydet |
-| `!yardım` | `!help` | `!aide` | Komut listesi |
+| Komut | İngilizce | Fransızca | Almanca | Ne yapar |
+|---|---|---|---|---|
+| `!çal <ad veya link>` | `!play` / `!p` | `!jouer` | `!spielen` | Hemen çalar ya da sıraya ekler |
+| `!şimdiçal <ad veya link>` | `!playnow` | `!jouermaintenant` | `!jetztspielen` | Sırayı atlayıp hemen çalar |
+| `!geç` | `!skip` / `!next` | `!passer` / `!suivant` | `!überspringen` | Sonraki şarkı |
+| `!dur` | `!stop` | `!arrêt` | `!stopp` | Durdurur ve sırayı temizler |
+| `!duraklat` / `!devam` | `!pause` / `!resume` | `!pause` / `!reprendre` | `!pause` / `!fortsetzen` | Duraklat / devam |
+| `!sıra` | `!queue` / `!q` | `!file` | `!warteschlange` | Sırayı gösterir |
+| `!şimdi` | `!np` | `!encours` | `!läuft` | Ne çalıyor |
+| `!ses <0-100>` | `!vol` | `!volume` | `!lautstärke` | Ses seviyesi |
+| `!tekrar <kapalı\|şarkı\|hepsi>` | `!loop <off\|one\|all>` | `!boucle <non\|un\|tout>` | `!wiederholen <aus\|eins\|alle>` | Tekrar |
+| `!karıştır` | `!shuffle` | `!mélanger` | `!mischen` | Sırayı karıştırır |
+| `!sil <#>` / `!temizle` | `!remove` / `!clear` | `!retirer` / `!vider` | `!entfernen` / `!leeren` | Şarkı siler / sırayı temizler |
+| `!gel` | `!join` | `!viens` | `!komm` | Kanalıma gel |
+| `!takip` | `!follow` | `!suivre` | `!folgen` | Beni kanaldan kanala takip et (tekrar yazınca bırakır) |
+| `!radyo <aç\|kapat>` | `!radio <on\|off>` | `!radio <oui\|non>` | `!radio <an\|aus>` | Sıra bitince benzer şarkılar çalmaya devam et |
+| `!liste <ad>` | `!playlist` / `!pl` | `!playlist` | `!playlist` | Kayıtlı bir listeyi sıraya ekle |
+| `!listeler` | `!playlists` | `!playlists` | `!playlists` | Kayıtlı listeleri göster |
+| `!fav` | `!fav` | `!fav` | `!fav` | Çalan şarkıyı Favoriler'e kaydet |
+| `!ara <ad>` | `!search` | `!chercher` | `!suchen` | 5 sonuç gösterir; `!1` … `!5` ile seçilir |
+| `!sar <1:30 \| +10 \| -10>` | `!seek` | `!aller` | `!spulen` | Şarkıda ileri geri gider |
+| `!önceki` | `!back` | `!précédent` | `!zurück` | Önceki şarkıyı tekrar çalar |
+| `!git <#>` | `!skipto` | `!allerà` | `!springen` | Sıradaki bir şarkıya atlar |
+| `!taşı <#> <#>` | `!move` | `!déplacer` | `!verschieben` | Sırada şarkının yerini değiştirir |
+| `!oyla` | `!voteskip` | `!voter` | `!abstimmen` | Geçmek için oy verir (**Oylamayla geç** açıksa) |
+| `!yardım` | `!help` | `!aide` | `!hilfe` | Komut listesi |
 
 Varsayılan olarak herkes botu kullanabilir. Sınırlamak için **Ayarlar → Bot** kısmına TeamSpeak
 UID'leri ya da sunucu grubu ID'leri ekle.
@@ -158,6 +164,13 @@ UID'leri ya da sunucu grubu ID'leri ekle.
 Kanal sessiz kalsın istersen **Ayarlar → Bot** kısmında **Her şarkıyı sohbette duyur** (her şarkı
 başlarken bir mesaj) ve **Sohbet komutlarını onayla** (“Sıraya eklendi …”, “Geçildi.” gibi kısa cevaplar)
 seçeneklerini kapat. `!şimdi` gibi sorular ve hatalar yine cevaplanır.
+
+Yine **Ayarlar → Bot** kısmında: **Kişi başı şarkı** bir kişinin sırada aynı anda kaç şarkısı
+bekleyebileceğini sınırlar (panel yöneticileri sınırlanmaz). **Oylamayla geç** açıksa başkasının yazdığı
+`!geç` bir oy sayılır; botun kanalındakilerin yarısı oy verince şarkı geçilir. Şarkıyı isteyen kişi her zaman geçebilir.
+
+YouTube bir şarkıyı anlık olarak reddederse (HTTP 403, bot kontrolü, yarıda kopan akış) Panda sessizce
+üç kereye kadar yeniden dener ve şarkı kaldığı yerden sürer.
 
 ## "Sign in to confirm you're not a bot" hatası
 

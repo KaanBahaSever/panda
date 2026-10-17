@@ -1,0 +1,20 @@
+# Songs per person: two songs may wait; the one playing doesn't count.
+s maxSongsPerUser=2 announce=false
+c !play test tone
+c !play test tone
+e Added to the queue (#1)
+c !play test tone
+e Added to the queue (#2)
+c !play test tone
+e You already have 2 songs waiting
+# Someone else's songs don't count, and once one of mine plays there is room again.
+P test tone
+c !skip
+c !play test tone
+e Added to the queue (#3)
+c !play test tone
+e You already have 2 songs waiting
+# A playlist stops at the limit too.
+L Limit test 5
+c !playlist Limit test
+e You already have 2 songs waiting

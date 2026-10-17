@@ -24,7 +24,7 @@ public sealed class BotInstance : IDisposable
 		log = logs.CreateLogger($"Panda.Bot.{config.Id}");
 		History = new PlayHistory(dir, logs.CreateLogger<PlayHistory>());
 		Player = new Player(config, global, youtube, library, History, logs.CreateLogger($"Panda.Player.{config.Id}"));
-		Ts = new TsBot(config, Player, library, playlists, dir, logs.CreateLogger($"Panda.TsBot.{config.Id}"));
+		Ts = new TsBot(config, Player, library, youtube, playlists, dir, logs.CreateLogger($"Panda.TsBot.{config.Id}"));
 		RestoreSession();
 	}
 

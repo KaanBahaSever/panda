@@ -42,11 +42,11 @@ Panda talks to the server directly, so it stays light: the bot itself uses about
   one song library.
 - 🐼 **Made for TeamSpeak 6** (TS3 servers work too).
 - 🌐 **Web panel** — now playing, queue with drag & drop, search, library, playlists, history with
-  times, statistics, volume, loop, seek, light/dark theme, English/Turkish/French.
+  times, statistics, volume, loop, seek, light/dark theme, English/Turkish/French/German.
 - 👥 **Panel users** — admins can do everything; "can only add songs" users watch and add songs.
 - 🩺 **System screen** — CPU, memory and disk, each bot's connection, live logs with search, and
   updates (one click on Linux installs).
-- 💬 **Chat commands** in English, Turkish and French. `!follow` makes the bot follow you between channels.
+- 💬 **Chat commands** in English, Turkish, French and German. `!follow` makes the bot follow you between channels.
 - 🍪 **YouTube bot check?** Paste your cookies in the panel and you're done.
 - 🔁 Reconnects by itself, keeps its identity (so permissions stick), shows the song in its description.
 - 🔐 Servers that ask for a higher identity security level work too: Panda raises its own once (a few seconds to a few minutes).
@@ -129,26 +129,32 @@ in a `data` folder next to where you start it.
 
 Write them in the bot's channel or in a private message to the bot.
 
-| Command | Turkish | French | What it does |
-|---|---|---|---|
-| `!play <name or link>` / `!p` | `!çal` | `!jouer` | Play now, or add to the queue |
-| `!playnow <name or link>` | `!şimdiçal` | `!jouermaintenant` | Skip the queue and play right away |
-| `!skip` / `!next` | `!geç` | `!passer` / `!suivant` | Next song |
-| `!stop` | `!dur` | `!arrêt` | Stop and clear the queue |
-| `!pause` / `!resume` | `!duraklat` / `!devam` | `!pause` / `!reprendre` | Pause / continue |
-| `!queue` / `!q` | `!sıra` | `!file` | Show the queue |
-| `!np` | `!şimdi` | `!encours` | What's playing |
-| `!vol <0-100>` | `!ses` | `!volume` | Volume |
-| `!loop <off\|one\|all>` | `!tekrar <kapalı\|şarkı\|hepsi>` | `!boucle <non\|un\|tout>` | Repeat |
-| `!shuffle` | `!karıştır` | `!mélanger` | Shuffle the queue |
-| `!remove <#>` / `!clear` | `!sil` / `!temizle` | `!retirer` / `!vider` | Remove a song / clear the queue |
-| `!join` | `!gel` | `!viens` | Come to my channel |
-| `!follow` | `!takip` | `!suivre` | Follow me between channels (again to stop) |
-| `!radio <on\|off>` | `!radyo <aç\|kapat>` | `!radio <oui\|non>` | Keep playing similar songs when the queue ends |
-| `!playlist <name>` / `!pl` | `!liste <ad>` | `!playlist` | Queue a saved playlist |
-| `!playlists` | `!listeler` | `!playlists` | List saved playlists |
-| `!fav` | `!fav` | `!fav` | Save the song playing to Favorites |
-| `!help` | `!yardım` | `!aide` | List commands |
+| Command | Turkish | French | German | What it does |
+|---|---|---|---|---|
+| `!play <name or link>` / `!p` | `!çal` | `!jouer` | `!spielen` | Play now, or add to the queue |
+| `!playnow <name or link>` | `!şimdiçal` | `!jouermaintenant` | `!jetztspielen` | Skip the queue and play right away |
+| `!skip` / `!next` | `!geç` | `!passer` / `!suivant` | `!überspringen` | Next song |
+| `!stop` | `!dur` | `!arrêt` | `!stopp` | Stop and clear the queue |
+| `!pause` / `!resume` | `!duraklat` / `!devam` | `!pause` / `!reprendre` | `!pause` / `!fortsetzen` | Pause / continue |
+| `!queue` / `!q` | `!sıra` | `!file` | `!warteschlange` | Show the queue |
+| `!np` | `!şimdi` | `!encours` | `!läuft` | What's playing |
+| `!vol <0-100>` | `!ses` | `!volume` | `!lautstärke` | Volume |
+| `!loop <off\|one\|all>` | `!tekrar <kapalı\|şarkı\|hepsi>` | `!boucle <non\|un\|tout>` | `!wiederholen <aus\|eins\|alle>` | Repeat |
+| `!shuffle` | `!karıştır` | `!mélanger` | `!mischen` | Shuffle the queue |
+| `!remove <#>` / `!clear` | `!sil` / `!temizle` | `!retirer` / `!vider` | `!entfernen` / `!leeren` | Remove a song / clear the queue |
+| `!join` | `!gel` | `!viens` | `!komm` | Come to my channel |
+| `!follow` | `!takip` | `!suivre` | `!folgen` | Follow me between channels (again to stop) |
+| `!radio <on\|off>` | `!radyo <aç\|kapat>` | `!radio <oui\|non>` | `!radio <an\|aus>` | Keep playing similar songs when the queue ends |
+| `!playlist <name>` / `!pl` | `!liste <ad>` | `!playlist` | `!playlist` | Queue a saved playlist |
+| `!playlists` | `!listeler` | `!playlists` | `!playlists` | List saved playlists |
+| `!fav` | `!fav` | `!fav` | `!fav` | Save the song playing to Favorites |
+| `!search <name>` | `!ara` | `!chercher` | `!suchen` | Show 5 results; `!1` … `!5` picks one |
+| `!seek <1:30 \| +10 \| -10>` | `!sar` | `!aller` | `!spulen` | Jump in the song |
+| `!back` | `!önceki` | `!précédent` | `!zurück` | Play the previous song again |
+| `!skipto <#>` | `!git` | `!allerà` | `!springen` | Jump to a song in the queue |
+| `!move <#> <#>` | `!taşı` | `!déplacer` | `!verschieben` | Move a song in the queue |
+| `!voteskip` | `!oyla` | `!voter` | `!abstimmen` | Vote to skip (when **Skip by vote** is on) |
+| `!help` | `!yardım` | `!aide` | `!hilfe` | List commands |
 
 By default everyone can use the bot. To limit it, add TeamSpeak UIDs or server group IDs under
 **Settings → Bot**.
@@ -156,6 +162,13 @@ By default everyone can use the bot. To limit it, add TeamSpeak UIDs or server g
 For a quiet channel, turn off **Announce each song in chat** (a message whenever a song starts) and
 **Confirm chat commands** (short replies like "Added to the queue …" or "Skipped.") under **Settings → Bot**.
 Questions such as `!np` and errors are still answered.
+
+Also under **Settings → Bot**: **Songs per person** limits how many songs one person can have waiting
+(panel admins aren't limited), and with **Skip by vote** on, `!skip` from someone else is a vote: the
+song is skipped when half of the people in the bot's channel voted. Whoever asked for a song can always skip it.
+
+When YouTube turns a song down for a moment (an HTTP 403, a bot check, a stream that breaks off), Panda
+quietly tries again, up to three times, and goes on from where the song stopped.
 
 ## "Sign in to confirm you're not a bot"
 
@@ -185,16 +198,20 @@ Everything is editable in the panel; the file is `/var/lib/panda/config.json` (o
       "id": "1",
       "server": { "address": "127.0.0.1:9987", "password": "", "channel": "Music", "channelPassword": "" },
       "bot": {
-        "nickname": "Panda 🐼", "commandPrefix": "!", "language": "en",   // chat replies: "en", "tr" or "fr"
+        "nickname": "Panda 🐼", "commandPrefix": "!", "language": "en",   // chat replies: "en", "tr", "fr" or "de"
         "volume": 50, "showSongInDescription": true, "radio": false,
         "announce": true,          // post every song in the channel as it starts
         "confirmCommands": true,   // short replies to !play, !skip…; questions and errors are always answered
-        "allowedUsers": [], "allowedServerGroups": [], "maxQueueLength": 100
+        "allowedUsers": [], "allowedServerGroups": [], "maxQueueLength": 100,
+        "maxSongsPerUser": 0,      // songs one person may have waiting; 0 = no limit
+        "voteSkip": false          // !skip from someone else is a vote; half of the channel skips
       }
     }
   ],
   "panel": { "listen": "0.0.0.0", "port": 8080, "users": [ /* set in the panel */ ] },
-  "youTube": { "ytDlpPath": "yt-dlp", "ffmpegPath": "ffmpeg", "cookiesFile": "", "maxDurationMinutes": 60 },
+  "youTube": { "ytDlpPath": "yt-dlp", "ffmpegPath": "ffmpeg", "cookiesFile": "", "maxDurationMinutes": 60,
+                "playAttempts": 3,                                 // tries when YouTube refuses a song
+                "retryPlayerClients": "android_vr,tv,web_safari" },  // yt-dlp clients from the third try on
   "library": { "enabled": true, "maxSizeMb": 5120, "path": "" },   // 0 MB = no limit; empty path = data/library
   "audio": { "normalize": true, "targetLufs": -14 }
 }

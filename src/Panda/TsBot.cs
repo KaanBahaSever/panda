@@ -31,6 +31,7 @@ public sealed class TsBot : BackgroundService
 	readonly BotConfig settings;
 	readonly Player player;
 	readonly Library library;
+	readonly YouTube youtube;
 	readonly Playlists playlists;
 	readonly ILogger log;
 	readonly string identityPath;
@@ -61,11 +62,12 @@ public sealed class TsBot : BackgroundService
 	string Prefix => Bot.CommandPrefix;
 
 	/// <param name="dir">The bot's folder, where its identity is kept.</param>
-	public TsBot(BotConfig settings, Player player, Library library, Playlists playlists, string dir, ILogger log)
+	public TsBot(BotConfig settings, Player player, Library library, YouTube youtube, Playlists playlists, string dir, ILogger log)
 	{
 		this.settings = settings;
 		this.player = player;
 		this.library = library;
+		this.youtube = youtube;
 		this.playlists = playlists;
 		this.log = log;
 		identityPath = Path.Combine(dir, "identity.json");
@@ -326,13 +328,21 @@ public sealed class TsBot : BackgroundService
 
 			async Task Reply(string reply)
 			{
-				if (msg.Target == TextMessageTargetMode.Private)
-					await c.SendPrivateMessage(reply, msg.InvokerId);
-				else
-					await c.SendChannelMessage(reply);
+				foreach (var part in SplitMessage(reply))
+				{
+					if (msg.Target == TextMessageTargetMode.Private)
+						await c.SendPrivateMessage(part, msg.InvokerId);
+					else
+						await c.SendChannelMessage(part);
+				}
 			}
 
 			var command = Commands.Find(cmd);
+			if (command is null && cmd.Length is > 0 and <= 2 && cmd.All(char.IsAsciiDigit))
+			{
+				command = "pick";
+				arg = cmd;
+			}
 			if (command is null)
 			{
 				// In the channel it may be meant for another bot ("!!play" for one on "!!"); stay quiet there.
@@ -355,6 +365,26 @@ public sealed class TsBot : BackgroundService
 		}
 	}
 
+	/// <summary>
+	/// TeamSpeak turns down messages over 1024 bytes; a long reply (the help, a search) goes out in
+	/// parts, cut between lines.
+	/// </summary>
+	internal static IEnumerable<string> SplitMessage(string text, int maxBytes = 1000)
+	{
+		var part = new StringBuilder();
+		foreach (var line in text.Split('\n'))
+		{
+			if (part.Length > 0 && Encoding.UTF8.GetByteCount(part.ToString()) + 1 + Encoding.UTF8.GetByteCount(line) > maxBytes)
+			{
+				yield return part.ToString();
+				part.Clear();
+			}
+			if (part.Length > 0) part.Append('\n');
+			part.Append(line);
+		}
+		if (part.Length > 0) yield return part.ToString();
+	}
+
 	bool IsAllowed(TsFullClient c, TextMessage msg)
 	{
 		var users = Bot.AllowedUsers;
@@ -364,6 +394,71 @@ public sealed class TsBot : BackgroundService
 		if (c.Book.Clients.TryGetValue(msg.InvokerId, out var who))
 			return who.ServerGroups.Any(g => groups.Contains(g.Value));
 		return false;
+	}
+
+	// A song that starts now is announced in the bot's channel; that answers a command written there,
+	// not one sent privately (maybe from another channel).
+	string? Queue(Track track, bool now, TextMessage msg)
+	{
+		var announced = Bot.Announce && msg.Target == TextMessageTargetMode.Channel;
+		if (now)
+		{
+			player.PlayNow(track);
+			return announced ? null : Confirm(Strings.Get(Lang, "now-playing", Link(track), Strings.Duration(Lang, track)));
+		}
+		var pos = player.Enqueue(track);
+		return pos == 0 && announced ? null
+			: Confirm(pos == 0 ? Strings.Get(Lang, "now-playing", Link(track), Strings.Duration(Lang, track))
+				: Strings.Get(Lang, "added", Link(track), pos, Strings.Duration(Lang, track)));
+	}
+
+	// !search results per person, picked with !1, !2...; they go stale after a few minutes.
+	const int SearchResults = 5;
+	static readonly TimeSpan SearchKeep = TimeSpan.FromMinutes(5);
+	readonly Dictionary<string, (List<Track> Results, DateTime At)> searches = [];
+	static string SearchKey(TextMessage msg) => msg.InvokerUid?.Value ?? "client:" + msg.InvokerId;
+
+	/// <summary>"1:30", "90", "1:02:03", or "+10" / "-10" from <paramref name="position"/>; null if it isn't a time.</summary>
+	internal static int? ParseSeek(string arg, int position)
+	{
+		arg = arg.Trim();
+		var sign = arg.StartsWith('+') ? 1 : arg.StartsWith('-') ? -1 : 0;
+		var parts = (sign == 0 ? arg : arg[1..]).Split(':');
+		if (parts.Length is < 1 or > 3) return null;
+		var seconds = 0;
+		foreach (var p in parts)
+		{
+			if (!int.TryParse(p, System.Globalization.NumberStyles.None, null, out var v) || v > 100_000) return null;
+			seconds = seconds * 60 + v;
+		}
+		return sign == 0 ? seconds : Math.Max(0, position + sign * seconds);
+	}
+
+	// Votes to skip the song playing: the people (unique ids) who voted for it.
+	Track? voteTrack;
+	readonly HashSet<string> votes = [];
+
+	/// <summary>A vote to skip: half of the people in the bot's channel (rounded up) skip the song.</summary>
+	string SkipVote(TsFullClient c, TextMessage msg, Track now)
+	{
+		var self = c.Book.Self();
+		if (self is null) return Strings.Get(Lang, "nothing-playing");
+		static string Key(TSLib.Full.Book.Client x) => x.Uid?.Value ?? "client:" + x.Id;
+		var listeners = c.Book.Clients.Values
+			.Where(x => x.Channel == self.Channel && x.Id != self.Id && x.ClientType == ClientType.Full)
+			.Select(Key).ToHashSet();
+		if (!c.Book.Clients.TryGetValue(msg.InvokerId, out var voter) || !listeners.Contains(Key(voter)))
+			return Strings.Get(Lang, "vote-not-here");
+		if (!ReferenceEquals(voteTrack, now)) { voteTrack = now; votes.Clear(); }
+		votes.Add(Key(voter));
+		// Only the votes of people still in the channel count.
+		var have = votes.Count(listeners.Contains);
+		var need = Math.Max(1, (listeners.Count + 1) / 2);
+		if (have < need) return Strings.Get(Lang, "vote-progress", have, need);
+		voteTrack = null;
+		votes.Clear();
+		player.Skip();
+		return Strings.Get(Lang, "vote-skipped", have, need);
 	}
 
 	/// <summary>A reply that only confirms what the command did; left out when the bot is set not to.</summary>
@@ -379,25 +474,89 @@ public sealed class TsBot : BackgroundService
 			if (arg.Length == 0) return Strings.Get(Lang, "usage-play", Prefix);
 			try
 			{
-				var track = await library.ResolveAsync(arg, who);
-				// A song that starts now is announced in the bot's channel; that answers a command written
-				// there, not one sent privately (maybe from another channel).
-				var announced = Bot.Announce && msg.Target == TextMessageTargetMode.Channel;
-				if (command == "playnow")
-				{
-					player.PlayNow(track);
-					return announced ? null : Confirm(Strings.Get(Lang, "now-playing", Link(track), Strings.Duration(Lang, track)));
-				}
-				var pos = player.Enqueue(track);
-				return pos == 0 && announced ? null
-					: Confirm(pos == 0 ? Strings.Get(Lang, "now-playing", Link(track), Strings.Duration(Lang, track))
-						: Strings.Get(Lang, "added", Link(track), pos, Strings.Duration(Lang, track)));
+				var track = await library.ResolveAsync(arg, who) with { RequesterId = msg.InvokerUid?.Value };
+				return Queue(track, command == "playnow", msg);
 			}
 			catch (YouTubeException ex) { return Strings.Error(Lang, ex.Message); }
 			catch (QueueFullException) { return Strings.Get(Lang, "queue-full"); }
+			catch (UserLimitException ex) { return Strings.Get(Lang, "user-limit", ex.Max); }
+
+		case "search":
+		{
+			if (arg.Length == 0) return Strings.Get(Lang, "usage-search", Prefix);
+			List<Track> results;
+			try { results = await youtube.SearchAsync(arg, SearchResults, who); }
+			catch (YouTubeException ex) { return Strings.Error(Lang, ex.Message); }
+			if (results.Count == 0) return Strings.Get(Lang, "err-not-found");
+			searches[SearchKey(msg)] = (results, DateTime.UtcNow);
+			var sb = new System.Text.StringBuilder(Strings.Get(Lang, "search-results", Prefix, results.Count));
+			for (int i = 0; i < results.Count; i++)
+				sb.Append($"\n[b]{i + 1}.[/b] {Link(results[i])} ({Strings.Duration(Lang, results[i])})");
+			return sb.ToString();
+		}
+
+		case "pick":
+		{
+			if (!searches.TryGetValue(SearchKey(msg), out var found) || DateTime.UtcNow - found.At > SearchKeep)
+				return Strings.Get(Lang, "pick-first", Prefix);
+			if (!int.TryParse(arg, out var n) || n < 1 || n > found.Results.Count)
+				return Strings.Get(Lang, "pick-bad", arg);
+			try
+			{
+				// The search only saw the list; this looks the song itself up (length, live, saved copy).
+				var track = await library.ResolveAsync(found.Results[n - 1].Url, who) with { RequesterId = msg.InvokerUid?.Value };
+				return Queue(track, now: false, msg);
+			}
+			catch (YouTubeException ex) { return Strings.Error(Lang, ex.Message); }
+			catch (QueueFullException) { return Strings.Get(Lang, "queue-full"); }
+			catch (UserLimitException ex) { return Strings.Get(Lang, "user-limit", ex.Max); }
+		}
+
+		case "seek":
+		{
+			if (player.Current is not { } now) return Strings.Get(Lang, "nothing-playing");
+			if (now.IsLive) return Strings.Get(Lang, "cant-seek");
+			if (ParseSeek(arg, (int)(player.GetState().Current?.Position ?? 0)) is not { } to) return Strings.Get(Lang, "usage-seek", Prefix);
+			player.Seek(to);
+			return Confirm(Strings.Get(Lang, "seeked", Strings.FormatTime(Math.Clamp(to, 0, Math.Max(0, now.Duration - 1)))));
+		}
+
+		case "back":
+		{
+			if (player.Back() is not { } prev) return Strings.Get(Lang, "back-none");
+			var announced = Bot.Announce && msg.Target == TextMessageTargetMode.Channel;
+			return announced ? null : Confirm(Strings.Get(Lang, "back", Link(prev)));
+		}
+
+		case "skipto":
+		{
+			if (!int.TryParse(arg, out var n) || player.SkipTo(n - 1) is not { } to) return Strings.Get(Lang, "bad-index", arg);
+			var announced = Bot.Announce && msg.Target == TextMessageTargetMode.Channel;
+			return announced ? null : Confirm(Strings.Get(Lang, "now-playing", Link(to), Strings.Duration(Lang, to)));
+		}
+
+		case "move":
+		{
+			var parts = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+			if (parts.Length != 2 || !int.TryParse(parts[0], out var from) || !int.TryParse(parts[1], out var to))
+				return Strings.Get(Lang, "usage-move", Prefix);
+			var queue = player.GetState().Queue;
+			if (from < 1 || from > queue.Count) return Strings.Get(Lang, "bad-index", from);
+			to = Math.Clamp(to, 1, queue.Count);
+			return player.Move(from - 1, to - 1, queue[from - 1].Id)
+				? Confirm(Strings.Get(Lang, "moved", Escape(queue[from - 1].Title), to))
+				: Strings.Get(Lang, "bad-index", from);
+		}
 
 		case "skip":
-			return player.Skip() ? Confirm(Strings.Get(Lang, "skipped")) : Strings.Get(Lang, "nothing-playing");
+		{
+			if (player.Current is not { } now) return Strings.Get(Lang, "nothing-playing");
+			var uid = msg.InvokerUid?.Value;
+			// Whoever asked for the song may always skip it.
+			if (!Bot.VoteSkip || (uid != null && now.RequesterId == uid))
+				return player.Skip() ? Confirm(Strings.Get(Lang, "skipped")) : Strings.Get(Lang, "nothing-playing");
+			return SkipVote(c, msg, now);
+		}
 
 		case "stop":
 			player.Stop();
@@ -464,9 +623,9 @@ public sealed class TsBot : BackgroundService
 		{
 			var mode = arg.ToLowerInvariant() switch
 			{
-				"off" or "kapalı" or "kapali" or "non" or "désactivé" or "desactive" or "0" => LoopMode.Off,
-				"one" or "song" or "şarkı" or "sarki" or "un" or "morceau" or "1" => LoopMode.One,
-				"all" or "queue" or "hepsi" or "tümü" or "tout" or "file" => LoopMode.All,
+				"off" or "kapalı" or "kapali" or "non" or "désactivé" or "desactive" or "aus" or "0" => LoopMode.Off,
+				"one" or "song" or "şarkı" or "sarki" or "un" or "morceau" or "eins" or "1" => LoopMode.One,
+				"all" or "queue" or "hepsi" or "tümü" or "tout" or "file" or "alle" => LoopMode.All,
 				_ => player.Loop switch { LoopMode.Off => LoopMode.All, LoopMode.All => LoopMode.One, _ => LoopMode.Off },
 			};
 			player.SetLoop(mode);
@@ -478,9 +637,11 @@ public sealed class TsBot : BackgroundService
 			if (arg.Length == 0) goto case "playlists";
 			if (playlists.Find(arg) is not { } list)
 				return Strings.Get(Lang, "playlist-not-found", Escape(arg), PlaylistNames());
-			var added = player.EnqueueMany(list.Songs.Select(s => s.ToTrack(who)));
-			return added == 0 && list.Songs.Count > 0 ? Strings.Get(Lang, "queue-full")
-				: Confirm(Strings.Get(Lang, "playlist-added", added, Escape(list.Name)));
+			var uid = msg.InvokerUid?.Value;
+			var added = player.EnqueueMany(list.Songs.Select(s => s.ToTrack(who) with { RequesterId = uid }), exempt: false, out var limited);
+			if (added == 0 && list.Songs.Count > 0)
+				return limited ? Strings.Get(Lang, "user-limit", Bot.MaxSongsPerUser) : Strings.Get(Lang, "queue-full");
+			return Confirm(Strings.Get(Lang, "playlist-added", added, Escape(list.Name)));
 		}
 
 		case "playlists":
@@ -501,8 +662,8 @@ public sealed class TsBot : BackgroundService
 		{
 			var on = arg.ToLowerInvariant() switch
 			{
-				"on" or "aç" or "ac" or "açık" or "acik" or "oui" or "activer" or "1" => true,
-				"off" or "kapat" or "kapalı" or "kapali" or "non" or "désactiver" or "desactiver" or "0" => false,
+				"on" or "aç" or "ac" or "açık" or "acik" or "oui" or "activer" or "an" or "1" => true,
+				"off" or "kapat" or "kapalı" or "kapali" or "non" or "désactiver" or "desactiver" or "aus" or "0" => false,
 				_ => !player.Radio,
 			};
 			player.SetRadio(on);
@@ -629,26 +790,33 @@ public static class Commands
 {
 	static readonly Dictionary<string, string> Aliases = new()
 	{
-		["play"] = "play", ["p"] = "play", ["çal"] = "play", ["cal"] = "play", ["oynat"] = "play", ["jouer"] = "play", ["joue"] = "play",
-		["playnow"] = "playnow", ["şimdiçal"] = "playnow", ["simdical"] = "playnow", ["jouermaintenant"] = "playnow",
-		["skip"] = "skip", ["next"] = "skip", ["s"] = "skip", ["geç"] = "skip", ["gec"] = "skip", ["atla"] = "skip", ["passer"] = "skip", ["suivant"] = "skip",
-		["stop"] = "stop", ["dur"] = "stop", ["arrêt"] = "stop", ["arret"] = "stop", ["arrêter"] = "stop", ["arreter"] = "stop",
+		["play"] = "play", ["p"] = "play", ["çal"] = "play", ["cal"] = "play", ["oynat"] = "play", ["jouer"] = "play", ["joue"] = "play", ["spielen"] = "play", ["spiel"] = "play",
+		["playnow"] = "playnow", ["şimdiçal"] = "playnow", ["simdical"] = "playnow", ["jouermaintenant"] = "playnow", ["jetztspielen"] = "playnow",
+		["skip"] = "skip", ["voteskip"] = "skip", ["vs"] = "skip", ["oyla"] = "skip", ["voter"] = "skip", ["abstimmen"] = "skip", ["next"] = "skip", ["s"] = "skip", ["geç"] = "skip", ["gec"] = "skip", ["atla"] = "skip", ["passer"] = "skip", ["suivant"] = "skip", ["überspringen"] = "skip", ["ueberspringen"] = "skip", ["nächster"] = "skip", ["naechster"] = "skip",
+		["stop"] = "stop", ["dur"] = "stop", ["arrêt"] = "stop", ["arret"] = "stop", ["arrêter"] = "stop", ["arreter"] = "stop", ["stopp"] = "stop",
 		["pause"] = "pause", ["duraklat"] = "pause",
-		["resume"] = "resume", ["unpause"] = "resume", ["devam"] = "resume", ["reprendre"] = "resume",
-		["queue"] = "queue", ["q"] = "queue", ["list"] = "queue", ["sıra"] = "queue", ["sira"] = "queue", ["liste"] = "queue", ["file"] = "queue",
-		["np"] = "np", ["now"] = "np", ["nowplaying"] = "np", ["şimdi"] = "np", ["simdi"] = "np", ["çalan"] = "np", ["encours"] = "np",
-		["vol"] = "vol", ["volume"] = "vol", ["v"] = "vol", ["ses"] = "vol",
-		["remove"] = "remove", ["rm"] = "remove", ["sil"] = "remove", ["retirer"] = "remove", ["supprimer"] = "remove",
-		["clear"] = "clear", ["temizle"] = "clear", ["vider"] = "clear",
-		["shuffle"] = "shuffle", ["karıştır"] = "shuffle", ["karistir"] = "shuffle", ["mélanger"] = "shuffle", ["melanger"] = "shuffle",
-		["loop"] = "loop", ["repeat"] = "loop", ["tekrar"] = "loop", ["boucle"] = "loop", ["répéter"] = "loop", ["repeter"] = "loop",
-		["join"] = "join", ["come"] = "join", ["gel"] = "join", ["viens"] = "join", ["rejoindre"] = "join",
+		["resume"] = "resume", ["unpause"] = "resume", ["devam"] = "resume", ["reprendre"] = "resume", ["fortsetzen"] = "resume",
+		["queue"] = "queue", ["q"] = "queue", ["list"] = "queue", ["sıra"] = "queue", ["sira"] = "queue", ["liste"] = "queue", ["file"] = "queue", ["warteschlange"] = "queue",
+		["np"] = "np", ["now"] = "np", ["nowplaying"] = "np", ["şimdi"] = "np", ["simdi"] = "np", ["çalan"] = "np", ["encours"] = "np", ["läuft"] = "np", ["laeuft"] = "np",
+		["vol"] = "vol", ["volume"] = "vol", ["v"] = "vol", ["ses"] = "vol", ["lautstärke"] = "vol", ["lautstaerke"] = "vol",
+		["remove"] = "remove", ["rm"] = "remove", ["sil"] = "remove", ["retirer"] = "remove", ["supprimer"] = "remove", ["entfernen"] = "remove",
+		["clear"] = "clear", ["temizle"] = "clear", ["vider"] = "clear", ["leeren"] = "clear",
+		["shuffle"] = "shuffle", ["karıştır"] = "shuffle", ["karistir"] = "shuffle", ["mélanger"] = "shuffle", ["melanger"] = "shuffle", ["mischen"] = "shuffle",
+		["loop"] = "loop", ["repeat"] = "loop", ["tekrar"] = "loop", ["boucle"] = "loop", ["répéter"] = "loop", ["repeter"] = "loop", ["wiederholen"] = "loop",
+		["join"] = "join", ["come"] = "join", ["gel"] = "join", ["viens"] = "join", ["rejoindre"] = "join", ["komm"] = "join",
 		["radio"] = "radio", ["radyo"] = "radio",
-		["follow"] = "follow", ["followme"] = "follow", ["takip"] = "follow", ["takipet"] = "follow", ["suivre"] = "follow",
+		["follow"] = "follow", ["followme"] = "follow", ["takip"] = "follow", ["takipet"] = "follow", ["suivre"] = "follow", ["folgen"] = "follow", ["folgmir"] = "follow",
 		["playlist"] = "playlist", ["pl"] = "playlist", ["çalmalistesi"] = "playlist", ["calmalistesi"] = "playlist",
 		["playlists"] = "playlists", ["lists"] = "playlists", ["listeler"] = "playlists",
 		["fav"] = "fav", ["favorite"] = "fav", ["favori"] = "fav",
-		["help"] = "help", ["h"] = "help", ["yardım"] = "help", ["yardim"] = "help", ["komutlar"] = "help", ["aide"] = "help",
+		["search"] = "search", ["find"] = "search", ["ara"] = "search", ["bul"] = "search", ["chercher"] = "search", ["recherche"] = "search", ["suchen"] = "search",
+		["pick"] = "pick", ["seç"] = "pick", ["sec"] = "pick", ["choisir"] = "pick", ["wählen"] = "pick", ["waehlen"] = "pick",
+		["seek"] = "seek", ["jump"] = "seek", ["sar"] = "seek", ["aller"] = "seek", ["spulen"] = "seek",
+		["back"] = "back", ["prev"] = "back", ["previous"] = "back", ["önceki"] = "back", ["onceki"] = "back", ["geri"] = "back",
+		["précédent"] = "back", ["precedent"] = "back", ["zurück"] = "back", ["zurueck"] = "back",
+		["skipto"] = "skipto", ["jumpto"] = "skipto", ["git"] = "skipto", ["allerà"] = "skipto", ["allera"] = "skipto", ["springen"] = "skipto",
+		["move"] = "move", ["mv"] = "move", ["taşı"] = "move", ["tasi"] = "move", ["déplacer"] = "move", ["deplacer"] = "move", ["verschieben"] = "move",
+		["help"] = "help", ["h"] = "help", ["yardım"] = "help", ["yardim"] = "help", ["komutlar"] = "help", ["aide"] = "help", ["hilfe"] = "help",
 	};
 
 	public static string? Find(string name) => Aliases.GetValueOrDefault(name);

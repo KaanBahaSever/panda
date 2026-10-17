@@ -1,0 +1,20 @@
+# Skip by vote: with three people in the channel, two votes skip a song someone else asked for.
+s voteSkip=true announce=false
+P test tone
++ Listener One
++ Listener Two
+c !skip
+e Vote to skip: 1/2.
+c !voteskip
+e Vote to skip: 1/2.
+o !skip
+e Skipped by vote (2/2).
+# Whoever asked for the song skips it at once.
+c !play test tone
+c !skip
+e Skipped.
+# With the setting off, !skip skips at once.
+s voteSkip=false
+P test tone
+c !skip
+e Skipped.

@@ -1,0 +1,30 @@
+# German replies and command names.
+s language=de announce=false
+c !hilfe
+e Panda[/b]-Befehle
+c !spielen test tone
+e Läuft gerade
+c !wiederholen alle
+e Die ganze Warteschlange wird wiederholt.
+c !wiederholen eins
+e Dieser Song wird wiederholt.
+c !wiederholen aus
+e Wiederholung aus.
+c !radio an
+e Radio an
+c !radio aus
+e Radio aus.
+c !lautstärke 45
+e Lautstärke auf 45 % gesetzt.
+c !läuft
+e Läuft gerade
+c !mischen
+e Warteschlange gemischt.
+c !überspringen
+e Übersprungen.
+c !stopp
+e Gestoppt und die Warteschlange geleert.
+c !xyz
+x
+p !xyz
+e Unbekannter Befehl.

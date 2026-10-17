@@ -27,6 +27,12 @@ public sealed record PlayerSession(
 
 public sealed class QueueFullException : Exception;
 
+/// <summary>The person already has as many songs waiting as the bot allows.</summary>
+public sealed class UserLimitException(int max) : Exception
+{
+	public int Max => max;
+}
+
 /// <summary>
 /// Queue + audio pipeline: TrackSource (PCM) → timer → volume → Opus encoder → voice target → TeamSpeak.
 /// </summary>
@@ -52,6 +58,8 @@ public sealed class Player : IDisposable
 	TrackSource? source;
 	int generation;
 	int startOffset;
+	// Tries of the current song so far (0 = the first): YouTube refuses a stream now and then.
+	int attempt;
 	bool paused;
 	int volume;
 	// For the play history: when the current song started and how much of it was heard
@@ -127,7 +135,8 @@ public sealed class Player : IDisposable
 		source is null ? startOffset : startOffset + Interlocked.Read(ref source.BytesRead) / (double)BytesPerSecond;
 
 	/// <summary>Adds a track; starts it right away when nothing is playing. Returns its queue position (0 = playing now).</summary>
-	public int Enqueue(Track track)
+	/// <param name="exempt">Not held to the songs-per-person limit (a panel admin).</param>
+	public int Enqueue(Track track, bool exempt = false)
 	{
 		int position;
 		lock (gate)
@@ -135,6 +144,8 @@ public sealed class Player : IDisposable
 			if (disposed) return 0;
 			if (queue.Count >= settings.Bot.MaxQueueLength)
 				throw new QueueFullException();
+			if (current != null && !exempt && WaitingLocked(track.RequesterId) >= PerUser)
+				throw new UserLimitException(PerUser);
 			DropRadioPicksLocked();
 			if (current is null)
 			{
@@ -151,10 +162,12 @@ public sealed class Player : IDisposable
 		return position;
 	}
 
-	/// <summary>Adds several tracks (a playlist) until the queue is full. Returns how many were added.</summary>
-	public int EnqueueMany(IEnumerable<Track> tracks)
+	/// <summary>Adds several tracks (a playlist) until the queue is full. Returns how many were added;
+	/// <paramref name="limited"/> tells that the songs-per-person limit stopped it.</summary>
+	public int EnqueueMany(IEnumerable<Track> tracks, bool exempt, out bool limited)
 	{
 		var added = 0;
+		limited = false;
 		lock (gate)
 		{
 			if (disposed) return 0;
@@ -163,14 +176,21 @@ public sealed class Player : IDisposable
 			{
 				if (youtube.TooLong(t)) continue;   // a playlist song over the length limit
 				if (current is null) StartLocked(t, 0);
-				else if (queue.Count < settings.Bot.MaxQueueLength) queue.Add(t);
-				else break;
+				else if (queue.Count >= settings.Bot.MaxQueueLength) break;
+				else if (!exempt && WaitingLocked(t.RequesterId) >= PerUser) { limited = true; break; }
+				else queue.Add(t);
 				added++;
 			}
 		}
 		if (added > 0) RaiseChanged();
 		return added;
 	}
+
+	int PerUser => settings.Bot.MaxSongsPerUser > 0 ? settings.Bot.MaxSongsPerUser : int.MaxValue;
+
+	// Songs this person has waiting (the one playing doesn't count). Unknown requesters aren't limited.
+	int WaitingLocked(string? requesterId) =>
+		requesterId is null ? 0 : queue.Count(t => t.RequesterId == requesterId);
 
 	/// <summary>Puts a track at the front of the queue and skips to it.</summary>
 	public void PlayNow(Track track)
@@ -196,6 +216,45 @@ public sealed class Player : IDisposable
 		}
 		RaiseChanged();
 		return true;
+	}
+
+	/// <summary>
+	/// Plays the song before this one again; the current song goes back to the front of the queue.
+	/// Returns the song, or null when nothing was played before.
+	/// </summary>
+	public Track? Back()
+	{
+		Track prev;
+		lock (gate)
+		{
+			if (disposed || history.Recent().FirstOrDefault() is not { } last) return null;
+			prev = last.ToTrack();
+			DropRadioPicksLocked();
+			// The interrupted song isn't a finished play: it comes again right after.
+			if (current != null) queue.Insert(0, current);
+			current = null;
+			StartLocked(prev, 0);
+		}
+		RaiseChanged();
+		return prev;
+	}
+
+	/// <summary>Jumps to the song at <paramref name="index"/> of the queue, leaving out the ones before it
+	/// (with loop "all" they go to the end). Returns the song, or null for a wrong index.</summary>
+	public Track? SkipTo(int index)
+	{
+		Track to;
+		lock (gate)
+		{
+			if (disposed || index < 0 || index >= queue.Count) return null;
+			to = queue[index];
+			var passed = queue.GetRange(0, index);
+			queue.RemoveRange(0, index);
+			if (Loop == LoopMode.All) queue.AddRange(passed);
+			AdvanceLocked(finished: false);
+		}
+		RaiseChanged();
+		return to;
 	}
 
 	public void Stop()
@@ -450,7 +509,8 @@ public sealed class Player : IDisposable
 
 	// "seeking" restarts the same song elsewhere: no announcement, no extra play count.
 	// "repeat" is loop-one starting it over: announced, but the same history entry.
-	void StartLocked(Track track, int startSeconds, bool seeking = false, bool repeat = false)
+	// "retry" > 0 is another try after YouTube refused the song or broke off: as quiet as seeking.
+	void StartLocked(Track track, int startSeconds, bool seeking = false, bool repeat = false, int retry = 0)
 	{
 		if (disposed) return;
 		resumeOnConnect = false;
@@ -459,7 +519,8 @@ public sealed class Player : IDisposable
 		current = track;
 		startOffset = startSeconds;
 		paused = false;
-		if (!seeking && !repeat)
+		attempt = retry;
+		if (!seeking && !repeat && retry == 0)
 		{
 			startedAt = DateTimeOffset.UtcNow;
 			heardBefore = 0;
@@ -480,7 +541,7 @@ public sealed class Player : IDisposable
 				// Not on disk yet: stream it from YouTube and save it on the way.
 				tee = seeking ? null : library.BeginTee(track);
 				audio = youtube.OpenAudio(track, startSeconds, tee,
-					tee is null ? null : complete => library.EndTee(track, tee, complete));
+					tee is null ? null : complete => library.EndTee(track, tee, complete), retry);
 			}
 		}
 		catch (YouTubeException ex)
@@ -495,13 +556,17 @@ public sealed class Player : IDisposable
 		source = new TrackSource(audio, gen, file != null, OnSourceEnded);
 		timePipe.InStream = source;
 		timePipe.Paused = false;
-		if (!seeking)
+		if (!seeking && retry == 0)
 		{
 			library.MarkPlayed(settings.Id, track);
 			_ = Task.Run(() => TrackStarted?.Invoke(track));
 		}
-		log.LogInformation("Playing {Title} ({Id}) for {User}{From}{Gain}", track.Title, track.Id, track.RequestedBy,
-			file != null ? " from the library" : "", gain is { } g ? $", loudness {g:+0.0;-0.0} dB" : "");
+		if (retry > 0)
+			log.LogInformation("Trying {Title} ({Id}) again{At}, try {Try} of {Tries}", track.Title, track.Id,
+				startSeconds > 0 ? $" from {Strings.FormatTime(startSeconds)}" : "", retry + 1, MaxAttempts);
+		else
+			log.LogInformation("Playing {Title} ({Id}) for {User}{From}{Gain}", track.Title, track.Id, track.RequestedBy,
+				file != null ? " from the library" : "", gain is { } g ? $", loudness {g:+0.0;-0.0} dB" : "");
 	}
 
 	void StopSourceLocked()
@@ -522,6 +587,8 @@ public sealed class Player : IDisposable
 		history.Add(new PlayedTrack(t.Id, t.Title, t.Channel, t.Duration, t.RequestedBy, startedAt, heard));
 	}
 
+	int MaxAttempts => Math.Clamp(config.YouTube.PlayAttempts, 1, 10);
+
 	void OnSourceEnded(TrackSource ended)
 	{
 		lock (gate)
@@ -531,12 +598,23 @@ public sealed class Player : IDisposable
 			// Less than a second of audio means yt-dlp/ffmpeg failed rather than the song ending,
 			// unless it was started (seeked) right before its end.
 			var remaining = current.IsLive ? int.MaxValue : current.Duration - startOffset;
-			if (Interlocked.Read(ref ended.BytesRead) < BytesPerSecond && remaining > 3)
+			var played = Interlocked.Read(ref ended.BytesRead) / (double)BytesPerSecond;
+			var noAudio = played < 1 && remaining > 3;
+			// yt-dlp stopped with an error halfway through: YouTube broke the stream off.
+			var cutOff = !noAudio && !ended.FromFile && ended.Errors.Contains("ERROR") && remaining - played > 5;
+			var reason = YouTube.FriendlyError(ended.Errors);
+			if ((noAudio || cutOff) && attempt + 1 < MaxAttempts && (ended.FromFile || YouTube.IsRetryable(reason)))
 			{
-				var reason = YouTube.FriendlyError(ended.Errors);
+				log.LogWarning("{Title} ({Id}) {What}: {Reason}", current.Title, current.Id,
+					cutOff ? $"broke off at {Strings.FormatTime(startOffset + played)}" : "did not start", ended.Errors.Trim());
+				// A saved file that can't be played is broken; drop it, the next try downloads it again.
+				if (ended.FromFile) library.Delete(current.Id);
+				RetryLocked(cutOff ? startOffset + (int)played : startOffset);
+			}
+			else if (noAudio)
+			{
 				var failed = current;
 				log.LogWarning("Could not play {Id}: {Reason}", failed.Id, ended.Errors.Trim());
-				// A saved file that can't be played is broken; drop it so it's downloaded again next time.
 				if (ended.FromFile) library.Delete(failed.Id);
 				AdvanceAfterFailureLocked();
 				_ = Task.Run(() => TrackFailed?.Invoke(failed, reason));
@@ -548,6 +626,27 @@ public sealed class Player : IDisposable
 			}
 		}
 		RaiseChanged();
+	}
+
+	// Starts the current song again after a second (YouTube often takes the next request), unless
+	// something else happened meanwhile (a skip, a stop, another song).
+	void RetryLocked(int at)
+	{
+		var track = current!;
+		var next = attempt + 1;
+		StopSourceLocked();
+		startOffset = at;
+		var gen = generation;
+		_ = Task.Run(async () =>
+		{
+			await Task.Delay(TimeSpan.FromSeconds(1));
+			lock (gate)
+			{
+				if (disposed || gen != generation || current != track) return;
+				StartLocked(track, at, seeking: at > 0, retry: next);
+			}
+			RaiseChanged();
+		});
 	}
 
 	void OnFailed(int gen, Track track, string reason)

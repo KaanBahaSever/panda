@@ -268,7 +268,7 @@
         <legend>🤖 <span data-i18n="sBot">Bot</span></legend>
         <div class="row2">
           <label class="field"><span data-i18n="sLang">Chat language</span>
-            <select name="language"><option value="en">English</option><option value="tr">Türkçe</option><option value="fr">Français</option></select></label>
+            <select name="language"><option value="en">English</option><option value="tr">Türkçe</option><option value="fr">Français</option><option value="de">Deutsch</option></select></label>
           <label class="field"><span data-i18n="sPrefix">Command prefix</span>
             <input name="commandPrefix" type="text" maxlength="3" required></label>
         </div>
@@ -276,6 +276,8 @@
         <label class="switch"><input type="checkbox" name="announce"><span class="track" aria-hidden="true"></span><span data-i18n="sAnnounce">Announce each song in chat</span></label>
         <label class="switch"><input type="checkbox" name="confirmCommands"><span class="track" aria-hidden="true"></span><span data-i18n="sConfirm">Confirm chat commands</span></label>
         <p class="hint" data-i18n="sChatHint">Announcing posts every song as it starts. Confirmations are the short replies to commands like !play and !skip. Questions (!np, !queue, !help) and errors are always answered.</p>
+        <label class="switch"><input type="checkbox" name="voteSkip"><span class="track" aria-hidden="true"></span><span data-i18n="sVoteSkip">Skip by vote</span></label>
+        <p class="hint" data-i18n="sVoteSkipHint">!skip from someone else is a vote; half of the people in the bot's channel skip the song. Whoever asked for it can always skip it, and the panel skips at once.</p>
         <label class="switch"><input type="checkbox" name="showSongInDescription"><span class="track" aria-hidden="true"></span><span data-i18n="sDesc">Show song in bot description</span></label>
         <div class="row2">
           <label class="field"><span data-i18n="sMaxQueue">Max queue length</span>
@@ -284,6 +286,9 @@
             <input name="maxDurationMinutes" type="number" min="0" max="1440" required></label>
         </div>
         <p class="hint" data-i18n="sMaxDurHint">0 = unlimited.</p>
+        <label class="field"><span data-i18n="sPerUser">Songs per person</span>
+          <input name="maxSongsPerUser" type="number" min="0" max="1000" required></label>
+        <p class="hint" data-i18n="sPerUserHint">How many songs one person can have waiting in the queue. 0 = no limit. Panel admins aren't limited.</p>
         <p class="hint js-many" hidden data-i18n="sMaxDurShared">Max song length is shared by all bots.</p>
         <label class="field"><span data-i18n="sUsers">Allowed users</span>
           <textarea name="allowedUsers" rows="3" spellcheck="false" placeholder="abc123XYZ+/=…"></textarea></label>

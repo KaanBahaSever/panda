@@ -34,10 +34,16 @@ s announce=false            change settings (bot 1)
 c !play test tone           send to the channel (p = private message)
 e Now playing               a reply to the last message contains this
 x                           the last message got no reply
+n Couldn't play             none of its replies contains this
 d ♪ Test Tone Song          the bot's description contains this (d ! = empty)
 w 2                         wait 2 s
 L Favorites 500             replace a playlist with 500 filler songs
+y 403 2                     the yt-dlp stand-in fails its next 2 downloads with HTTP 403 (also: cut, search, unavailable)
+Y player_client=            the yt-dlp stand-in was called with this
 ```
+
+The tests never reach YouTube: `wsl/fake-yt-dlp.sh` stands in for yt-dlp. Every search finds
+"Fake <words>", every song is the generated test tone, and YouTube's failures are acted out on request.
 
 The test password `testpass123` and the query key `testkey-local-only` are for these local test
 instances only.

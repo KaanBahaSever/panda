@@ -19,6 +19,8 @@ public sealed record Track(
 	public bool IsLive => Duration <= 0;
 	/// <summary>Picked by the radio rather than asked for by someone.</summary>
 	public bool Radio { get; init; }
+	/// <summary>Who asked for it, for the songs-per-person limit: a TeamSpeak unique id or "panel:name".</summary>
+	public string? RequesterId { get; init; }
 }
 
 public sealed class YouTubeException(string message) : Exception(message);
@@ -162,7 +164,19 @@ public sealed partial class YouTube(PandaConfig config, ILogger<YouTube> log)
 		return args;
 	}
 
-	async Task<JsonElement> RunJsonAsync(IEnumerable<string> extra, CancellationToken ct)
+	// YouTube turns a request down now and then (403, a bot check) and takes the next one: one more try.
+	async Task<JsonElement> RunJsonAsync(IReadOnlyList<string> extra, CancellationToken ct)
+	{
+		try { return await RunJsonOnceAsync(extra, ct); }
+		catch (YouTubeException ex) when (ex.Message != "timeout" && IsRetryable(ex.Message))
+		{
+			log.LogInformation("yt-dlp failed ({Reason}); trying again", ex.Message);
+			await Task.Delay(TimeSpan.FromSeconds(1), ct);
+			return await RunJsonOnceAsync(extra, ct);
+		}
+	}
+
+	async Task<JsonElement> RunJsonOnceAsync(IReadOnlyList<string> extra, CancellationToken ct)
 	{
 		var psi = new ProcessStartInfo(config.YouTube.YtDlpPath)
 		{
@@ -207,7 +221,8 @@ public sealed partial class YouTube(PandaConfig config, ILogger<YouTube> log)
 	/// </summary>
 	/// <param name="teePath">Also write the downloaded bytes to this file (to save the song).</param>
 	/// <param name="teeDone">Called when the download ended; true when it completed.</param>
-	public AudioStream OpenAudio(Track track, int startSeconds = 0, string? teePath = null, Action<bool>? teeDone = null)
+	/// <param name="attempt">0 for the first try; from the third try on other YouTube clients are asked.</param>
+	public AudioStream OpenAudio(Track track, int startSeconds = 0, string? teePath = null, Action<bool>? teeDone = null, int attempt = 0)
 	{
 		var yt = new ProcessStartInfo(config.YouTube.YtDlpPath)
 		{
@@ -216,6 +231,9 @@ public sealed partial class YouTube(PandaConfig config, ILogger<YouTube> log)
 			UseShellExecute = false,
 		};
 		foreach (var a in BaseArgs()) yt.ArgumentList.Add(a);
+		if (attempt >= 2 && config.YouTube.RetryPlayerClients.Trim() is { Length: > 0 } clients)
+			foreach (var a in new[] { "--extractor-args", $"youtube:player_client={clients}" })
+				yt.ArgumentList.Add(a);
 		foreach (var a in new[] { "--quiet", "--no-playlist", "-f", "bestaudio/best", "-o", "-", track.Url })
 			yt.ArgumentList.Add(a);
 
@@ -327,6 +345,14 @@ public sealed partial class YouTube(PandaConfig config, ILogger<YouTube> log)
 	{
 		try { if (!p.HasExited) p.Kill(entireProcessTree: true); } catch { }
 	}
+
+	/// <summary>
+	/// Whether another try may work: YouTube refusing or breaking off (403, a bot check, a timeout)
+	/// often passes, a missing, private or too long video never does.
+	/// </summary>
+	public static bool IsRetryable(string reason) =>
+		reason is not ("unavailable" or "age" or "not-found" or "empty" or "playlist-empty" or "not-youtube" or "too-long")
+		&& !reason.StartsWith("missing:");
 
 	/// <summary>Maps yt-dlp's stderr to a short reason the bot can show.</summary>
 	public static string FriendlyError(string stderr)

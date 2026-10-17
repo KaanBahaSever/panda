@@ -5,12 +5,17 @@
 //   # text            heading, printed
 //   c <text>          send to the channel, collect replies          p <text>   same, as a private message
 //   e <text>          one of the replies to the last message contains <text>
-//   x                 the last message got no reply
+//   x                 the last message got no reply           n <text>   none of its replies contains <text>
 //   w <seconds>       wait (replies that come meanwhile count for the last message)
 //   s key=value ...   change bot 1's settings through the panel (values: true/false, numbers, text)
 //   d                 print Panda's description        d <text>  it contains <text>        d !  it is empty
 //                     (read from the server's HTTP query when $PANDA_TEST_QUERY is "<url> <api key>", else from the client)
 //   L <name> <count>  replace playlist <name> with <count> filler songs
+//   y <mode> <count>  the yt-dlp stand-in fails its next <count> calls of that kind (see tests/wsl/fake-yt-dlp.sh)
+//   Y <text>          the yt-dlp stand-in was called with arguments containing <text> since the scenario started
+//   + <name>          another client joins Panda's channel, until the scenario ends
+//   o <text>          the first of those clients sends <text> to the channel (replies count like after "c")
+//   P <song>          a panel admin adds a song (it isn't the test client's own song)
 // Exit code: the number of failed checks.
 using System.Globalization;
 using System.Net;
@@ -46,6 +51,8 @@ c.OnEachTextMessage += (_, m) =>
 	Console.WriteLine("   <- " + line);
 };
 
+// How long replies to a message are collected; they come within a few hundred ms.
+var ReplyWait = TimeSpan.FromSeconds(1.8);
 int failed = 0, passed = 0;
 void Check(bool ok, string what)
 {
@@ -67,16 +74,39 @@ await scheduler.InvokeAsync(async () =>
 		lock (replies) replies.Clear();
 		Console.WriteLine($"-> [{(priv ? "private" : "channel")}] {text}");
 		if (priv) await c.SendPrivateMessage(text, panda.Id); else await c.SendChannelMessage(text);
-		await Task.Delay(2500);
+		await Task.Delay(ReplyWait);
 	}
 	string[] Got() { lock (replies) return replies.ToArray(); }
+	var extras = new List<(DedicatedTaskScheduler Scheduler, TsFullClient Client)>();
+	async Task AddListener(string name)
+	{
+		var sch = new DedicatedTaskScheduler(Id.Null);
+		var x = new TsFullClient(sch);
+		var channel = panda.Channel;
+		await sch.InvokeAsync(async () =>
+		{
+			var r = await x.Connect(new ConnectionDataFull(args[0], TsCrypt.GenerateNewIdentity(8), username: name));
+			if (!r.Ok) { Console.WriteLine($"   {name} could not connect: {r.Error.ErrorFormat()}"); return; }
+			await Task.Delay(1000);
+			await x.ClientMove(x.ClientId, channel);
+		});
+		extras.Add((sch, x));
+		await Task.Delay(1000);
+	}
+	async Task DropListeners()
+	{
+		foreach (var (sch, x) in extras) await Task.WhenAny(sch.InvokeAsync(() => x.Disconnect()), Task.Delay(2000));
+		extras.Clear();
+	}
 	async Task<string> Description() => await Query.DescriptionAsync(panda.Name.ToString())
 		?? c.Book.Clients.GetValueOrDefault(panda.Id)?.Description ?? "";
 
 	foreach (var file in args[2..])
 	{
 		Console.WriteLine($"\n=== {Path.GetFileName(file)}");
+		await DropListeners();
 		await panel.SetAsync(defaults);
+		FakeYtDlp.Reset();
 		await c.SendChannelMessage("!stop");
 		await Task.Delay(1500);
 		foreach (var raw in File.ReadAllLines(file))
@@ -84,33 +114,50 @@ await scheduler.InvokeAsync(async () =>
 			var line = raw.TrimEnd();
 			if (line.Length == 0) continue;
 			var arg = line.Length > 2 ? line[2..] : "";
-			switch (line[0])
+			// A line that throws (the panel refused, a client is missing) fails, the rest still runs.
+			try
 			{
-			case '#': Console.WriteLine(line); break;
-			case 'c': await Send(false, arg); break;
-			case 'p': await Send(true, arg); break;
-			case 'w': await Task.Delay(TimeSpan.FromSeconds(double.Parse(arg, CultureInfo.InvariantCulture))); break;
-			case 'e': Check(Got().Any(g => g.Contains(arg)), $"reply has \"{arg}\""); break;
-			case 'x': Check(Got().Length == 0, "no reply"); break;
-			case 's':
-				await panel.SetAsync(arg.Split(' ', StringSplitOptions.RemoveEmptyEntries)
-					.Select(kv => kv.Split('=', 2)).ToDictionary(kv => kv[0], kv => kv[1]));
-				await Task.Delay(1000);
-				break;
-			case 'd':
-				var desc = await Description();
-				if (arg.Length == 0) Console.WriteLine($"   description: \"{desc}\"");
-				else if (arg == "!") Check(desc.Length == 0, $"description is empty (\"{desc}\")");
-				else Check(desc.Contains(arg), $"description has \"{arg}\" (\"{desc}\")");
-				break;
-			case 'L':
-				var parts = arg.Split(' ');
-				await panel.FillPlaylistAsync(parts[0], int.Parse(parts[1]));
-				break;
-			default: Console.WriteLine($"?? unknown line: {line}"); failed++; break;
-			}
+				switch (line[0])
+				{
+				case '#': Console.WriteLine(line); break;
+				case 'c': await Send(false, arg); break;
+				case 'p': await Send(true, arg); break;
+				case 'w': await Task.Delay(TimeSpan.FromSeconds(double.Parse(arg, CultureInfo.InvariantCulture))); break;
+				case 'e': Check(Got().Any(g => g.Contains(arg)), $"reply has \"{arg}\""); break;
+				case 'x': Check(Got().Length == 0, "no reply"); break;
+				case 'n': Check(!Got().Any(g => g.Contains(arg)), $"no reply has \"{arg}\""); break;
+				case 's':
+					await panel.SetAsync(arg.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+						.Select(kv => kv.Split('=', 2)).ToDictionary(kv => kv[0], kv => kv[1]));
+					await Task.Delay(1000);
+					break;
+				case 'd':
+					var desc = await Description();
+					if (arg.Length == 0) Console.WriteLine($"   description: \"{desc}\"");
+					else if (arg == "!") Check(desc.Length == 0, $"description is empty (\"{desc}\")");
+					else Check(desc.Contains(arg), $"description has \"{arg}\" (\"{desc}\")");
+					break;
+				case 'L':
+					var cut = arg.LastIndexOf(' ');   // the name may have spaces; the count comes last
+					await panel.FillPlaylistAsync(arg[..cut], int.Parse(arg[(cut + 1)..]));
+					break;
+				case 'y': FakeYtDlp.Fail(arg); break;
+				case '+': await AddListener(arg); break;
+				case 'o':
+					lock (replies) replies.Clear();
+					Console.WriteLine($"-> [channel, from {extras[0].Client.Book.Self()?.Name}] {arg}");
+					await extras[0].Scheduler.InvokeAsync(() => extras[0].Client.SendChannelMessage(arg));
+					await Task.Delay(ReplyWait);
+					break;
+				case 'P': Console.WriteLine($"-> [panel] play {arg}"); await panel.PlayAsync(arg); await Task.Delay(1500); break;
+				case 'Y': Check(FakeYtDlp.Calls().Any(l => l.Contains(arg)), $"yt-dlp was called with \"{arg}\""); break;
+				default: Console.WriteLine($"?? unknown line: {line}"); failed++; break;
+				}			}
+			catch (Exception ex) { Check(false, $"{line}: {ex.GetType().Name}: {ex.Message}"); }
+
 		}
 	}
+	await DropListeners();
 	await Task.WhenAny(c.Disconnect(), Task.Delay(3000));
 });
 
@@ -135,6 +182,9 @@ sealed class Panel(string url, string password)
 				: JsonValue.Create(v);
 		(await http.PutAsJsonAsync("/api/bots/1/settings", s)).EnsureSuccessStatusCode();
 	}
+
+	public async Task PlayAsync(string query) =>
+		(await http.PostAsJsonAsync("/api/bots/1/play", new { query })).EnsureSuccessStatusCode();
 
 	public async Task FillPlaylistAsync(string name, int count)
 	{
@@ -164,4 +214,20 @@ static class Query
 		if (clid is null) return "";
 		return (string?)(await Get($"clientinfo?clid={clid}")).FirstOrDefault()?["client_description"] ?? "";
 	}
+}
+
+static class FakeYtDlp
+{
+	static readonly string? Dir = Environment.GetEnvironmentVariable("FAKE_YTDLP_DIR");
+
+	public static void Fail(string modeAndCount) => File.WriteAllText(Path.Combine(Dir!, "fail"), modeAndCount + "\n");
+
+	public static void Reset()
+	{
+		if (Dir is null) return;
+		File.WriteAllText(Path.Combine(Dir, "fail"), "");
+		File.WriteAllText(Path.Combine(Dir, "calls"), "");
+	}
+
+	public static string[] Calls() => Dir is null ? [] : File.ReadAllLines(Path.Combine(Dir, "calls"));
 }

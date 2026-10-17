@@ -1,0 +1,35 @@
+# YouTube refusing a song (403) is tried again quietly; the song plays after the second failure.
+y 403 2
+c !play retry one
+e Now playing
+w 4
+n Couldn't play
+c !np
+e Fake retry one
+# The third try asks other YouTube clients.
+Y player_client=
+# Refused every time: after three tries the bot says so and moves on.
+c !stop
+y 403 5
+c !play retry two
+w 5
+e Couldn't play
+c !np
+e Nothing is playing.
+# A video that doesn't exist is not tried again.
+y unavailable 5
+c !play retry three
+w 3
+e Couldn't play
+# A stream that breaks off halfway goes on from where it stopped.
+c !stop
+y cut 1
+c !play retry four
+w 9
+c !np
+e Fake retry four
+# A search that YouTube turns down once is tried again.
+c !stop
+y search 1
+c !play retry five
+e Now playing

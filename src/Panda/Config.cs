@@ -332,7 +332,7 @@ public sealed class BotSettings
 {
 	public string Nickname { get; set; } = "Panda 🐼";
 	public string CommandPrefix { get; set; } = "!";
-	/// <summary>Language of chat replies: "en", "tr" or "fr".</summary>
+	/// <summary>Language of chat replies: "en", "tr", "fr" or "de".</summary>
 	public string Language { get; set; } = "en";
 	public int Volume { get; set; } = 50;
 	/// <summary>Post "Now playing" in the channel when a song starts.</summary>
@@ -348,6 +348,10 @@ public sealed class BotSettings
 	public List<string> AllowedUsers { get; set; } = new();
 	public List<ulong> AllowedServerGroups { get; set; } = new();
 	public int MaxQueueLength { get; set; } = 100;
+	/// <summary>Songs one person may have waiting in the queue; 0 = no limit. Panel admins aren't limited.</summary>
+	public int MaxSongsPerUser { get; set; }
+	/// <summary>!skip from someone other than the requester is a vote; half of the bot's channel skips the song.</summary>
+	public bool VoteSkip { get; set; }
 	/// <summary>When the queue runs out, keep playing songs like the last one.</summary>
 	public bool Radio { get; set; }
 }
@@ -369,6 +373,13 @@ public sealed class YouTubeSettings
 	/// <summary>Netscape cookies.txt, needed when YouTube asks to "confirm you're not a bot".</summary>
 	public string CookiesFile { get; set; } = "";
 	public int MaxDurationMinutes { get; set; } = 60;
+	/// <summary>
+	/// Tries per song when YouTube refuses it (403, bot check, a broken stream...) before the bot
+	/// says it couldn't play it. YouTube does this now and then; a new try usually works.
+	/// </summary>
+	public int PlayAttempts { get; set; } = 3;
+	/// <summary>YouTube clients yt-dlp uses from the third try on (yt-dlp's player_client); empty = yt-dlp's own choice.</summary>
+	public string RetryPlayerClients { get; set; } = "android_vr,tv,web_safari";
 }
 
 public static class PasswordHasher
