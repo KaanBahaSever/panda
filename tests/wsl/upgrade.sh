@@ -51,12 +51,16 @@ systemctl start panda; wait_up || { echo "Panda did not start"; exit 1; }
 sleep 5
 check "login" "$(login)" 204
 api -d '{"volume":37}' $P/api/bots/1/volume -o /dev/null
-# Settings of the old kind: "only these people and groups may use the bot" (before 0.5).
+# Settings of the old kinds: "only these people and groups may use the bot" (before 0.5), autoplay
+# called radio with a level of its own (before 0.6).
+OLDV=${FROM#v}
 api $P/api/bots/1/settings | python3 -c "
 import sys, json
 d = json.load(sys.stdin); d['allowedUsers'] = ['oldTestUid0000000000000000='];  d['allowedServerGroups'] = [6]
+d['commandLevels'] = {'radio': 'dj'}
 print(json.dumps(d))" > $W/old-settings.json
 api -X PUT -d @$W/old-settings.json $P/api/bots/1/settings -o /dev/null
+api -d '{"on":true}' $P/api/bots/1/radio -o /dev/null
 api -d '{"name":"Upgrade test","songs":[{"id":"tstTone0001","title":"Test Tone Song","channel":"Tester","duration":90}]}' $P/api/playlists -o /dev/null
 check "play" "$(api -d '{"query":"test tone"}' $P/api/bots/1/play -o /dev/null -w '%{http_code}')" 200
 check "queue" "$(api -d '{"query":"test tone"}' $P/api/bots/1/play -o /dev/null -w '%{http_code}')" 200
@@ -85,10 +89,18 @@ echo "== after the update"
 sleep 5
 check "login with the same password" "$(login)" 204
 check "song, queue, loop, volume" "$(state)" "$BEFORE"
+case $OLDV in 0.[0-4].*)
 check "allowed users became the members, everyone else shut out" "$(api $P/api/bots/1/settings | python3 -c "
 import sys, json
 d = json.load(sys.stdin)
-print(d.get('everyoneCanUse'), [p['uid'] for p in d.get('members', [])], d.get('memberGroups'), d.get('djs'), d.get('djGroups'))")" "False ['oldTestUid0000000000000000='] [6] [] []"
+print(d.get('everyoneCanUse'), [p['uid'] for p in d.get('members', [])], d.get('memberGroups'), d.get('djs'), d.get('djGroups'))")" "False ['oldTestUid0000000000000000='] [6] [] []" ;;
+esac
+case $OLDV in 0.[0-5].*)
+check "radio became autoplay (still on)" "$(api $P/api/bots/1/state | python3 -c "import sys,json; print(json.load(sys.stdin)['player'].get('autoplay'))")" True
+check "the level of !radio went to !autoplay and !fm" "$(api $P/api/bots/1/settings | python3 -c "
+import sys, json
+l = json.load(sys.stdin)['commandLevels']; print(l.get('autoplay'), l.get('fm'))")" "dj dj" ;;
+esac
 check "playlist" "$(api "$P/api/playlists/Upgrade%20test" | python3 -c "import sys,json; print(len(json.load(sys.stdin)['songs']))")" 1
 check "saved song" "$(api "$P/api/library" | grep -c tstTone0001)" 1
 check "panda.service" "$(systemctl is-active panda)" active

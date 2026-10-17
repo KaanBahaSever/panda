@@ -1,4 +1,4 @@
-// Panda 🐼 — a tiny YouTube music bot for TeamSpeak 6.
+// Panda 🐼 — a tiny music bot for TeamSpeak 6.
 // Licensed under the Open Software License version 3.0.
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.DataProtection;
@@ -74,6 +74,9 @@ if (config.Panel.Users.Count == 0)
 
 		""");
 }
+// Links people send may point into the local network only when the settings say so.
+Web.AllowLocalLinks = () => config.Sources.LocalLinks;
+if (Web.Rewriting) Console.WriteLine("PANDA_TEST_REWRITE is set: music service requests go to a test server.");
 var cookies = Path.Combine(dataDir, "cookies.txt");
 if (config.YouTube.CookiesFile.Length == 0 && File.Exists(cookies))
 	config.YouTube.CookiesFile = cookies;
@@ -99,6 +102,11 @@ builder.Services.AddSingleton(new DataPaths(dataDir));
 builder.Services.AddSingleton<YouTube>();
 builder.Services.AddSingleton<Library>();
 builder.Services.AddSingleton<Playlists>();
+builder.Services.AddSingleton<SponsorBlock>();
+builder.Services.AddSingleton<RadioBrowser>();
+builder.Services.AddSingleton<RadioFavorites>();
+builder.Services.AddSingleton<Sources>();
+builder.Services.AddSingleton<BotShared>();
 builder.Services.AddSingleton(logBuffer);
 builder.Services.AddSingleton<BotManager>();
 builder.Services.AddSingleton<SystemInfo>();

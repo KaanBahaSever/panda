@@ -5,14 +5,15 @@
 <h1 align="center">Panda 🐼</h1>
 
 <p align="center">
-  <b>TeamSpeak 6</b> için minik, tatlı bir YouTube müzik botu — şirin bir web paneliyle.<br>
+  <b>TeamSpeak 6</b> için minik, tatlı bir müzik botu — şirin bir web paneliyle.<br>
   <a href="https://kaanbahasever.github.io/panda/">Web sitesi</a> ·
   <a href="README.md">English</a>
 </p>
 
 ---
 
-Panda TeamSpeak sunucuna girer ve YouTube'dan müzik çalar. Sohbete `!çal` ve şarkı adını ya da linkini
+Panda TeamSpeak sunucuna girer ve YouTube'dan (ayrıca SoundCloud'dan, Spotify linklerinden, internet
+radyolarından…) müzik çalar. Sohbete `!çal` ve şarkı adını ya da linkini
 yazman yeterli; istersen web panelini kullan. Eklenti yok, script yok, arkada çalışan bir TeamSpeak
 programı yok: Panda sunucuyla doğrudan konuşur, bu yüzden hafiftir (bot ~130 MB RAM kullanır,
 `yt-dlp` ve `ffmpeg` sadece şarkı çalarken çalışır).
@@ -21,14 +22,21 @@ programı yok: Panda sunucuyla doğrudan konuşur, bu yüzden hafiftir (bot ~130
 
 ## Özellikler
 
-- 🎵 **Sadece YouTube, ama hakkıyla** — adıyla ara ya da link yapıştır: `youtube.com`, `youtu.be`,
-  **YouTube Music**, Shorts. Çalma listesi ve albüm linkleri tüm listeyi açmak yerine tek şarkı ekler
+- 🎵 **Önce YouTube** — adıyla ara ya da link yapıştır: `youtube.com`, `youtu.be`,
+  **YouTube Music**, Shorts. YouTube çalma listesi linkleri tüm listeyi açmak yerine tek şarkı ekler
   (linkteki şarkıyı ya da listenin ilk şarkısını).
+- 🔗 **Her yerden link** — SoundCloud, Bandcamp, Mixcloud, Vimeo, Twitch ve ses dosyaları oradan çalar;
+  **Spotify, Apple Music, Deezer ve Tidal** linkleri YouTube'da aranır (Spotify albümü ya da listesi
+  şarkı şarkı gelir); başka her sayfanın başlığı aranır. Her kaynak ayrı kapatılabilir.
+- 📻 **İnternet radyosu** — radyonun yayın linkini yapıştır (Icecast/Shoutcast, `.m3u`, `.pls`) ya da
+  panelde ada, ülkeye ve türe göre radyo bul ([Radio Browser](https://www.radio-browser.info/)'dan),
+  sohbette `!fm <ad>`. Radyoda çalan şarkı panelde ve botun açıklamasında görünür.
 - 📚 **Şarkı kütüphanesi** — istenen her şarkı diske kaydedilir. Tekrar çalınan şarkılar anında başlar
   ve YouTube'a hiç gitmez; kütüphane dolunca en az dinlenen şarkılar yer açar.
 - ⚡ **Şarkılar arası bekleme yok** — sıradaki şarkılar önceden indirilir.
-- 📻 **Radyo** — sıra bitince Panda son şarkıya benzer şarkılar çalmaya devam eder (YouTube Mix).
-  Varsayılan olarak kapalı; `!radyo` ya da radyo düğmesiyle açılır.
+- ✨ **Otomatik devam** — sıra bitince Panda son şarkıya benzer şarkılar çalmaya devam eder (YouTube Mix).
+  Varsayılan olarak kapalı; `!otomatik` ya da ✨ düğmesiyle açılır. (0.5'e kadar adı "radyo"ydu.)
+- ⏭️ **SponsorBlock** — açarsan videoların müzik olmayan kısımlarını (şarkı öncesi konuşma, reklam) atlar.
 - 🔊 **Eşit ses seviyesi** — kaydedilen şarkılar bir kez ölçülür ve hepsi aynı yükseklikte çalar.
 - 📃 **Çalma listeleri ve favoriler** — sırayı ya da tek tek şarkıları listelere kaydet, `!liste <ad>`
   ile çal, `!fav` ile çalan şarkıyı favorilere ekle.
@@ -62,6 +70,36 @@ Kaydetme **Ayarlar → Kütüphane** kısmından kapatılabilir; o zaman Panda s
 önceden indirir ve çaldıktan sonra siler.
 
 ![Koyu temada kütüphane](docs/library.png)
+
+## Şarkılar nereden gelir
+
+**Ayarlar → Kaynaklar** aramanın önce nereye bakacağını (YouTube, YouTube Music ya da SoundCloud) ve
+bulamazsa diğerlerinin denenip denenmeyeceğini belirler. Sohbette `sc:` ve `ytm:` bir arama için kaynak
+seçer: `!çal sc:lofi`, `!ara ytm:blinding lights`.
+
+| Gönderdiğin | Panda'nın çaldığı |
+|---|---|
+| Kelimeler | Uyan en iyi kayıtlı şarkı, yoksa ilk arama sonucu |
+| YouTube ya da YouTube Music linki | O video |
+| SoundCloud, Bandcamp, Mixcloud, Vimeo, Twitch… ([yt-dlp](https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md)'nin bildiği her yer) | Oradaki şarkı |
+| Ses dosyası (`.mp3`, `.ogg`…) | Dosyanın kendisi |
+| Spotify, Apple Music, Deezer, Tidal | Aynı şarkı YouTube'dan (bu servislerin sesi korumalı); Spotify ve Deezer albüm ve listeleri şarkı şarkı gelir |
+| Radyo yayını (Icecast/Shoutcast, `.m3u`, `.pls`, HLS) | Radyo, canlı |
+| Başka herhangi bir sayfa | Başlığı YouTube'da aranır |
+
+Kütüphaneye sadece YouTube şarkıları kaydedilir; başka yerlerden gelen şarkılar olduğu gibi çalınır,
+otomatik devam son YouTube şarkısından devam eder. Kendi ağındaki linkler (modemin sayfası, `192.168.x.x`)
+**Yerel ağdaki linkler** açık değilse reddedilir; böylece kimse Panda'ya onları açtıramaz.
+
+**İnternet radyosu**: aramanın yanındaki 📻 düğmesi radyo listesini açar (radyolar
+[Radio Browser](https://www.radio-browser.info/)'dan gelir, ücretsiz ve açık bir liste; Panda her radyonun
+kendi yayınını çalar). Yıldızladığın radyolar favorilerde kalır; `!fm` favorileri listeler,
+`!fm <ad ya da numara>` birini çalar, radyo çalarken `!fav` onu favorilere ekler.
+
+**YouTube ayarları** (Ayarlar → YouTube): en uzun şarkı süresi, `!ara` sonuç sayısı, canlı yayınları ya da
+bir dakikadan kısa videoları aramalardan çıkarma, ses kalitesi (en iyi ya da veri tasarrufu için yaklaşık
+70 kbps), SponsorBlock ve hangi kısımları atlayacağı, YouTube şarkıyı reddedince deneme sayısı ve otomatik
+devam (son kaç şarkıyı tekrarlamayacağı, aynı sanatçının tekrar gelip gelemeyeceği).
 
 ## İstatistikler ve Sistem ekranı
 
@@ -146,11 +184,12 @@ Botun kanalına ya da bota özel mesaj olarak yaz. İngilizce karşılıkları d
 | `!sil <#>` / `!temizle` | `!remove` / `!clear` | `!retirer` / `!vider` | `!entfernen` / `!leeren` | Şarkı siler / sırayı temizler |
 | `!gel` | `!join` | `!viens` | `!komm` | Kanalıma gel |
 | `!takip` | `!follow` | `!suivre` | `!folgen` | Beni kanaldan kanala takip et (tekrar yazınca bırakır) |
-| `!radyo <aç\|kapat>` | `!radio <on\|off>` | `!radio <oui\|non>` | `!radio <an\|aus>` | Sıra bitince benzer şarkılar çalmaya devam et |
+| `!otomatik <aç\|kapat>` | `!autoplay <on\|off>` | `!auto <oui\|non>` | `!autoplay <an\|aus>` | Sıra bitince benzer şarkılar çalmaya devam et |
+| `!fm <ad ya da #>` / `!istasyon` | `!fm` | `!fm` / `!station` | `!fm` / `!sender` | İnternet radyosu çal; tek başına: favori radyolar |
 | `!liste <ad>` | `!playlist` / `!pl` | `!playlist` | `!playlist` | Kayıtlı bir listeyi sıraya ekle |
 | `!listeler` | `!playlists` | `!playlists` | `!playlists` | Kayıtlı listeleri göster |
 | `!fav` | `!fav` | `!fav` | `!fav` | Çalan şarkıyı Favoriler'e kaydet |
-| `!ara <ad>` | `!search` | `!chercher` | `!suchen` | 5 sonuç gösterir; `!1` … `!5` ile seçilir |
+| `!ara <ad>` | `!search` | `!chercher` | `!suchen` | Sonuçları gösterir (varsayılan 5); `!1`, `!2`… ile seçilir |
 | `!sar <1:30 \| +10 \| -10>` | `!seek` | `!aller` | `!spulen` | Şarkıda ileri geri gider |
 | `!önceki` | `!back` | `!précédent` | `!zurück` | Önceki şarkıyı tekrar çalar |
 | `!git <#>` | `!skipto` | `!allerà` | `!springen` | Sıradaki bir şarkıya atlar |
@@ -211,6 +250,11 @@ Botlar `bots` listesinde, panel kullanıcıları `panel.users` içinde, ses eşi
 0.3'ten önceki dosyalar (tek bot, tek panel şifresi) açılışta dönüştürülür; bot TeamSpeak kimliğini
 korur, eski şifre `admin` kullanıcısının şifresi olur.
 
+Kaynaklar `sources` altında (`search`: "youtube", "youtubeMusic" ya da "soundcloud"; her kaynağın açık/kapalı
+anahtarı; `localLinks`: yerel ağdaki linkler), YouTube'a özel ayarlar `youTube` altında (`quality`,
+`searchResults`, `hideLive`, `hideShort`, `sponsorBlock`, `sponsorBlockCategories`, `autoplayNoRepeat`,
+`autoplaySameArtist`). Botun `radio` ayarı 0.6'da `autoplay` olarak taşınır.
+
 Bir panel şifresini sıfırlamak (ya da bütün şifreler unutulduysa yeni bir yönetici açmak) için:
 `sudo -u panda /opt/panda/panda --data /var/lib/panda set-password <yeni> [kullanıcı]`.
 
@@ -228,6 +272,11 @@ curl -H "Authorization: Bearer pk_..." http://sunucun:8080/api/bots
 
 Anahtar panelden iptal edilince hemen çalışmaz olur, açık canlı akışlar dahil.
 
+Bazı çağrılar: `GET /api/bots/{bot}/state` (çalan, sıra), `POST /api/bots/{bot}/play` `{"query": "ad ya da link"}`
+(albüm ya da listede cevap kaç şarkının daha geleceğini `more` ile söyler), `POST /api/bots/{bot}/fm`
+`{"uuid": "<Radio Browser radyo kimliği>"}`, `GET /api/radio/search?name=&country=&tag=`,
+`POST /api/bots/{bot}/autoplay` `{"on": true}`.
+
 ## Derleme
 
 ```bash
@@ -240,7 +289,7 @@ bash scripts/build-release.sh linux-x64   # dist/ içine tek dosyalık sürüm
 Panda, [TSLib](https://github.com/Splamy/TS3AudioBot) (bir TeamSpeak istemci kütüphanesi) üzerine
 kurulmuş bir C# (.NET 8) uygulaması. TeamSpeak 6 sunucuları bağlantı sırasında TSLib'in tanımadığı yeni
 bir lisans bloğu gönderiyor; Panda bunu okuyan küçük bir yama içeriyor (bkz. [`lib/`](lib/README.md)).
-Ses `yt-dlp` ile gelir, `ffmpeg` ile çözülür ve [Concentus](https://github.com/lostromb/concentus) ile
+Ses `yt-dlp` ile gelir (radyolar doğrudan kendi yayınından), `ffmpeg` ile çözülür ve [Concentus](https://github.com/lostromb/concentus) ile
 Opus'a çevrilir.
 
 ## Lisans

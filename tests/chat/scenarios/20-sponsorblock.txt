@@ -1,0 +1,14 @@
+# SponsorBlock: the parts marked as not music are skipped (the test song: 0–5 s and 20–30 s).
+s youTube.sponsorBlock=true announce=false
+c !play test tone
+e Now playing
+w 2
+t 5 12
+w 18
+t 30 45
+# Off: the song plays from the start.
+s youTube.sponsorBlock=false
+c !stop
+c !play test tone
+w 1
+t 0 5

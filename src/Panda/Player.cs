@@ -8,7 +8,8 @@ namespace Panda;
 [JsonConverter(typeof(JsonStringEnumConverter<LoopMode>))]
 public enum LoopMode { Off, One, All }
 
-public sealed record NowPlaying(Track Track, double Position, bool Paused);
+/// <param name="StreamTitle">What an internet radio station says it plays right now, when it says.</param>
+public sealed record NowPlaying(Track Track, double Position, bool Paused, string? StreamTitle = null);
 
 public sealed record PlayerState(
 	NowPlaying? Current,
@@ -16,7 +17,7 @@ public sealed record PlayerState(
 	IReadOnlyList<PlayedTrack> History,
 	int Volume,
 	LoopMode Loop,
-	bool Radio);
+	bool Autoplay);
 
 /// <summary>
 /// What a bot was playing when Panda stopped (an update or a restart), so it picks up where it left off.
@@ -44,6 +45,7 @@ public sealed class Player : IDisposable
 	readonly PandaConfig config;
 	readonly YouTube youtube;
 	readonly Library library;
+	readonly SponsorBlock sponsorBlock;
 	readonly PlayHistory history;
 	readonly ILogger log;
 
@@ -66,19 +68,23 @@ public sealed class Player : IDisposable
 	// by sources that are already gone (seeking and loop-one replace the source).
 	DateTimeOffset startedAt;
 	double heardBefore;
-	// Radio: a pick is being looked for; anything that makes a running search outdated bumps the
+	// Autoplay: a pick is being looked for; anything that makes a running search outdated bumps the
 	// generation; a song without a Mix isn't asked again; picks that fail to play in a row.
-	bool radioBusy;
-	int radioGen;
-	string? radioNoMix;
-	int radioFailures;
-	// The bot was removed: work that finishes late (a radio pick, a song still being looked up)
+	bool autoBusy;
+	int autoGen;
+	string? autoNoMix;
+	int autoFailures;
+	// The bot was removed: work that finishes late (an autoplay pick, a song still being looked up)
 	// must not start playback, nor touch the library, on a player whose audio thread is gone.
 	bool disposed;
 	// Restored after a restart: the song waits paused until the bot is connected again.
 	bool resumeOnConnect;
 	// The current song was saved for after the restart; it is not a finished play yet.
 	bool sessionSaved;
+	// What the radio station playing says it plays.
+	string? streamTitle;
+	// Goes up when the queue is thrown away (!stop, !clear): songs of a list still being looked up stop coming.
+	int epoch;
 
 	public LoopMode Loop { get; private set; }
 
@@ -86,13 +92,16 @@ public sealed class Player : IDisposable
 	public event Action? Changed;
 	public event Action<Track>? TrackStarted;
 	public event Action<Track, string>? TrackFailed;
+	/// <summary>The radio station playing names another song.</summary>
+	public event Action<Track, string>? StreamTitleChanged;
 
-	public Player(BotConfig settings, PandaConfig config, YouTube youtube, Library library, PlayHistory history, ILogger log)
+	public Player(BotConfig settings, PandaConfig config, YouTube youtube, Library library, SponsorBlock sponsorBlock, PlayHistory history, ILogger log)
 	{
 		this.settings = settings;
 		this.config = config;
 		this.youtube = youtube;
 		this.library = library;
+		this.sponsorBlock = sponsorBlock;
 		this.history = history;
 		this.log = log;
 
@@ -119,15 +128,20 @@ public sealed class Player : IDisposable
 	}
 
 	public int Volume => volume;
+	/// <summary>The bot was removed (or Panda is stopping): nothing more is added.</summary>
+	public bool Disposed { get { lock (gate) return disposed; } }
 	public Track? Current { get { lock (gate) return current; } }
+	public string? StreamTitle { get { lock (gate) return streamTitle; } }
+	/// <summary>See <see cref="epoch"/>: a list being added stops when this changed.</summary>
+	public int Epoch { get { lock (gate) return epoch; } }
 	public bool IsPaused { get { lock (gate) return paused; } }
 
 	public PlayerState GetState()
 	{
 		lock (gate)
 		{
-			NowPlaying? now = current is null ? null : new(current, PositionLocked(), paused);
-			return new PlayerState(now, queue.ToArray(), history.Recent(), volume, Loop, settings.Bot.Radio);
+			NowPlaying? now = current is null ? null : new(current, PositionLocked(), paused, streamTitle);
+			return new PlayerState(now, queue.ToArray(), history.Recent(), volume, Loop, settings.Bot.Autoplay);
 		}
 	}
 
@@ -146,7 +160,7 @@ public sealed class Player : IDisposable
 				throw new QueueFullException();
 			if (current != null && !exempt && WaitingLocked(track.RequesterId) >= PerUser)
 				throw new UserLimitException(PerUser);
-			DropRadioPicksLocked();
+			DropAutoplayPicksLocked();
 			if (current is null)
 			{
 				StartLocked(track, 0);
@@ -158,6 +172,7 @@ public sealed class Player : IDisposable
 				position = queue.Count;
 			}
 		}
+		if (position <= 2) sponsorBlock.Prefetch(track);
 		RaiseChanged();
 		return position;
 	}
@@ -171,7 +186,7 @@ public sealed class Player : IDisposable
 		lock (gate)
 		{
 			if (disposed) return 0;
-			DropRadioPicksLocked();
+			DropAutoplayPicksLocked();
 			foreach (var t in tracks)
 			{
 				if (youtube.TooLong(t)) continue;   // a playlist song over the length limit
@@ -201,7 +216,7 @@ public sealed class Player : IDisposable
 			if (disposed) return;
 			if (current != null && !exempt && WaitingLocked(track.RequesterId) >= PerUser)
 				throw new UserLimitException(PerUser);
-			DropRadioPicksLocked();
+			DropAutoplayPicksLocked();
 			queue.Insert(0, track);
 			AdvanceLocked(finished: false);
 			// Loop "all" put the song that was playing back at the end; that may not pass the limit.
@@ -234,7 +249,7 @@ public sealed class Player : IDisposable
 			// The song playing may itself be the last one (played again by !back): look past it.
 			if (disposed || history.Recent().FirstOrDefault(p => p.Id != current?.Id) is not { } last) return null;
 			prev = last.ToTrack();
-			DropRadioPicksLocked();
+			DropAutoplayPicksLocked();
 			// The interrupted song isn't a finished play: it comes again right after.
 			if (current != null)
 			{
@@ -271,7 +286,8 @@ public sealed class Player : IDisposable
 	{
 		lock (gate)
 		{
-			radioGen++; // a pick on its way must not start playing again
+			epoch++;
+			autoGen++; // a pick on its way must not start playing again
 			queue.Clear();
 			if (current != null) AddHistoryLocked(current);
 			StopSourceLocked();
@@ -362,112 +378,127 @@ public sealed class Player : IDisposable
 	{
 		lock (gate)
 		{
-			radioGen++;
+			epoch++;
+			autoGen++;
 			queue.Clear();
 		}
 		RaiseChanged();
 	}
 
-	// ---- radio: when the queue runs out, songs from the Mix of the last one ----
+	// ---- autoplay: when the queue runs out, songs from the YouTube Mix of the last one ----
 
-	public bool Radio => settings.Bot.Radio;
+	public bool Autoplay => settings.Bot.Autoplay;
 
-	public void SetRadio(bool on)
+	public void SetAutoplay(bool on)
 	{
 		Track? seed = null;
 		lock (gate)
 		{
-			settings.Bot.Radio = on;
-			radioGen++;
-			radioNoMix = null;
-			radioFailures = 0;
-			if (!on) queue.RemoveAll(t => t.Radio);
+			settings.Bot.Autoplay = on;
+			autoGen++;
+			autoNoMix = null;
+			autoFailures = 0;
+			if (!on) queue.RemoveAll(t => t.Autoplay);
 			// Turned on while idle: start from the last song played.
-			else if (current is null && queue.Count == 0) seed = history.Recent().FirstOrDefault()?.ToTrack();
+			else if (current is null && queue.Count == 0) seed = LastYouTubeLocked();
 		}
 		config.Save();
-		if (seed != null) FetchRadio(seed);
+		if (seed != null) FetchAutoplay(seed);
 		RaiseChanged();
 	}
 
-	// A song someone asked for goes first; the radio picks again after it.
-	void DropRadioPicksLocked()
+	// A song someone asked for goes first; autoplay picks again after it.
+	void DropAutoplayPicksLocked()
 	{
-		if (queue.RemoveAll(t => t.Radio) > 0 || radioBusy) radioGen++;
+		if (queue.RemoveAll(t => t.Autoplay) > 0 || autoBusy) autoGen++;
 	}
 
 	// The last song is playing and nothing comes after it: look for the next one now, so it can be
-	// downloaded ahead of time like any queued song.
-	void CheckRadio()
+	// downloaded ahead of time like any queued song. Only YouTube has Mixes: after a song from elsewhere
+	// it goes on from the last YouTube song; a radio station never ends, so nothing comes after it.
+	void CheckAutoplay()
 	{
 		Track seed;
 		lock (gate)
 		{
-			if (disposed || !settings.Bot.Radio || radioBusy || current is null || queue.Count > 0 || current.Id == radioNoMix) return;
-			seed = current;
+			if (disposed || !settings.Bot.Autoplay || autoBusy || current is null || queue.Count > 0 || current.IsLive) return;
+			if ((current.IsYouTube ? current : LastYouTubeLocked()) is not { } s || s.Id == autoNoMix) return;
+			seed = s;
 		}
-		FetchRadio(seed);
+		FetchAutoplay(seed);
 	}
 
-	void FetchRadio(Track seed)
+	Track? LastYouTubeLocked() =>
+		history.Recent().FirstOrDefault(p => p.Source is null && !p.IsLive)?.ToTrack();
+
+	void FetchAutoplay(Track seed)
 	{
 		int gen;
 		lock (gate)
 		{
-			if (radioBusy || disposed) return;
-			radioBusy = true;
-			gen = radioGen;
+			if (autoBusy || disposed) return;
+			autoBusy = true;
+			gen = autoGen;
 		}
 		_ = Task.Run(async () =>
 		{
 			Track? pick = null;
-			try { pick = await PickRadioAsync(seed); }
-			catch (Exception ex) { log.LogWarning("Radio: no Mix for {Title}: {Error}", seed.Title, ex.Message); }
+			try { pick = await PickAutoplayAsync(seed); }
+			catch (Exception ex) { log.LogWarning("Autoplay: no Mix for {Title}: {Error}", seed.Title, ex.Message); }
 			var added = false;
 			lock (gate)
 			{
-				radioBusy = false;
-				if (gen != radioGen || !settings.Bot.Radio) { } // outdated: looked at again below
-				else if (pick is null) radioNoMix = seed.Id; // stays quiet after this song
+				autoBusy = false;
+				if (gen != autoGen || !settings.Bot.Autoplay) { } // outdated: looked at again below
+				else if (pick is null) autoNoMix = seed.Id; // stays quiet after this song
 				else if (queue.Count == 0)
 				{
-					log.LogInformation("Radio: {Title} comes next (like {Seed})", pick.Title, seed.Title);
+					log.LogInformation("Autoplay: {Title} comes next (like {Seed})", pick.Title, seed.Title);
 					if (current is null) StartLocked(pick, 0);
 					else queue.Add(pick);
 					added = true;
 				}
 			}
 			if (added) RaiseChanged();
-			else if (gen != radioGen) CheckRadio();
+			else if (gen != autoGen) CheckAutoplay();
 		});
 	}
 
-	/// <summary>The first song of the seed's Mix that wasn't played lately, or null.</summary>
-	async Task<Track?> PickRadioAsync(Track seed)
+	/// <summary>The first song of the seed's Mix that wasn't played lately (and, when the settings say so,
+	/// isn't by the same artist), or null.</summary>
+	async Task<Track?> PickAutoplayAsync(Track seed)
 	{
 		HashSet<string> skip;
 		lock (gate)
 		{
-			skip = history.Recent().Select(p => p.Id).Concat(queue.Select(t => t.Id)).ToHashSet();
+			skip = history.Recent().Take(Math.Clamp(config.YouTube.AutoplayNoRepeat, 0, PlayHistory.RecentSize))
+				.Select(p => p.Id).Concat(queue.Select(t => t.Id)).ToHashSet();
 			if (current != null) skip.Add(current.Id);
 		}
 		skip.Add(seed.Id);
+		var sameArtist = config.YouTube.AutoplaySameArtist;
+		var artist = Artist(seed.Channel);
 		var max = config.YouTube.MaxDurationMinutes * 60;
 		using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(90));
 		foreach (var t in await youtube.MixAsync(seed.Id, 50, cts.Token))
 		{
 			if (skip.Contains(t.Id) || (max > 0 && t.Duration > max)) continue;
+			if (!sameArtist && artist.Length > 0 && Artist(t.Channel) == artist) continue;
 			var track = t;
 			if (track.IsLive) // the Mix didn't say how long it is: ask
 			{
 				try { track = await youtube.ResolveAsync(t.Url, "", cts.Token); }
 				catch (YouTubeException) { continue; }
-				if (track.IsLive) continue; // no live streams on the radio
+				if (track.IsLive) continue; // no live streams in autoplay
 			}
-			return track with { RequestedBy = Strings.Get(settings.Bot.Language, "radio-name"), Radio = true };
+			return track with { RequestedBy = Strings.Get(settings.Bot.Language, "autoplay-name"), Autoplay = true };
 		}
 		return null;
 	}
+
+	// "Artist - Topic", "ArtistVEVO" and "Artist" are one artist.
+	static string Artist(string channel) =>
+		Library.Normalize(System.Text.RegularExpressions.Regex.Replace(channel, @"\s*-\s*Topic$|VEVO$|\s+Official$", "", System.Text.RegularExpressions.RegexOptions.IgnoreCase));
 
 	public void Shuffle()
 	{
@@ -536,8 +567,21 @@ public sealed class Player : IDisposable
 			heardBefore = 0;
 		}
 
+		if (retry == 0 && !seeking) streamTitle = null;
+		// SponsorBlock: a song that starts with a part to skip starts after it.
+		var segments = sponsorBlock.Known(track);
+		if (segments?.FirstOrDefault(s => s.Start <= startSeconds + 0.5 && s.End > startSeconds) is { } first && first.End < track.Duration - 2)
+		{
+			log.LogInformation("Skipping {From}–{To} of {Title} (SponsorBlock: {Category})",
+				Strings.FormatTime(first.Start), Strings.FormatTime(first.End), track.Title, first.Category);
+			startOffset = startSeconds = (int)Math.Ceiling(first.End);
+		}
+		else if (segments is null && sponsorBlock.Enabled && track.IsYouTube && !track.IsLive)
+			_ = Task.Run(async () => { await sponsorBlock.GetAsync(track); SegmentsArrived(gen, track); });
+
 		AudioStream audio;
-		var file = library.GetFile(track.Id);
+		// Only YouTube songs are saved (their id names the file).
+		var file = track.IsYouTube ? library.GetFile(track.Id) : null;
 		var gain = file is null ? null : library.GainFor(track.Id);
 		string? tee = null;
 		try
@@ -546,10 +590,18 @@ public sealed class Player : IDisposable
 			{
 				audio = youtube.OpenFile(file, startSeconds, gain);
 			}
+			else if (track.Source == Media.Radio)
+			{
+				audio = youtube.OpenRadio(track, title => OnStreamTitle(gen, track, title));
+			}
+			else if (track.Source == Media.Direct)
+			{
+				audio = youtube.OpenUrl(track, startSeconds);
+			}
 			else
 			{
-				// Not on disk yet: stream it from YouTube and save it on the way.
-				tee = seeking ? null : library.BeginTee(track);
+				// Not on disk yet: stream it (from YouTube: and save it on the way).
+				tee = seeking || !track.IsYouTube ? null : library.BeginTee(track);
 				audio = youtube.OpenAudio(track, startSeconds, tee,
 					tee is null ? null : complete => library.EndTee(track, tee, complete), retry);
 			}
@@ -563,12 +615,15 @@ public sealed class Player : IDisposable
 			return;
 		}
 
-		source = new TrackSource(audio, gen, file != null, OnSourceEnded);
+		source = new TrackSource(audio, gen, file != null, OnSourceEnded, OnSkipPoint);
+		SetSkipPointLocked(segments);
+		// The next songs' parts to skip are known before they start (not a whole playlist's at once).
+		foreach (var next in queue.Take(2)) sponsorBlock.Prefetch(next);
 		timePipe.InStream = source;
 		timePipe.Paused = false;
 		if (!seeking && retry == 0)
 		{
-			library.MarkPlayed(settings.Id, track);
+			if (track.IsYouTube) library.MarkPlayed(settings.Id, track);
 			_ = Task.Run(() => TrackStarted?.Invoke(track));
 		}
 		if (retry > 0)
@@ -577,6 +632,79 @@ public sealed class Player : IDisposable
 		else
 			log.LogInformation("Playing {Title} ({Id}) for {User}{From}{Gain}", track.Title, track.Id, track.RequestedBy,
 				file != null ? " from the library" : "", gain is { } g ? $", loudness {g:+0.0;-0.0} dB" : "");
+	}
+
+	// ---- SponsorBlock: jumping over the parts that aren't music ----
+
+	// The segments came after the song had started: the next part to skip is set now.
+	void SegmentsArrived(int gen, Track track)
+	{
+		lock (gate)
+		{
+			if (gen != generation || current != track || source is null) return;
+			var segments = sponsorBlock.Known(track);
+			// Still in a part at the start (the first seconds of the song): jump now.
+			var at = PositionLocked();
+			if (segments?.FirstOrDefault(s => s.Start <= at + 0.5 && s.End > at) is { } now)
+			{
+				SkipLocked(now);
+				return;
+			}
+			SetSkipPointLocked(segments);
+		}
+		RaiseChanged();
+	}
+
+	// The audio thread tells when the song reaches the next part to skip.
+	void SetSkipPointLocked(Segment[]? segments)
+	{
+		if (source is null || segments is null || current is null) return;
+		var at = Math.Max(startOffset, PositionLocked());
+		var next = segments.FirstOrDefault(s => s.Start > at + 0.5);
+		source.Arm(next is null ? long.MaxValue : (long)((next.Start - startOffset) * BytesPerSecond));
+	}
+
+	void OnSkipPoint(TrackSource reached)
+	{
+		lock (gate)
+		{
+			if (reached.Generation != generation || current is null) return;
+			var at = PositionLocked();
+			var segments = sponsorBlock.Known(current);
+			// Nothing to skip here (a kind was turned off meanwhile): wait for the next part.
+			if (segments?.FirstOrDefault(s => s.Start <= at + 1 && s.End > at) is not { } part)
+			{
+				SetSkipPointLocked(segments);
+				return;
+			}
+			SkipLocked(part);
+		}
+		RaiseChanged();
+	}
+
+	// To the end of the part; a part that runs to the end of the song ends it (as if it had played out).
+	void SkipLocked(Segment part)
+	{
+		var song = current!;
+		log.LogInformation("Skipping {From}–{To} of {Title} (SponsorBlock: {Category})",
+			Strings.FormatTime(part.Start), Strings.FormatTime(part.End), song.Title, part.Category);
+		var wasPaused = paused;
+		if (part.End >= song.Duration - 2) AdvanceLocked(finished: true);
+		else StartLocked(song, (int)Math.Ceiling(part.End), seeking: true);
+		if (wasPaused && current == song) { paused = true; timePipe.Paused = true; }
+	}
+
+	void OnStreamTitle(int gen, Track track, string title)
+	{
+		lock (gate)
+		{
+			if (gen != generation || current != track || streamTitle == title) return;
+			streamTitle = title;
+		}
+		log.LogInformation("{Station} plays {Title}", track.Title, title);
+		try { StreamTitleChanged?.Invoke(track, title); }
+		catch (Exception ex) { log.LogError(ex, "StreamTitleChanged handler failed"); }
+		RaiseChanged();
 	}
 
 	void StopSourceLocked()
@@ -594,7 +722,7 @@ public sealed class Player : IDisposable
 	void AddHistoryLocked(Track t)
 	{
 		var heard = (int)Math.Round(heardBefore + SourceSecondsLocked());
-		history.Add(new PlayedTrack(t.Id, t.Title, t.Channel, t.Duration, t.RequestedBy, startedAt, heard));
+		history.Add(new PlayedTrack(t.Id, t.Title, t.Channel, t.Duration, t.RequestedBy, startedAt, heard) { Source = t.Source, Link = t.Link, Art = t.Art });
 	}
 
 	int MaxAttempts => Math.Clamp(config.YouTube.PlayAttempts, 1, 10);
@@ -613,6 +741,8 @@ public sealed class Player : IDisposable
 			// yt-dlp stopped with an error halfway through: YouTube broke the stream off.
 			var cutOff = !noAudio && !ended.FromFile && ended.Errors.Contains("ERROR") && remaining - played > 5;
 			var reason = YouTube.FriendlyError(ended.Errors);
+			// A station that played for a while and then dropped gets all its tries again.
+			if (cutOff && current.IsLive && played > 60) attempt = 0;
 			if ((noAudio || cutOff) && attempt + 1 < MaxAttempts && (ended.FromFile || YouTube.IsRetryable(reason)))
 			{
 				log.LogWarning("{Title} ({Id}) {What}: {Reason}", current.Title, current.Id,
@@ -639,7 +769,7 @@ public sealed class Player : IDisposable
 			}
 			else
 			{
-				radioFailures = 0;
+				autoFailures = 0;
 				AdvanceLocked(finished: true);
 			}
 		}
@@ -687,7 +817,7 @@ public sealed class Player : IDisposable
 	}
 
 	// A broken song is dropped: never repeated by loop-one, never re-queued by loop-all.
-	// When it was the radio's pick and nothing else comes, the radio tries again (a few times).
+	// When it was autoplay's pick and nothing else comes, autoplay tries again (a few times).
 	void AdvanceAfterFailureLocked()
 	{
 		var failed = current;
@@ -696,8 +826,8 @@ public sealed class Player : IDisposable
 		Loop = LoopMode.Off;
 		try { AdvanceLocked(finished: false); }
 		finally { Loop = loop; }
-		if (failed is { Radio: true } && current is null && settings.Bot.Radio && ++radioFailures <= 3)
-			_ = Task.Run(() => FetchRadio(failed));
+		if (failed is { Autoplay: true } && current is null && settings.Bot.Autoplay && ++autoFailures <= 3)
+			_ = Task.Run(() => FetchAutoplay(failed));
 	}
 
 	// ---- surviving a restart ----
@@ -735,7 +865,7 @@ public sealed class Player : IDisposable
 				StartLocked(t, at, seeking: true);
 				if (current == t)
 				{
-					library.Resumed(settings.Id, t);
+					if (t.IsYouTube) library.Resumed(settings.Id, t);
 					paused = true;
 					timePipe.Paused = true;
 					resumeOnConnect = !s.Paused;
@@ -747,7 +877,7 @@ public sealed class Player : IDisposable
 
 	void RaiseChanged()
 	{
-		CheckRadio();
+		CheckAutoplay();
 		Track[] upcoming;
 		bool idle;
 		lock (gate)
@@ -774,19 +904,27 @@ public sealed class Player : IDisposable
 			StopSourceLocked();
 			queue.Clear();
 			disposed = true;
-			radioGen++;
+			autoGen++;
 		}
 		timePipe.Dispose();
 	}
 
 	/// <summary>Feeds ffmpeg's PCM into the timer pipe and notices when the song is over.</summary>
-	sealed class TrackSource(AudioStream audio, int generation, bool fromFile, Action<TrackSource> ended) : IAudioPassiveProducer
+	sealed class TrackSource(AudioStream audio, int generation, bool fromFile, Action<TrackSource> ended, Action<TrackSource> skipPoint) : IAudioPassiveProducer
 	{
 		public bool FromFile => fromFile;
 		public long BytesRead;
 		public int Generation => generation;
 		public string Errors => audio.Errors;
-		int done;
+		/// <summary>When this much audio was read, the song reached a part to skip (SponsorBlock).</summary>
+		long SkipAt = long.MaxValue;
+		int done, skipped;
+
+		public void Arm(long at)
+		{
+			Volatile.Write(ref SkipAt, at);
+			Interlocked.Exchange(ref skipped, 0);
+		}
 
 		public int Read(byte[] buffer, int offset, int length, out Meta? meta)
 		{
@@ -802,8 +940,8 @@ public sealed class Player : IDisposable
 			{
 				read = 0;
 			}
-			if (read > 0)
-				Interlocked.Add(ref BytesRead, read);
+			if (read > 0 && Interlocked.Add(ref BytesRead, read) >= Volatile.Read(ref SkipAt) && Interlocked.Exchange(ref skipped, 1) == 0)
+				ThreadPool.QueueUserWorkItem(_ => skipPoint(this));
 			if (read < length && Interlocked.Exchange(ref done, 1) == 0)
 				ThreadPool.QueueUserWorkItem(_ => ended(this));
 			return read;

@@ -11,9 +11,10 @@ e Ce morceau sera répété.
 c !boucle non
 e Répétition désactivée.
 c !radio oui
-e Radio activée
-c !radio non
-e Radio désactivée.
+e Lecture auto activée
+e C'est maintenant
+c !auto non
+e Lecture auto désactivée.
 c !volume 40
 e Volume réglé sur 40 %
 c !encours

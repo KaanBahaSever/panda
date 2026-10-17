@@ -1,7 +1,8 @@
 #!/bin/bash
 # WSL: the panel API with API keys, against the running test Panda from env.sh (port 8097):
 # a key logs in as its role, a "dj" key can't do admin things, a revoked key stops working, the
-# live stream works with a key; the server's people and the bot's permissions come back.
+# live stream works with a key; the server's people and the bot's permissions come back; internet radio
+# (the stand-in Radio Browser of fake-web.py) and the sources and YouTube settings.
 # usage: api.sh      Exit code = failed checks.
 set -u
 P=http://127.0.0.1:8097
@@ -52,6 +53,46 @@ check "permissions: can't be heard in a channel that needs talk power 100" "$(cu
 Q "channeledit?cid=$CID&channel_needed_talk_power=0" >/dev/null
 check "permissions: groups" "$(curl -s -b $J $P/api/bots/1/ts/permissions | json "[c['ok'] for c in d if c['key']=='groups'][0]")" True
 check "removing a key that isn't there" "$(code -H "Authorization: Bearer $ADMIN" -X DELETE $P/api/apikeys/nope)" 404
+
+echo "== internet radio"
+UUID=a0000000-0000-4000-8000-000000000001
+post() { curl -s -b $J -H 'Content-Type: application/json' -d "$2" "$P$1"; }
+# Radio and local links on (a chat scenario may have left them off).
+curl -s -b $J $P/api/bots/1/settings | python3 -c "
+import sys, json
+d = json.load(sys.stdin); d['sources']['radio'] = True; d['sources']['localLinks'] = True; print(json.dumps(d))" \
+	| curl -s -b $J -X PUT -H 'Content-Type: application/json' -d @- $P/api/bots/1/settings -o /dev/null
+check "radio search" "$(curl -s -b $J "$P/api/radio/search?name=test" | json "d[0]['name']")" "Test Station"
+check "a search needs something to look for" "$(curl -s -b $J "$P/api/radio/search" | json "len(d)")" 0
+check "countries" "$(curl -s -b $J $P/api/radio/countries | json "d[0]['code']")" TL
+check "favorite a station" "$(code -b $J -H 'Content-Type: application/json' -d "{\"uuid\":\"$UUID\"}" $P/api/radio/favorites)" 200
+check "favorites" "$(curl -s -b $J $P/api/radio/favorites | json "[s['name'] for s in d]")" "['Test Station']"
+check "play a station" "$(post /api/bots/1/fm "{\"uuid\":\"$UUID\"}" | json "d['source']")" radio
+# Stations are played by their id only: an address in the request is never used.
+check "no station for an unknown id (an address is ignored)" "$(code -b $J -H 'Content-Type: application/json' -d '{"uuid":"nope","url":"http://10.0.0.1/"}' $P/api/bots/1/fm)" 404
+check "remove the favorite" "$(code -b $J -X DELETE $P/api/radio/favorites/$UUID)" 204
+check "the panel takes any link" "$(post /api/bots/1/play '{"query":"http://127.0.0.1:8096/radio"}' | json "d['title']")" "Test FM"
+check "a Spotify playlist says how many more come" "$(post /api/bots/1/play '{"query":"https://open.spotify.com/playlist/abcdefghij1234567890"}' | json "(d['more'], d['list'])")" "(2, 'Test Mix')"
+curl -s -b $J -X POST $P/api/bots/1/control/stop -o /dev/null
+
+echo "== the sources and YouTube settings"
+curl -s -b $J $P/api/bots/1/settings > /tmp/panda-api-settings.json
+check "the settings have the sources" "$(json "d['sources']['search']" < /tmp/panda-api-settings.json)" youtube
+# Each change starts from the settings read above.
+put() { python3 -c "
+import sys, json
+d = json.load(open('/tmp/panda-api-settings.json')); exec(sys.argv[1]); print(json.dumps(d))" "$1" | curl -s -b $J -X PUT -H 'Content-Type: application/json' -d @- $P/api/bots/1/settings; }
+check "an unknown search is left as it was" "$(put "d['sources']['search'] = 'bing'" | json "d['sources']['search']")" youtube
+check "yt-dlp clients with other characters are refused" "$(put "d['youTube']['retryPlayerClients'] = 'tv;rm -rf'" | json "d['youTube']['retryPlayerClients']")" "android_vr,tv,web_safari"
+check "only known SponsorBlock categories" "$(put "d['youTube']['sponsorBlockCategories'] = ['sponsor', 'bogus']" | json "d['youTube']['sponsorBlockCategories']")" "['sponsor']"
+check "settings without the sources (an older panel) keep them" "$(put "d['sources']['radio'] = False; d['sources']['localLinks'] = True" >/dev/null; put "del d['sources']; del d['youTube']" | json "(d['sources']['radio'], d['youTube']['sponsorBlockCategories'])")" "(False, ['music_offtopic'])"
+put "pass" >/dev/null
+
+echo "== playlists and the library"
+check "playlists take songs from other sites" "$(post /api/playlists '{"name":"Sites","songs":[{"id":"soundcloud:123","title":"SC Song","channel":"x","duration":90,"source":"link","link":"https://soundcloud.com/a/b"}]}' | json "len(d['songs'])")" 1
+check "but not with a link that isn't a web page" "$(post /api/playlists '{"name":"Sites","songs":[{"id":"x:1","title":"Bad","channel":"x","duration":9,"source":"link","link":"javascript:alert(1)"}]}' | json "len(d['songs'])")" 1
+check "nor a station" "$(post /api/playlists '{"name":"Sites","songs":[{"id":"radio:x","title":"FM","channel":"x","duration":0,"source":"radio","link":"http://x.y/"}]}' | json "len(d['songs'])")" 1
+check "the library deletes songs only by their id" "$(code -b $J -X DELETE "$P/api/library/..%2F..%2Fconfig")" 409
 
 echo; echo "api: $failed failed"
 exit $failed

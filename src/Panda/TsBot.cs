@@ -41,8 +41,11 @@ public sealed class TsBot : BackgroundService
 {
 	readonly BotConfig settings;
 	readonly Player player;
+	readonly PandaConfig config;
 	readonly Library library;
-	readonly YouTube youtube;
+	readonly Sources sources;
+	readonly RadioBrowser radios;
+	readonly RadioFavorites favorites;
 	readonly Playlists playlists;
 	readonly ILogger log;
 	readonly string identityPath;
@@ -73,18 +76,23 @@ public sealed class TsBot : BackgroundService
 	string Prefix => Bot.CommandPrefix;
 
 	/// <param name="dir">The bot's folder, where its identity is kept.</param>
-	public TsBot(BotConfig settings, Player player, Library library, YouTube youtube, Playlists playlists, string dir, ILogger log)
+	public TsBot(BotConfig settings, PandaConfig config, Player player, Library library, Sources sources, RadioBrowser radios,
+		RadioFavorites favorites, Playlists playlists, string dir, ILogger log)
 	{
 		this.settings = settings;
+		this.config = config;
 		this.player = player;
 		this.library = library;
-		this.youtube = youtube;
+		this.sources = sources;
+		this.radios = radios;
+		this.favorites = favorites;
 		this.playlists = playlists;
 		this.log = log;
 		identityPath = Path.Combine(dir, "identity.json");
 
 		player.TrackStarted += t => _ = scheduler.InvokeAsync(() => OnTrackStarted(t));
 		player.TrackFailed += (t, reason) => _ = scheduler.InvokeAsync(() => OnTrackFailed(t, reason));
+		player.StreamTitleChanged += (t, song) => _ = scheduler.InvokeAsync(() => SetDescription(Describe(t)));
 		player.Changed += () =>
 		{
 			if (player.Current is null)
@@ -232,7 +240,7 @@ public sealed class TsBot : BackgroundService
 		description = null;
 		await UploadAvatarIfNeeded(c);
 		var now = player.Current;
-		await SetDescription(now is null ? "" : "♪ " + now.Title);
+		await SetDescription(now is null ? "" : Describe(now));
 		return null;
 	}
 
@@ -386,13 +394,17 @@ public sealed class TsBot : BackgroundService
 
 	/// <summary>The panel saved this bot's settings: what can change without reconnecting does so now.</summary>
 	public void SettingsChanged() =>
-		_ = scheduler.InvokeAsync(() => SetDescription(player.Current is { } t ? "♪ " + t.Title : ""));
+		_ = scheduler.InvokeAsync(() => SetDescription(player.Current is { } t ? Describe(t) : ""));
+
+	// A radio station with the song it plays, when it says.
+	string Describe(Track t) =>
+		t.Source == Media.Radio && player.StreamTitle is { } song && player.Current == t ? $"📻 {t.Title}: {song}" : "♪ " + t.Title;
 
 	async Task OnTrackStarted(Track t)
 	{
 		lock (votes) { voteTrack = null; votes.Clear(); }
 		if (client is not { Connected: true } c) return;
-		await SetDescription("♪ " + t.Title);
+		await SetDescription(Describe(t));
 		if (Bot.Announce)
 			Note("chat", await c.SendChannelMessage(Strings.Get(Lang, "now-playing-by", Link(t), Strings.Duration(Lang, t), t.RequestedBy)), "b_client_channel_textmessage_send");
 	}
@@ -400,7 +412,10 @@ public sealed class TsBot : BackgroundService
 	async Task OnTrackFailed(Track t, string reason)
 	{
 		if (client is not { Connected: true } c) return;
-		Note("chat", await c.SendChannelMessage(Strings.Get(Lang, "play-failed", t.Title, Strings.ShortError(Lang, reason))), "b_client_channel_textmessage_send");
+		// Titles from other sites (a station's name) and the tools' error text come from outside: no BBCode, and for a
+		// link no inner details (a scanner would learn which local addresses answer).
+		var why = t.IsYouTube || Strings.IsKnownError(reason) ? Strings.ShortError(Lang, reason) : Strings.ShortError(Lang, "link-unplayable");
+		Note("chat", await c.SendChannelMessage(Strings.Get(Lang, "play-failed", Escape(t.Title), Escape(why))), "b_client_channel_textmessage_send");
 	}
 
 	async Task FollowAsync(TsFullClient c, ChannelId target)
@@ -420,7 +435,9 @@ public sealed class TsBot : BackgroundService
 		StatusChanged?.Invoke();
 	}
 
-	static string Link(Track t) => $"[url={t.Url}]{Escape(t.Title)}[/url]";
+	// Links from other sites come from people: no brackets or spaces that could end the BBCode early.
+	static string Link(Track t) =>
+		$"[url={t.Url.Replace("[", "%5B").Replace("]", "%5D").Replace(" ", "%20")}]{Escape(t.Title)}[/url]";
 
 	string PlaylistNames() =>
 		string.Join(", ", playlists.All().Select(p => $"[b]{Escape(p.Name)}[/b] ({p.Songs.Count})"));
@@ -473,9 +490,16 @@ public sealed class TsBot : BackgroundService
 				await Reply(Strings.Get(Lang, "no-permission"));
 				return;
 			}
+			// Up to 0.5 !radio was autoplay: alone (or with on/off) it still is, with a name it plays a station.
+			var oldRadio = command == "radio";
+			if (oldRadio) command = IsSwitch(arg) ? "autoplay" : "fm";
 			// "!queue rock" plays a playlist and "!playlist" alone lists them: the level goes by what happens.
-			var acting = command switch { "queue" when arg.Length > 0 => "playlist", "playlist" when arg.Length == 0 => "playlists", _ => command };
-			var asking = acting is "np" or "queue" or "help" or "playlists";
+			var acting = command switch
+			{
+				"queue" when arg.Length > 0 => "playlist", "playlist" when arg.Length == 0 => "playlists", "fm" when arg.Length == 0 => "stations",
+				_ => command,
+			};
+			var asking = acting is "np" or "queue" or "help" or "playlists" or "stations";
 			if (Bot.OnlyFromChannel && level < ChatLevel.Admin && !asking && !InBotChannel(c, msg))
 			{
 				await Reply(Strings.Get(Lang, "only-in-channel"));
@@ -488,6 +512,8 @@ public sealed class TsBot : BackgroundService
 				return;
 			}
 			var reply = await RunCommand(c, command, arg, msg, level);
+			if (oldRadio && command == "autoplay")
+				reply = (reply is null ? "" : reply + "\n") + Strings.Get(Lang, "radio-renamed", Prefix);
 			if (reply != null)
 				await Reply(reply);
 		}
@@ -546,8 +572,8 @@ public sealed class TsBot : BackgroundService
 
 	// ---- other people's songs ----
 
-	/// <summary>A song is someone's own when they asked for it; the radio's picks are nobody's.</summary>
-	static bool Own(Track t, TextMessage msg) => t.Radio || (msg.InvokerUid?.Value is { } uid && t.RequesterId == uid);
+	/// <summary>A song is someone's own when they asked for it; autoplay's picks are nobody's.</summary>
+	static bool Own(Track t, TextMessage msg) => t.Autoplay || (msg.InvokerUid?.Value is { } uid && t.RequesterId == uid);
 
 	bool MayChangeOthers(ChatLevel level) => level >= ChatPermissions.Parse(Bot.OthersSongs);
 
@@ -559,6 +585,44 @@ public sealed class TsBot : BackgroundService
 
 	// A song that starts now is announced in the bot's channel; that answers a command written there,
 	// not one sent privately (maybe from another channel).
+	// "on"/"off" in the bot's languages; null for anything else.
+	static bool? Switch(string arg) => arg.ToLowerInvariant() switch
+	{
+		"on" or "aç" or "ac" or "açık" or "acik" or "oui" or "activer" or "an" or "1" => true,
+		"off" or "kapat" or "kapalı" or "kapali" or "non" or "désactiver" or "desactiver" or "aus" or "0" => false,
+		_ => null,
+	};
+
+	static bool IsSwitch(string arg) => arg.Length == 0 || Switch(arg) != null;
+
+	/// <summary>The rest of an album or playlist is looked up in the background and added as it's found;
+	/// a !stop or !clear (or the queue filling up) ends it. Says how it went when it's done.</summary>
+	void AddListLater(TextMessage msg, Resolved r, bool exempt)
+	{
+		var target = msg.Target;
+		var invoker = msg.InvokerId;
+		var uid = msg.InvokerUid?.Value;
+		var epoch = player.Epoch;
+		_ = Task.Run(async () =>
+		{
+			var (added, missed) = await sources.AddAllAsync(r.More!, msg.InvokerName.ToString(), t =>
+			{
+				if (disposed || player.Epoch != epoch) return false;
+				try { player.Enqueue(t with { RequesterId = uid }, exempt); return true; }
+				catch (Exception ex) when (ex is QueueFullException or UserLimitException) { return false; }
+			});
+			if (disposed || !Bot.ConfirmCommands) return;
+			var text = Strings.Get(Lang, "list-added", added + 1, Escape(r.ListName ?? ""))
+				+ (missed > 0 ? " " + Strings.Get(Lang, "list-missed", missed) : "");
+			await scheduler.InvokeAsync(async () =>
+			{
+				if (client is not { Connected: true } c) return;
+				if (target == TextMessageTargetMode.Private) await c.SendPrivateMessage(text, invoker);
+				else Note("chat", await c.SendChannelMessage(text), "b_client_channel_textmessage_send");
+			});
+		});
+	}
+
 	string? Queue(Track track, bool now, TextMessage msg, bool exempt)
 	{
 		var announced = Bot.Announce && msg.Target == TextMessageTargetMode.Channel;
@@ -574,7 +638,7 @@ public sealed class TsBot : BackgroundService
 	}
 
 	// !search results per person, picked with !1, !2...; they go stale after a few minutes.
-	const int SearchResults = 5;
+	int SearchResults => Math.Clamp(config.YouTube.SearchResults, 1, 10);
 	static readonly TimeSpan SearchKeep = TimeSpan.FromMinutes(5);
 	readonly Dictionary<string, (List<Track> Results, DateTime At)> searches = [];
 	static string SearchKey(TextMessage msg) => msg.InvokerUid?.Value ?? "client:" + msg.InvokerId;
@@ -673,8 +737,15 @@ public sealed class TsBot : BackgroundService
 			if (arg.Length == 0) return Strings.Get(Lang, "usage-play", Prefix);
 			try
 			{
-				var track = await library.ResolveAsync(arg, who) with { RequesterId = msg.InvokerUid?.Value };
-				return Queue(track, command == "playnow", msg, exempt);
+				var r = await sources.ResolveAsync(arg, who);
+				var reply = Queue(r.Track with { RequesterId = msg.InvokerUid?.Value }, command == "playnow", msg, exempt);
+				// An album or a playlist: the rest is looked up and added one by one.
+				if (r.More is { Count: > 0 } more)
+				{
+					AddListLater(msg, r, exempt);
+					reply = (reply is null ? "" : reply + "\n") + Strings.Get(Lang, "list-adding", more.Count, Escape(r.ListName ?? ""));
+				}
+				return reply;
 			}
 			catch (YouTubeException ex) { return Strings.Error(Lang, ex.Message); }
 			catch (QueueFullException) { return Strings.Get(Lang, "queue-full"); }
@@ -684,7 +755,7 @@ public sealed class TsBot : BackgroundService
 		{
 			if (arg.Length == 0) return Strings.Get(Lang, "usage-search", Prefix);
 			List<Track> results;
-			try { results = await youtube.SearchAsync(arg, SearchResults, who); }
+			try { results = await sources.SearchAnyAsync(arg, SearchResults, who); }
 			catch (YouTubeException ex) { return Strings.Error(Lang, ex.Message); }
 			if (results.Count == 0) return Strings.Get(Lang, "err-not-found");
 			KeepSearch(msg, results);
@@ -703,7 +774,7 @@ public sealed class TsBot : BackgroundService
 			try
 			{
 				// The search only saw the list; this looks the song itself up (length, live, saved copy).
-				var track = await library.ResolveAsync(found[n - 1].Url, who) with { RequesterId = msg.InvokerUid?.Value };
+				var track = (await sources.ResolveAsync(found[n - 1].Url, who)).Track with { RequesterId = msg.InvokerUid?.Value };
 				return Queue(track, now: false, msg, exempt);
 			}
 			catch (YouTubeException ex) { return Strings.Error(Lang, ex.Message); }
@@ -855,6 +926,10 @@ public sealed class TsBot : BackgroundService
 		case "fav":
 		{
 			if (player.Current is not { } now) return Strings.Get(Lang, "nothing-playing");
+			// A radio station goes to the favorite stations (!fm).
+			if (Stations.FromTrack(now) is { } station)
+				return favorites.Add(station) ? Confirm(Strings.Get(Lang, "fm-fav-added", Escape(station.Name), Prefix))
+					: Strings.Get(Lang, "fm-fav-full", RadioFavorites.Max);
 			// One shared list; it is named in the bot's chat language when it's first made.
 			var name = Strings.Languages.Select(l => playlists.Find(Strings.Get(l, "favorites"))?.Name).FirstOrDefault(n => n != null)
 				?? Strings.Get(Lang, "favorites");
@@ -863,16 +938,35 @@ public sealed class TsBot : BackgroundService
 			return Confirm(Strings.Get(Lang, "fav-added", Link(now), Escape(name)));
 		}
 
-		case "radio":
+		case "autoplay":
 		{
-			var on = arg.ToLowerInvariant() switch
+			var on = Switch(arg) ?? !player.Autoplay;
+			player.SetAutoplay(on);
+			return Confirm(Strings.Get(Lang, on ? "autoplay-on" : "autoplay-off"));
+		}
+
+		case "fm":
+		{
+			if (!config.Sources.Radio) return Strings.Error(Lang, "source-off");
+			var saved = favorites.All();
+			if (arg.Length == 0)
 			{
-				"on" or "aç" or "ac" or "açık" or "acik" or "oui" or "activer" or "an" or "1" => true,
-				"off" or "kapat" or "kapalı" or "kapali" or "non" or "désactiver" or "desactiver" or "aus" or "0" => false,
-				_ => !player.Radio,
-			};
-			player.SetRadio(on);
-			return Confirm(Strings.Get(Lang, on ? "radio-on" : "radio-off"));
+				if (saved.Count == 0) return Strings.Get(Lang, "fm-none", Prefix);
+				var sb = new StringBuilder(Strings.Get(Lang, "fm-list", Prefix));
+				for (int i = 0; i < saved.Count && i < 30; i++) sb.Append($"\n[b]{i + 1}.[/b] {Escape(saved[i].Name)}");
+				return sb.ToString();
+			}
+			var station = int.TryParse(arg, out var n) && n >= 1 && n <= saved.Count ? saved[n - 1] : favorites.Find(arg);
+			if (station is null)
+			{
+				try { station = (await radios.SearchAsync(arg, null, null, 1, CancellationToken.None)).FirstOrDefault(); }
+				catch (RadioException) { return Strings.Get(Lang, "fm-down"); }
+				if (station is null) return Strings.Get(Lang, "fm-not-found", Escape(arg));
+			}
+			radios.Played(station);
+			try { return Queue(station.ToTrack(who) with { RequesterId = msg.InvokerUid?.Value }, now: false, msg, exempt); }
+			catch (QueueFullException) { return Strings.Get(Lang, "queue-full"); }
+			catch (UserLimitException ex) { return Strings.Get(Lang, "user-limit", ex.Max); }
 		}
 
 		case "follow":
@@ -1010,6 +1104,9 @@ public static class Commands
 		["shuffle"] = "shuffle", ["karıştır"] = "shuffle", ["karistir"] = "shuffle", ["mélanger"] = "shuffle", ["melanger"] = "shuffle", ["mischen"] = "shuffle",
 		["loop"] = "loop", ["repeat"] = "loop", ["tekrar"] = "loop", ["boucle"] = "loop", ["répéter"] = "loop", ["repeter"] = "loop", ["wiederholen"] = "loop",
 		["join"] = "join", ["come"] = "join", ["gel"] = "join", ["viens"] = "join", ["rejoindre"] = "join", ["komm"] = "join",
+		["autoplay"] = "autoplay", ["auto"] = "autoplay", ["otomatik"] = "autoplay", ["otodevam"] = "autoplay", ["lectureauto"] = "autoplay", ["automatisch"] = "autoplay",
+		["fm"] = "fm", ["station"] = "fm", ["istasyon"] = "fm", ["sender"] = "fm",
+		// Up to 0.5 the name of autoplay; now it leads to autoplay or !fm (see HandleMessageAsync).
 		["radio"] = "radio", ["radyo"] = "radio",
 		["follow"] = "follow", ["followme"] = "follow", ["takip"] = "follow", ["takipet"] = "follow", ["suivre"] = "follow", ["folgen"] = "follow", ["folgmir"] = "follow",
 		["playlist"] = "playlist", ["pl"] = "playlist", ["çalmalistesi"] = "playlist", ["calmalistesi"] = "playlist",

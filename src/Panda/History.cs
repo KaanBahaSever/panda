@@ -10,11 +10,14 @@ public sealed record PlayedTrack(
 	/// <summary>Seconds actually played (pauses and skipped parts don't count).</summary>
 	int Listened)
 {
-	public string Url => $"https://www.youtube.com/watch?v={Id}";
-	public string Thumbnail => $"https://i.ytimg.com/vi/{Id}/hqdefault.jpg";
+	public string? Source { get; init; }
+	public string? Link { get; init; }
+	public string? Art { get; init; }
+	public string Url => Media.Url(Id, Source, Link);
+	public string? Thumbnail => Media.Thumbnail(Id, Source, Art);
 	public bool IsLive => Duration <= 0;
 
-	public Track ToTrack() => new(Id, Title, Channel, Duration, RequestedBy);
+	public Track ToTrack() => new(Id, Title, Channel, Duration, RequestedBy) { Source = Source, Link = Link, Art = Art };
 }
 
 /// <summary>

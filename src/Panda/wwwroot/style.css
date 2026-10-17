@@ -76,6 +76,12 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .badge { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 11px; font-weight: 800; letter-spacing: .06em; }
 .badge.live { background: var(--danger); color: #fff; }
 .badge.sm { padding: 0 6px; font-size: 10px; }
+.badge.src { background: var(--soft); color: var(--soft-text); letter-spacing: .02em; }
+.np-stream { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 4px; font-size: 14px; font-weight: 700; color: var(--green); }
+.sb-cats { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: -4px; }
+.sb-cats .check { margin: 0; }
+.hint.warn { color: var(--warn, #b7791f); font-weight: 600; }
+#radio-results:empty, #radio-favs:empty { display: none; }
 .chip { display: inline-block; margin-left: 6px; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; background: var(--surface-2); color: var(--muted); vertical-align: middle; }
 .chip.on { background: var(--soft); color: var(--soft-text); }
 .empty { padding: 14px 4px 4px; text-align: center; font-size: 14px; }

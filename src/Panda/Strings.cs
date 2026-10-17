@@ -63,20 +63,34 @@ public static class Strings
 		["vote-needed"] = ("This song is someone else's: vote with [b]{0}voteskip[/b].", "Bu şarkıyı başkası istedi: [b]{0}oyla[/b] ile oy ver.",
 			"Ce morceau est celui de quelqu'un d'autre : vote avec [b]{0}voter[/b].", "Diesen Song hat jemand anderes gewünscht: stimm mit [b]{0}abstimmen[/b] ab."),
 		["queue-full"] = ("The queue is full.", "Sıra dolu.", "La file est pleine.", "Die Warteschlange ist voll."),
-		["err-not-found"] = ("Nothing found on YouTube.", "YouTube'da bir şey bulamadım.", "Rien trouvé sur YouTube.", "Auf YouTube nichts gefunden."),
+		["err-not-found"] = ("Nothing found.", "Bir şey bulamadım.", "Rien trouvé.", "Nichts gefunden."),
+		["err-source-off"] = ("That source is turned off in the panel.", "Bu kaynak panelde kapalı.", "Cette source est désactivée dans le panneau.", "Diese Quelle ist im Panel ausgeschaltet."),
+		["err-link-private"] = ("I don't open links into the local network.", "Yerel ağdaki linkleri açmıyorum.", "Je n'ouvre pas les liens vers le réseau local.", "Ich öffne keine Links ins lokale Netzwerk."),
+		["err-link-unreachable"] = ("I couldn't open that link.", "Bu linki açamadım.", "Je n'ai pas pu ouvrir ce lien.", "Ich konnte den Link nicht öffnen."),
+		["err-link-unplayable"] = ("I found nothing to play at that link.", "O linkte çalacak bir şey bulamadım.", "Je n'ai rien trouvé à lire à ce lien.", "Unter dem Link habe ich nichts zum Abspielen gefunden."),
 		["err-playlist-empty"] = ("That playlist is empty.", "Bu çalma listesi boş.", "Cette playlist est vide.", "Diese Playlist ist leer."),
 		["err-not-youtube"] = ("I only play YouTube links.", "Sadece YouTube linklerini çalabiliyorum.", "Je ne lis que les liens YouTube.", "Ich spiele nur YouTube-Links."),
 		["err-too-long"] = ("That video is too long.", "Bu video çok uzun.", "Cette vidéo est trop longue.", "Das Video ist zu lang."),
 		["err-bot-check"] = ("YouTube wants to check I'm not a bot. Add fresh cookies in the panel.", "YouTube bot kontrolü istiyor. Panelden yeni cookies ekleyin.", "YouTube veut vérifier que je ne suis pas un robot. Ajoutez de nouveaux cookies dans le panneau.", "YouTube will sichergehen, dass ich kein Bot bin. Füge im Panel neue Cookies hinzu."),
 		["err-unavailable"] = ("That video isn't available.", "Bu video kullanılamıyor.", "Cette vidéo n'est pas disponible.", "Dieses Video ist nicht verfügbar."),
 		["err-age"] = ("That video is age-restricted. Add cookies of an adult account in the panel.", "Bu video yaş sınırlı. Panelden yetişkin bir hesabın cookies'ini ekleyin.", "Cette vidéo est soumise à une limite d'âge. Ajoutez dans le panneau les cookies d'un compte adulte.", "Dieses Video hat eine Altersbeschränkung. Füge im Panel die Cookies eines volljährigen Kontos hinzu."),
-		["err-timeout"] = ("YouTube didn't answer in time. Try again.", "YouTube zamanında cevap vermedi. Tekrar dene.", "YouTube n'a pas répondu à temps. Réessaie.", "YouTube hat nicht rechtzeitig geantwortet. Versuch es nochmal."),
+		["err-timeout"] = ("No answer in time. Try again.", "Zamanında cevap gelmedi. Tekrar dene.", "Pas de réponse à temps. Réessaie.", "Keine rechtzeitige Antwort. Versuch es nochmal."),
 		["err-other"] = ("Couldn't play that: {0}", "Çalamadım: {0}", "Impossible de lire ça : {0}", "Konnte das nicht abspielen: {0}"),
 		["play-failed"] = ("Couldn't play [b]{0}[/b]: {1}", "[b]{0}[/b] çalınamadı: {1}", "Impossible de lire [b]{0}[/b] : {1}", "Konnte [b]{0}[/b] nicht abspielen: {1}"),
 		["live"] = ("LIVE", "CANLI", "EN DIRECT", "LIVE"),
-		["radio-name"] = ("📻 Radio", "📻 Radyo", "📻 Radio", "📻 Radio"),
-		["radio-on"] = ("📻 Radio on: when the queue runs out I keep playing songs like the last one.", "📻 Radyo açık: sıra bitince son şarkıya benzer şarkılar çalarım.", "📻 Radio activée : quand la file est finie, je continue avec des morceaux proches du dernier.", "📻 Radio an: Wenn die Warteschlange leer ist, spiele ich Songs, die dem letzten ähneln."),
-		["radio-off"] = ("📻 Radio off.", "📻 Radyo kapalı.", "📻 Radio désactivée.", "📻 Radio aus."),
+		["autoplay-name"] = ("✨ Autoplay", "✨ Otomatik devam", "✨ Lecture auto", "✨ Autoplay"),
+		["autoplay-on"] = ("✨ Autoplay on: when the queue runs out I keep playing songs like the last one.", "✨ Otomatik devam açık: sıra bitince son şarkıya benzer şarkılar çalarım.", "✨ Lecture auto activée : quand la file est finie, je continue avec des morceaux proches du dernier.", "✨ Autoplay an: Wenn die Warteschlange leer ist, spiele ich Songs, die dem letzten ähneln."),
+		["autoplay-off"] = ("✨ Autoplay off.", "✨ Otomatik devam kapalı.", "✨ Lecture auto désactivée.", "✨ Autoplay aus."),
+		["radio-renamed"] = ("(This is now [b]{0}autoplay[/b]; [b]{0}fm <name>[/b] plays an internet radio station.)", "(Bunun adı artık [b]{0}otomatik[/b]; [b]{0}fm <ad>[/b] bir internet radyosu çalar.)", "(C'est maintenant [b]{0}auto[/b] ; [b]{0}fm <nom>[/b] lit une radio sur Internet.)", "(Das heißt jetzt [b]{0}autoplay[/b]; [b]{0}fm <Name>[/b] spielt einen Internetradiosender.)"),
+		["fm-list"] = ("📻 Favorite stations (play one with [b]{0}fm <number or name>[/b]):", "📻 Favori radyolar ([b]{0}fm <numara ya da ad>[/b] ile çal):", "📻 Radios favorites (lance-en une avec [b]{0}fm <numéro ou nom>[/b]) :", "📻 Lieblingssender (spiel einen mit [b]{0}fm <Nummer oder Name>[/b]):"),
+		["fm-none"] = ("📻 No favorite stations yet. [b]{0}fm <name>[/b] finds one on Radio Browser; [b]{0}fav[/b] while it plays keeps it.", "📻 Henüz favori radyo yok. [b]{0}fm <ad>[/b] Radio Browser'da arar; çalarken [b]{0}fav[/b] favorilere ekler.", "📻 Pas encore de radios favorites. [b]{0}fm <nom>[/b] en trouve une sur Radio Browser ; [b]{0}fav[/b] pendant qu'elle joue la garde.", "📻 Noch keine Lieblingssender. [b]{0}fm <Name>[/b] sucht einen bei Radio Browser; [b]{0}fav[/b], während er läuft, behält ihn."),
+		["fm-not-found"] = ("No radio station called [b]{0}[/b] found.", "[b]{0}[/b] adında bir radyo bulamadım.", "Aucune radio nommée [b]{0}[/b] trouvée.", "Kein Radiosender namens [b]{0}[/b] gefunden."),
+		["fm-down"] = ("The radio list (Radio Browser) doesn't answer right now. Try again later.", "Radyo listesi (Radio Browser) şu an cevap vermiyor. Sonra tekrar dene.", "La liste des radios (Radio Browser) ne répond pas pour l'instant. Réessaie plus tard.", "Die Senderliste (Radio Browser) antwortet gerade nicht. Versuch es später nochmal."),
+		["fm-fav-added"] = ("📻 [b]{0}[/b] is now a favorite station ([b]{1}fm[/b] lists them).", "📻 [b]{0}[/b] favori radyolara eklendi ([b]{1}fm[/b] listeler).", "📻 [b]{0}[/b] fait maintenant partie des radios favorites ([b]{1}fm[/b] les liste).", "📻 [b]{0}[/b] ist jetzt ein Lieblingssender ([b]{1}fm[/b] zeigt sie)."),
+		["fm-fav-full"] = ("There are already {0} favorite stations. Remove some in the panel first.", "Zaten {0} favori radyo var. Önce panelden birkaçını sil.", "Il y a déjà {0} radios favorites. Retire-en d'abord dans le panneau.", "Es gibt schon {0} Lieblingssender. Entferne zuerst ein paar im Panel."),
+		["list-adding"] = ("📃 {0} more songs from [b]{1}[/b] are looked up and added one by one.", "📃 [b]{1}[/b] listesindeki diğer {0} şarkı aranıp sırayla ekleniyor.", "📃 Les {0} autres morceaux de [b]{1}[/b] sont cherchés et ajoutés un par un.", "📃 Die {0} weiteren Songs aus [b]{1}[/b] werden gesucht und nach und nach hinzugefügt."),
+		["list-added"] = ("📃 Done: {0} songs from [b]{1}[/b] are in the queue.", "📃 Bitti: [b]{1}[/b] listesinden {0} şarkı sırada.", "📃 Terminé : {0} morceaux de [b]{1}[/b] sont dans la file.", "📃 Fertig: {0} Songs aus [b]{1}[/b] sind in der Warteschlange."),
+		["list-missed"] = ("{0} weren't found.", "{0} şarkı bulunamadı.", "{0} n'ont pas été trouvés.", "{0} wurden nicht gefunden."),
 		["playlist-added"] = ("📃 Added {0} songs from [b]{1}[/b].", "📃 [b]{1}[/b] listesinden {0} şarkı sıraya eklendi.", "📃 {0} morceaux de [b]{1}[/b] ajoutés à la file.", "📃 {0} Songs aus [b]{1}[/b] hinzugefügt."),
 		["playlist-not-found"] = ("There is no playlist called [b]{0}[/b]. {1}", "[b]{0}[/b] adında bir liste yok. {1}", "Il n'y a pas de playlist nommée [b]{0}[/b]. {1}", "Es gibt keine Playlist namens [b]{0}[/b]. {1}"),
 		["playlists"] = ("📃 Playlists: {0}", "📃 Listeler: {0}", "📃 Playlists : {0}", "📃 Playlists: {0}"),
@@ -86,46 +100,46 @@ public static class Strings
 		["fav-added"] = ("⭐ Saved to [b]{1}[/b]: {0}", "⭐ [b]{1}[/b] listesine eklendi: {0}", "⭐ Ajouté à [b]{1}[/b] : {0}", "⭐ In [b]{1}[/b] gespeichert: {0}"),
 		["help"] = (
 			"🐼 [b]Panda[/b] commands:\n" +
-			"[b]{0}play[/b] <song or link> – play / add to queue · [b]{0}playnow[/b] <song> – play right away\n" +
+			"[b]{0}play[/b] <song or link> – play / add to queue (YouTube, SoundCloud, Spotify, radio links…; [b]sc:[/b] / [b]ytm:[/b] searches SoundCloud / YouTube Music) · [b]{0}playnow[/b] <song> – play right away\n" +
 			"[b]{0}skip[/b] – next song · [b]{0}stop[/b] – stop & clear\n" +
 			"[b]{0}pause[/b] · [b]{0}resume[/b]\n" +
 			"[b]{0}queue[/b] – show queue · [b]{0}np[/b] – now playing\n" +
 			"[b]{0}vol[/b] <0-100> · [b]{0}loop[/b] <off|one|all> · [b]{0}shuffle[/b]\n" +
 			"[b]{0}remove[/b] <#> · [b]{0}clear[/b] · [b]{0}join[/b] – come to my channel · [b]{0}follow[/b] – follow me around\n" +
-			"[b]{0}search[/b] <song> – pick from 5 results · [b]{0}seek[/b] 1:30 · [b]{0}back[/b] – previous song · [b]{0}skipto[/b] <#> · [b]{0}move[/b] <#> <#> · [b]{0}voteskip[/b]\n" +
-			"[b]{0}radio[/b] <on|off> – keep playing similar songs when the queue ends\n" +
+			"[b]{0}search[/b] <song> – pick from the results · [b]{0}seek[/b] 1:30 · [b]{0}back[/b] – previous song · [b]{0}skipto[/b] <#> · [b]{0}move[/b] <#> <#> · [b]{0}voteskip[/b]\n" +
+			"[b]{0}autoplay[/b] <on|off> – keep playing similar songs when the queue ends · [b]{0}fm[/b] <station> – internet radio (alone: the favorite stations)\n" +
 			"[b]{0}playlist[/b] <name> – queue a saved playlist · [b]{0}playlists[/b] · [b]{0}fav[/b] – save this song to Favorites",
 			"🐼 [b]Panda[/b] komutları:\n" +
-			"[b]{0}çal[/b] <şarkı veya link> – çal / sıraya ekle · [b]{0}şimdiçal[/b] <şarkı> – hemen çal\n" +
+			"[b]{0}çal[/b] <şarkı veya link> – çal / sıraya ekle (YouTube, SoundCloud, Spotify, radyo linkleri…; [b]sc:[/b] / [b]ytm:[/b] SoundCloud / YouTube Music'te arar) · [b]{0}şimdiçal[/b] <şarkı> – hemen çal\n" +
 			"[b]{0}geç[/b] – sonraki şarkı · [b]{0}dur[/b] – durdur ve sırayı temizle\n" +
 			"[b]{0}duraklat[/b] · [b]{0}devam[/b]\n" +
 			"[b]{0}sıra[/b] – sırayı göster · [b]{0}şimdi[/b] – çalan şarkı\n" +
 			"[b]{0}ses[/b] <0-100> · [b]{0}tekrar[/b] <kapalı|şarkı|hepsi> · [b]{0}karıştır[/b]\n" +
 			"[b]{0}sil[/b] <#> · [b]{0}temizle[/b] · [b]{0}gel[/b] – kanalıma gel · [b]{0}takip[/b] – beni takip et\n" +
-			"[b]{0}ara[/b] <şarkı> – 5 sonuçtan seç · [b]{0}sar[/b] 1:30 · [b]{0}önceki[/b] – önceki şarkı · [b]{0}git[/b] <#> · [b]{0}taşı[/b] <#> <#> · [b]{0}oyla[/b] – geçmek için oy\n" +
-			"[b]{0}radyo[/b] <aç|kapat> – sıra bitince benzer şarkılar çalmaya devam et\n" +
+			"[b]{0}ara[/b] <şarkı> – sonuçlardan seç · [b]{0}sar[/b] 1:30 · [b]{0}önceki[/b] – önceki şarkı · [b]{0}git[/b] <#> · [b]{0}taşı[/b] <#> <#> · [b]{0}oyla[/b] – geçmek için oy\n" +
+			"[b]{0}otomatik[/b] <aç|kapat> – sıra bitince benzer şarkılar çalmaya devam et · [b]{0}fm[/b] <radyo> – internet radyosu (tek başına: favori radyolar)\n" +
 			"[b]{0}liste[/b] <ad> – kayıtlı listeyi sıraya ekle · [b]{0}listeler[/b] · [b]{0}fav[/b] – bu şarkıyı Favoriler'e kaydet\n" +
 			"(English commands like [b]{0}play[/b] work too)",
 			"🐼 Commandes de [b]Panda[/b] :\n" +
-			"[b]{0}jouer[/b] <morceau ou lien> – lire / ajouter à la file · [b]{0}jouermaintenant[/b] <morceau> – lire tout de suite\n" +
+			"[b]{0}jouer[/b] <morceau ou lien> – lire / ajouter à la file (YouTube, SoundCloud, Spotify, liens radio… ; [b]sc:[/b] / [b]ytm:[/b] cherche sur SoundCloud / YouTube Music) · [b]{0}jouermaintenant[/b] <morceau> – lire tout de suite\n" +
 			"[b]{0}passer[/b] – morceau suivant · [b]{0}arrêt[/b] – arrêter et vider la file\n" +
 			"[b]{0}pause[/b] · [b]{0}reprendre[/b]\n" +
 			"[b]{0}file[/b] – voir la file · [b]{0}encours[/b] – morceau en cours\n" +
 			"[b]{0}volume[/b] <0-100> · [b]{0}boucle[/b] <non|un|tout> · [b]{0}mélanger[/b]\n" +
 			"[b]{0}retirer[/b] <#> · [b]{0}vider[/b] · [b]{0}viens[/b] – viens dans mon canal · [b]{0}suivre[/b] – suis-moi de canal en canal\n" +
-			"[b]{0}chercher[/b] <morceau> – choisir parmi 5 résultats · [b]{0}aller[/b] 1:30 · [b]{0}précédent[/b] · [b]{0}allerà[/b] <#> · [b]{0}déplacer[/b] <#> <#> · [b]{0}voter[/b] – voter pour passer\n" +
-			"[b]{0}radio[/b] <oui|non> – continuer avec des morceaux proches quand la file est finie\n" +
+			"[b]{0}chercher[/b] <morceau> – choisir parmi les résultats · [b]{0}aller[/b] 1:30 · [b]{0}précédent[/b] · [b]{0}allerà[/b] <#> · [b]{0}déplacer[/b] <#> <#> · [b]{0}voter[/b] – voter pour passer\n" +
+			"[b]{0}auto[/b] <oui|non> – continuer avec des morceaux proches quand la file est finie · [b]{0}fm[/b] <station> – radio sur Internet (seul : les radios favorites)\n" +
 			"[b]{0}playlist[/b] <nom> – ajouter une playlist enregistrée · [b]{0}playlists[/b] · [b]{0}fav[/b] – enregistrer ce morceau dans les Favoris\n" +
 			"(les commandes anglaises comme [b]{0}play[/b] marchent aussi)",
 			"🐼 [b]Panda[/b]-Befehle:\n" +
-			"[b]{0}spielen[/b] <Song oder Link> – abspielen / einreihen · [b]{0}jetztspielen[/b] <Song> – sofort abspielen\n" +
+			"[b]{0}spielen[/b] <Song oder Link> – abspielen / einreihen (YouTube, SoundCloud, Spotify, Radio-Links…; [b]sc:[/b] / [b]ytm:[/b] sucht bei SoundCloud / YouTube Music) · [b]{0}jetztspielen[/b] <Song> – sofort abspielen\n" +
 			"[b]{0}überspringen[/b] – nächster Song · [b]{0}stopp[/b] – stoppen und Warteschlange leeren\n" +
 			"[b]{0}pause[/b] · [b]{0}fortsetzen[/b]\n" +
 			"[b]{0}warteschlange[/b] – Warteschlange zeigen · [b]{0}läuft[/b] – was gerade läuft\n" +
 			"[b]{0}lautstärke[/b] <0-100> · [b]{0}wiederholen[/b] <aus|eins|alle> · [b]{0}mischen[/b]\n" +
 			"[b]{0}entfernen[/b] <#> · [b]{0}leeren[/b] · [b]{0}komm[/b] – komm in meinen Channel · [b]{0}folgen[/b] – folge mir durch die Channels\n" +
-			"[b]{0}suchen[/b] <Song> – aus 5 Ergebnissen wählen · [b]{0}spulen[/b] 1:30 · [b]{0}zurück[/b] · [b]{0}springen[/b] <#> · [b]{0}verschieben[/b] <#> <#> · [b]{0}abstimmen[/b] – für das Überspringen abstimmen\n" +
-			"[b]{0}radio[/b] <an|aus> – ähnliche Songs weiterspielen, wenn die Warteschlange leer ist\n" +
+			"[b]{0}suchen[/b] <Song> – aus den Ergebnissen wählen · [b]{0}spulen[/b] 1:30 · [b]{0}zurück[/b] · [b]{0}springen[/b] <#> · [b]{0}verschieben[/b] <#> <#> · [b]{0}abstimmen[/b] – für das Überspringen abstimmen\n" +
+			"[b]{0}autoplay[/b] <an|aus> – ähnliche Songs weiterspielen, wenn die Warteschlange leer ist · [b]{0}fm[/b] <Sender> – Internetradio (allein: die Lieblingssender)\n" +
 			"[b]{0}playlist[/b] <Name> – gespeicherte Playlist einreihen · [b]{0}playlists[/b] · [b]{0}fav[/b] – diesen Song in den Favoriten speichern\n" +
 			"(englische Befehle wie [b]{0}play[/b] gehen auch)"),
 	};
@@ -161,12 +175,16 @@ public static class Strings
 		"unavailable" => Get(lang, "err-unavailable"),
 		"age" => Get(lang, "err-age"),
 		"timeout" => Get(lang, "err-timeout"),
-		_ => Get(lang, "err-other", reason),
+		"source-off" or "link-private" or "link-unreachable" or "link-unplayable" => Get(lang, "err-" + reason),
+		// Text of yt-dlp or ffmpeg, maybe about someone's page: no BBCode.
+		_ => Get(lang, "err-other", reason.Replace("[", "(").Replace("]", ")")),
 	};
+
+	public static bool IsKnownError(string reason) =>
+		reason is "not-found" or "empty" or "playlist-empty" or "not-youtube" or "too-long" or "bot-check" or "unavailable" or "age" or "timeout"
+			or "source-off" or "link-private" or "link-unreachable" or "link-unplayable";
 
 	/// <summary>The reason without the "Couldn't play that:" wrapper, for "Couldn't play X: reason".</summary>
 	public static string ShortError(string lang, string reason) =>
-		reason is "not-found" or "empty" or "playlist-empty" or "not-youtube" or "too-long" or "bot-check" or "unavailable" or "age" or "timeout"
-			? Error(lang, reason)
-			: reason;
+		IsKnownError(reason) ? Error(lang, reason) : reason.Replace("[", "(").Replace("]", ")");
 }

@@ -4,12 +4,16 @@ namespace Panda;
 
 public sealed record PlaylistSong(string Id, string Title, string Channel, int Duration)
 {
-	public string Url => $"https://www.youtube.com/watch?v={Id}";
-	public string Thumbnail => $"https://i.ytimg.com/vi/{Id}/hqdefault.jpg";
+	/// <summary>Null for YouTube; songs from other sites keep their link (see <see cref="Track.Source"/>).</summary>
+	public string? Source { get; init; }
+	public string? Link { get; init; }
+	public string? Art { get; init; }
+	public string Url => Media.Url(Id, Source, Link);
+	public string? Thumbnail => Media.Thumbnail(Id, Source, Art);
 	public bool IsLive => Duration <= 0;
 
-	public static PlaylistSong From(Track t) => new(t.Id, t.Title, t.Channel, t.Duration);
-	public Track ToTrack(string requestedBy) => new(Id, Title, Channel, Duration, requestedBy);
+	public static PlaylistSong From(Track t) => new(t.Id, t.Title, t.Channel, t.Duration) { Source = t.Source, Link = t.Link, Art = t.Art };
+	public Track ToTrack(string requestedBy) => new(Id, Title, Channel, Duration, requestedBy) { Source = Source, Link = Link, Art = Art };
 }
 
 public sealed record Playlist(string Name, IReadOnlyList<PlaylistSong> Songs, DateTimeOffset Updated);

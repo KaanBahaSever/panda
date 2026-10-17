@@ -11,9 +11,10 @@ e Dieser Song wird wiederholt.
 c !wiederholen aus
 e Wiederholung aus.
 c !radio an
-e Radio an
-c !radio aus
-e Radio aus.
+e Autoplay an
+e Das heißt jetzt
+c !autoplay aus
+e Autoplay aus.
 c !lautstärke 45
 e Lautstärke auf 45 % gesetzt.
 c !läuft

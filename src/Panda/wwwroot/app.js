@@ -9,14 +9,20 @@ const I18N = {
     nowPlaying: 'Now playing', live: 'LIVE', napping: 'Panda is napping 💤 — add a song!', seek: 'Seek',
     shuffle: 'Shuffle queue', stop: 'Stop', play: 'Play', pause: 'Pause', skip: 'Skip', mute: 'Mute', unmute: 'Unmute', volume: 'Volume',
     loopOff: 'Loop: off', loopAll: 'Loop: whole queue', loopOne: 'Loop: this song',
-    radioOn: 'Radio: on — similar songs follow when the queue ends', radioOff: 'Radio: off', radioToast: '📻 Radio on: similar songs follow when the queue ends',
+    autoplayOn: 'Autoplay: on — similar songs follow when the queue ends', autoplayOff: 'Autoplay: off', autoplayToast: '✨ Autoplay on: similar songs follow when the queue ends',
+    radio: 'Radio', radioTitle: 'Internet radio', radioFavs: 'Favorite stations', radioFavsEmpty: 'No favorite stations yet. Find one below and star it.', radioFind: 'Find a station', radioName: 'Name', radioCountry: 'Country', radioTag: 'Genre', radioAny: 'Any', radioSearch: 'Search', radioHint: "Stations come from Radio Browser (radio-browser.info), a free, open list. Panda plays each station's own stream and saves nothing.", radioNone: 'No stations found 🐾', radioFav: 'Add to favorite stations', radioUnfav: 'Remove from favorite stations', radioFaved: 'Added to favorite stations', radioUnfaved: 'Removed from favorite stations',
+    fromSearch: 'Search results', listAdding: (n, x) => `${n} more songs from "${x}" are on the way`,
+    sSources: 'Sources', sSearchIn: 'Search on', sFallback: 'When nothing is found there, try the others', sSearchWarn: "Songs from SoundCloud aren't saved to the library, and autoplay only follows YouTube songs.", sPrefixes: 'In the chat, “sc:” searches SoundCloud and “ytm:” YouTube Music, whatever is chosen here (!play sc:lofi).', srcSites: 'Other sites (Bandcamp, Mixcloud, Vimeo, Twitch…) and audio files', srcServices: 'Spotify, Apple Music, Deezer and Tidal links (looked up on YouTube)', srcPages: "Any other link: look up the page's title on YouTube", srcRadio: 'Internet radio (stream links, !fm, the radio list)', srcLocal: 'Links into the local network (a radio or a NAS at home)', sSourcesHint: "YouTube is always on. Songs from other sites play straight from there; only YouTube songs are saved to the library. Links into the local network are refused unless allowed, so nobody can make Panda open a router's page.",
+    sSearchCount: 'Results of !search', ytHideLive: 'Leave live streams out of searches', ytHideShort: 'Leave videos under a minute out of searches', sQuality: 'Audio quality', qBest: 'Best', qSaver: 'Save data (about 70 kbps; saved songs are smaller too)', ytSponsorBlock: "Skip the parts that aren't music (SponsorBlock)", sSponsorHint: "Parts people marked on SponsorBlock (sponsor.ajay.app). Panda only sends the first characters of a code made from the video's id, not which video plays.", 'sb.music_offtopic': 'Talk in music videos', 'sb.sponsor': 'Sponsors', 'sb.selfpromo': 'Self-promotion', 'sb.intro': 'Intros', 'sb.outro': 'Endings',
+    sAttempts: 'Tries when YouTube refuses a song', sClients: 'YouTube clients from the third try', sRetryHint: "YouTube turns a song down now and then (403); another try usually works. The clients are yt-dlp's player_client names; empty = yt-dlp's own choice.", sAutoplay: 'Autoplay', sNoRepeat: "Don't repeat any of the last … songs", ytSameArtist: 'The same artist may come again', sAutoplayHint: "Autoplay (✨ under the player) keeps playing songs like the last one when the queue ends, from YouTube's Mix.",
+    'err.source-off': 'That source is turned off in Settings → Sources.', 'err.link-private': 'Links into the local network are turned off (Settings → Sources).', 'err.link-unreachable': 'That link could not be opened.', 'err.link-unplayable': 'Nothing to play was found at that link.', 'err.radio-list-down': "The radio list (Radio Browser) doesn't answer right now.", 'err.fm-full': 'There are already 200 favorite stations.', 'cmd.autoplay': 'Autoplay', 'cmd.fm': 'Internet radio',
     playlists: 'Playlists', plEmpty: 'No saved playlists yet.', plSaveQueue: 'Save the queue as a playlist', plAdd: 'Add to playlist', plNew: 'New playlist…',
     plName: 'Name of the playlist:', plPlay: 'Add to the queue', plShuffle: 'Add shuffled', plRename: 'Rename', plDelete: 'Delete playlist',
     confirmPlDelete: x => `Delete the playlist "${x}"?`, plQueued: (n, x) => `${n} songs from "${x}" added`, plSaved: x => `Saved to "${x}"`,
     plFull: (x, n) => `"${x}" is full (500 songs): ${n === 1 ? '1 song' : `${n} songs`} didn't fit.`,
     plRenamed: 'Playlist renamed', plDeleted: 'Playlist deleted', 'err.bad-playlist-name': 'Playlist names are 1–40 characters with at least one letter or digit, and no slashes.',
     'err.playlist-exists': 'There is already a playlist with that name.',
-    addSong: 'Add a song', addPh: 'Song name or YouTube link', add: 'Add', playNow: 'Play now', added: 'Added', results: 'Results',
+    addSong: 'Add a song', addPh: 'Song name or link', add: 'Add', playNow: 'Play now', added: 'Added', results: 'Results',
     noResults: 'No results 🐾', close: 'Close', queue: 'Queue', clear: 'Clear', queueEmpty: 'The queue is empty. Search for something above!',
     history: 'Recently played', historyEmpty: 'Nothing played yet.', today: 'Today', yesterday: 'Yesterday', addAgain: 'Add again', remove: 'Remove', moveUp: 'Move up', moveDown: 'Move down',
     requestedBy: 'requested by', songs: n => n === 1 ? '1 song' : `${n} songs`,
@@ -27,7 +33,7 @@ const I18N = {
     sNick: 'Nickname', removePw: 'Remove password', unchanged: 'unchanged', sBot: 'Bot', sLang: 'Chat language', sPrefix: 'Command prefix',
     sAnnounce: 'Announce each song in chat', sConfirm: 'Confirm chat commands',
     sChatHint: 'Announcing posts every song as it starts. Confirmations are the short replies to commands like !play and !skip. Questions (!np, !queue, !help) and errors are always answered.', sDesc: 'Show song in bot description', sMaxQueue: 'Max queue length', sMaxDur: 'Max song length (min)',
-    sMaxDurHint: '0 = unlimited.', sPerUser: 'Songs per person', sPerUserHint: 'How many songs one person can have waiting in the queue. 0 = no limit. DJs and admins aren\'t limited.', 'err.user-limit': 'You already have as many songs waiting as allowed. Add more when one has played.', sMaxDurShared: 'Max song length is shared by all bots.',
+    sMaxDurHint: '0 = unlimited.', sPerUser: 'Songs per person', sPerUserHint: 'How many songs one person can have waiting in the queue. 0 = no limit. DJs and admins aren\'t limited.', 'err.user-limit': 'You already have as many songs waiting as allowed. Add more when one has played.',
     save: 'Save', reconnect: 'Reconnect bot',
     sCookies: 'YouTube cookies', sCookiesHelp: 'If YouTube says "confirm you\'re not a bot": open a private/incognito window, log in to YouTube, export cookies with a "cookies.txt" browser extension, paste them here, then close that window.',
     chooseFile: 'Choose file', saveCookies: 'Save cookies', removeCookies: 'Remove cookies', cookiesOn: 'Cookies set ✓', cookiesOff: 'No cookies',
@@ -43,8 +49,8 @@ const I18N = {
     'err.queue-full': 'The queue is full.', 'err.wrong-password': 'Wrong password.', 'err.too-many-attempts': 'Too many attempts — wait a few minutes.',
     'err.password-too-short': 'The new password needs at least 6 characters.', 'err.cookies-invalid': 'That doesn\'t look like a YouTube cookies.txt.',
     'err.too-large': 'That file is too large.', 'err.missing': 'Missing tool on the server: ',
-    'err.timeout': 'YouTube didn\'t answer in time — try again.', 'err.no-bot': 'That bot no longer exists.',
-    library: 'Library', savedBadge: 'saved', fromLibrary: 'From your library', fromYouTube: 'From YouTube', libFilter: 'Filter saved songs',
+    'err.timeout': 'No answer in time — try again.', 'err.no-bot': 'That bot no longer exists.',
+    library: 'Library', savedBadge: 'saved', fromLibrary: 'From your library', libFilter: 'Filter saved songs',
     usage: (a, b) => `${a} of ${b}`, libOff: 'Saving is off — turn it on in Settings.', libEmpty: 'No saved songs yet. Songs are saved as they are requested.',
     libNoMatch: 'No saved songs match.', libCapped: 'Showing the 500 most played songs — use the filter to find others.', showMore: 'Show more',
     plays: n => n === 1 ? '1 play' : `${n} plays`, requests: n => n === 1 ? '1 song' : `${n} songs`, delete: 'Delete', deleted: 'Deleted', confirmLibDelete: x => `Delete "${x}" from the library?`,
@@ -86,7 +92,7 @@ const I18N = {
     stats: 'Statistics', statsRange: 'Period', last7: 'Last 7 days', last30: 'Last 30 days', last365: 'Last year', allTime: 'All time',
     thisBot: 'This bot', allBots: 'All bots', statsEmpty: 'Nothing was played in this period.', sPlays: 'plays', sListened: 'listened',
     sSongs: 'different songs', sPeople: 'people', topSongs: 'Most played', topPeople: 'Who asked the most', activity: 'Activity', byHour: 'By hour of day',
-    sPerm: "Chat permissions", sEveryone: "Everyone on the server can use the bot", sEveryoneHint: "When off, only the people below, DJs and admins can.", sMembers: "Who may use the bot", sAdmins: "Admins (can do everything)", sDjs: "DJs", sBlocked: "Blocked", sPeopleHint: "Pick people or server groups from the server, or paste a unique ID. Chat admins and DJs are not the panel's users.", addPerson: "Add", pickTitle: "Add from the server", pickSearch: "Search people and groups", pickGroups: "Server groups", pickPeople: "Online now", pickUid: "Or paste a unique ID", pickOffline: "The bot isn't connected; you can still paste a unique ID.", pickNoGroups: "The bot can't see the server groups (b_virtualserver_servergroup_list).", noOne: "Nobody yet", sOthers: "Who may skip, remove or move other people's songs", lvlEveryone: "Everyone", lvlDj: "DJs and admins", lvlAdmin: "Admins only", sVoteSkip: "The others can vote to skip", sVoteSkipHint: "People who may not skip someone else's song vote with !skip; it's skipped when half of the bot's channel voted. Whoever asked for a song can always skip it, and the panel skips at once.", sOnlyChannel: "Only people in the bot's channel can give commands", sOnlyChannelHint: "Admins can from anywhere; questions like !np are always answered.", sCmdLevels: "Who may use each command", sRecommended: "Use the recommended setup", sRecommendedHint: "Adding songs and voting for everyone; pausing, volume, the queue and the rest for DJs. Save to keep it.", sChecks: "The bot's permissions on the server", sChecksHint: "What the bot can do with its server group's permissions. \"Not tried yet\" fills in as the bot is used.", pcOk: "Works", pcUnknown: "Not tried yet", pcOffline: "The bot isn't connected.", refresh: "Refresh", sKeys: "API keys", sKeysHint: "For programs that use Panda without logging in (a script, a management panel). They send the key as \"Authorization: Bearer <key>\" and get the role's rights.", keyName: "Name", addKey: "Make a key", keyShown: "Copy the key now; it won't be shown again.", copy: "Copy", copied: "Copied", keyMade: "Key made", keyRevoked: "Key revoked", keyNever: "Never used", revoke: "Revoke", "err.bad-key-name": "Key names are 1–40 characters, without brackets.", "err.too-many-keys": "There are already 50 keys.", "err.key-exists": "There is already a key with that name.", "pc.talk": "Be heard in the channel", "pc.chat": "Write in the chat", "pc.description": "Show the song in its description", "pc.move": "Change channels (!join, !follow)", "pc.groups": "See the server groups", "cmd.play": "Add a song", "cmd.search": "Search and pick", "cmd.playnow": "Play right away", "cmd.skip": "Skip (own song, or vote)", "cmd.remove": "Remove from the queue", "cmd.move": "Move in the queue", "cmd.skipto": "Jump to a song", "cmd.back": "Previous song", "cmd.seek": "Jump within the song", "cmd.pause": "Pause and resume", "cmd.stop": "Stop and clear", "cmd.clear": "Clear the queue", "cmd.shuffle": "Shuffle", "cmd.loop": "Repeat", "cmd.vol": "Volume", "cmd.radio": "Radio", "cmd.playlist": "Play a saved playlist", "cmd.fav": "Save to Favorites", "cmd.join": "Come to my channel", "cmd.follow": "Follow me",
+    sPerm: "Chat permissions", sEveryone: "Everyone on the server can use the bot", sEveryoneHint: "When off, only the people below, DJs and admins can.", sMembers: "Who may use the bot", sAdmins: "Admins (can do everything)", sDjs: "DJs", sBlocked: "Blocked", sPeopleHint: "Pick people or server groups from the server, or paste a unique ID. Chat admins and DJs are not the panel's users.", addPerson: "Add", pickTitle: "Add from the server", pickSearch: "Search people and groups", pickGroups: "Server groups", pickPeople: "Online now", pickUid: "Or paste a unique ID", pickOffline: "The bot isn't connected; you can still paste a unique ID.", pickNoGroups: "The bot can't see the server groups (b_virtualserver_servergroup_list).", noOne: "Nobody yet", sOthers: "Who may skip, remove or move other people's songs", lvlEveryone: "Everyone", lvlDj: "DJs and admins", lvlAdmin: "Admins only", sVoteSkip: "The others can vote to skip", sVoteSkipHint: "People who may not skip someone else's song vote with !skip; it's skipped when half of the bot's channel voted. Whoever asked for a song can always skip it, and the panel skips at once.", sOnlyChannel: "Only people in the bot's channel can give commands", sOnlyChannelHint: "Admins can from anywhere; questions like !np are always answered.", sCmdLevels: "Who may use each command", sRecommended: "Use the recommended setup", sRecommendedHint: "Adding songs and voting for everyone; pausing, volume, the queue and the rest for DJs. Save to keep it.", sChecks: "The bot's permissions on the server", sChecksHint: "What the bot can do with its server group's permissions. \"Not tried yet\" fills in as the bot is used.", pcOk: "Works", pcUnknown: "Not tried yet", pcOffline: "The bot isn't connected.", refresh: "Refresh", sKeys: "API keys", sKeysHint: "For programs that use Panda without logging in (a script, a management panel). They send the key as \"Authorization: Bearer <key>\" and get the role's rights.", keyName: "Name", addKey: "Make a key", keyShown: "Copy the key now; it won't be shown again.", copy: "Copy", copied: "Copied", keyMade: "Key made", keyRevoked: "Key revoked", keyNever: "Never used", revoke: "Revoke", "err.bad-key-name": "Key names are 1–40 characters, without brackets.", "err.too-many-keys": "There are already 50 keys.", "err.key-exists": "There is already a key with that name.", "pc.talk": "Be heard in the channel", "pc.chat": "Write in the chat", "pc.description": "Show the song in its description", "pc.move": "Change channels (!join, !follow)", "pc.groups": "See the server groups", "cmd.play": "Add a song", "cmd.search": "Search and pick", "cmd.playnow": "Play right away", "cmd.skip": "Skip (own song, or vote)", "cmd.remove": "Remove from the queue", "cmd.move": "Move in the queue", "cmd.skipto": "Jump to a song", "cmd.back": "Previous song", "cmd.seek": "Jump within the song", "cmd.pause": "Pause and resume", "cmd.stop": "Stop and clear", "cmd.clear": "Clear the queue", "cmd.shuffle": "Shuffle", "cmd.loop": "Repeat", "cmd.vol": "Volume", "cmd.playlist": "Play a saved playlist", "cmd.fav": "Save to Favorites", "cmd.join": "Come to my channel", "cmd.follow": "Follow me",
     pcMissing: x => `Missing: give the bot's server group ${x}.`, pcTalk: (h, n) => `Talk power ${h}, the channel needs ${n}.`, confirmKeyRevoke: x => `Revoke the key "${x}"? Programs using it stop working.`, keyUsed: x => `Last used ${x}`
   },
   tr: {
@@ -95,14 +101,20 @@ const I18N = {
     nowPlaying: 'Şimdi çalıyor', live: 'CANLI', napping: 'Panda uyukluyor 💤 — bir şarkı ekle!', seek: 'Sar',
     shuffle: 'Sırayı karıştır', stop: 'Durdur', play: 'Oynat', pause: 'Duraklat', skip: 'Geç', mute: 'Sessize al', unmute: 'Sesi aç', volume: 'Ses',
     loopOff: 'Tekrar: kapalı', loopAll: 'Tekrar: tüm sıra', loopOne: 'Tekrar: bu şarkı',
-    radioOn: 'Radyo: açık — sıra bitince benzer şarkılar gelir', radioOff: 'Radyo: kapalı', radioToast: '📻 Radyo açık: sıra bitince benzer şarkılar gelir',
+    autoplayOn: 'Otomatik devam: açık — sıra bitince benzer şarkılar gelir', autoplayOff: 'Otomatik devam: kapalı', autoplayToast: '✨ Otomatik devam açık: sıra bitince benzer şarkılar gelir',
+    radio: 'Radyo', radioTitle: 'İnternet radyosu', radioFavs: 'Favori radyolar', radioFavsEmpty: 'Henüz favori radyo yok. Aşağıdan bulup yıldızlayın.', radioFind: 'Radyo bul', radioName: 'Ad', radioCountry: 'Ülke', radioTag: 'Tür', radioAny: 'Hepsi', radioSearch: 'Ara', radioHint: "Radyolar Radio Browser'dan (radio-browser.info) gelir; ücretsiz ve açık bir liste. Panda her radyonun kendi yayınını çalar, hiçbir şey kaydetmez.", radioNone: 'Radyo bulunamadı 🐾', radioFav: 'Favori radyolara ekle', radioUnfav: 'Favori radyolardan çıkar', radioFaved: 'Favori radyolara eklendi', radioUnfaved: 'Favori radyolardan çıkarıldı',
+    fromSearch: 'Arama sonuçları', listAdding: (n, x) => `"${x}" listesindeki ${n} şarkı daha ekleniyor`,
+    sSources: 'Kaynaklar', sSearchIn: 'Arama yeri', sFallback: 'Orada bulamazsa diğerlerinde ara', sSearchWarn: 'SoundCloud şarkıları kütüphaneye kaydedilmez; otomatik devam sadece YouTube şarkılarından devam eder.', sPrefixes: "Sohbette “sc:” SoundCloud'da, “ytm:” YouTube Music'te arar; buradaki seçim ne olursa olsun (!çal sc:lofi).", srcSites: 'Diğer siteler (Bandcamp, Mixcloud, Vimeo, Twitch…) ve ses dosyaları', srcServices: "Spotify, Apple Music, Deezer ve Tidal linkleri (YouTube'da aranır)", srcPages: "Diğer her link: sayfanın başlığını YouTube'da ara", srcRadio: 'İnternet radyosu (yayın linkleri, !fm, radyo listesi)', srcLocal: 'Yerel ağdaki linkler (evdeki bir radyo ya da NAS)', sSourcesHint: "YouTube hep açık. Diğer sitelerin şarkıları doğrudan oradan çalınır; sadece YouTube şarkıları kütüphaneye kaydedilir. Yerel ağdaki linkler izin verilmedikçe reddedilir; böylece kimse Panda'ya modemin sayfasını açtıramaz.",
+    sSearchCount: '!ara sonuç sayısı', ytHideLive: 'Canlı yayınları aramalardan çıkar', ytHideShort: 'Bir dakikadan kısa videoları aramalardan çıkar', sQuality: 'Ses kalitesi', qBest: 'En iyi', qSaver: 'Veri tasarrufu (yaklaşık 70 kbps; kaydedilen şarkılar da küçülür)', ytSponsorBlock: 'Müzik olmayan kısımları atla (SponsorBlock)', sSponsorHint: "İnsanların SponsorBlock'ta (sponsor.ajay.app) işaretlediği kısımlar. Panda hangi videonun çaldığını değil, video kimliğinden üretilen bir kodun ilk karakterlerini gönderir.", 'sb.music_offtopic': 'Klipteki konuşmalar', 'sb.sponsor': 'Sponsorlar', 'sb.selfpromo': 'Kendi tanıtımı', 'sb.intro': 'Girişler', 'sb.outro': 'Kapanışlar',
+    sAttempts: 'YouTube şarkıyı reddederse deneme sayısı', sClients: 'Üçüncü denemeden itibaren YouTube istemcileri', sRetryHint: "YouTube arada bir şarkıyı reddeder (403); yeniden denemek çoğu zaman işe yarar. İstemciler yt-dlp'nin player_client adlarıdır; boş = yt-dlp'nin kendi seçimi.", sAutoplay: 'Otomatik devam', sNoRepeat: 'Son … şarkıyı tekrar çalma', ytSameArtist: 'Aynı sanatçı tekrar gelebilir', sAutoplayHint: "Otomatik devam (oynatıcının altındaki ✨) sıra bitince YouTube'un Mix listesinden son şarkıya benzer şarkılar çalmaya devam eder.",
+    'err.source-off': "Bu kaynak Ayarlar → Kaynaklar'da kapalı.", 'err.link-private': 'Yerel ağdaki linkler kapalı (Ayarlar → Kaynaklar).', 'err.link-unreachable': 'Bu link açılamadı.', 'err.link-unplayable': 'O linkte çalacak bir şey bulunamadı.', 'err.radio-list-down': 'Radyo listesi (Radio Browser) şu an cevap vermiyor.', 'err.fm-full': 'Zaten 200 favori radyo var.', 'cmd.autoplay': 'Otomatik devam', 'cmd.fm': 'İnternet radyosu',
     playlists: 'Çalma listeleri', plEmpty: 'Henüz kayıtlı liste yok.', plSaveQueue: 'Sırayı liste olarak kaydet', plAdd: 'Listeye ekle', plNew: 'Yeni liste…',
     plName: 'Listenin adı:', plPlay: 'Sıraya ekle', plShuffle: 'Karışık ekle', plRename: 'Adını değiştir', plDelete: 'Listeyi sil',
     confirmPlDelete: x => `"${x}" listesi silinsin mi?`, plQueued: (n, x) => `"${x}" listesinden ${n} şarkı eklendi`, plSaved: x => `"${x}" listesine kaydedildi`,
     plFull: (x, n) => `"${x}" dolu (500 şarkı): ${n} şarkı eklenemedi.`,
     plRenamed: 'Listenin adı değişti', plDeleted: 'Liste silindi', 'err.bad-playlist-name': 'Liste adı 1–40 karakter olmalı, en az bir harf ya da rakam içermeli ve eğik çizgi içermemeli.',
     'err.playlist-exists': 'Bu adda bir liste zaten var.',
-    addSong: 'Şarkı ekle', addPh: 'Şarkı adı ya da YouTube linki', add: 'Ekle', playNow: 'Hemen çal', added: 'Eklendi', results: 'Sonuçlar',
+    addSong: 'Şarkı ekle', addPh: 'Şarkı adı ya da link', add: 'Ekle', playNow: 'Hemen çal', added: 'Eklendi', results: 'Sonuçlar',
     noResults: 'Sonuç yok 🐾', close: 'Kapat', queue: 'Sıra', clear: 'Temizle', queueEmpty: 'Sıra boş. Yukarıdan bir şey ara!',
     history: 'Son çalınanlar', historyEmpty: 'Henüz bir şey çalınmadı.', today: 'Bugün', yesterday: 'Dün', addAgain: 'Tekrar ekle', remove: 'Kaldır', moveUp: 'Yukarı taşı', moveDown: 'Aşağı taşı',
     requestedBy: 'İsteyen:', songs: n => `${n} şarkı`,
@@ -113,7 +125,7 @@ const I18N = {
     sNick: 'Takma ad', removePw: 'Şifreyi kaldır', unchanged: 'değişmedi', sBot: 'Bot', sLang: 'Sohbet dili', sPrefix: 'Komut öneki',
     sAnnounce: 'Her şarkıyı sohbette duyur', sConfirm: 'Sohbet komutlarını onayla',
     sChatHint: 'Duyuru, her şarkı başlarken kanala yazılır. Onay, !çal ve !geç gibi komutlara verilen kısa cevaptır. Sorular (!şimdi, !sıra, !yardım) ve hatalar her zaman cevaplanır.', sDesc: 'Şarkıyı bot açıklamasında göster', sMaxQueue: 'En fazla sıra uzunluğu', sMaxDur: 'En uzun şarkı (dk)',
-    sMaxDurHint: '0 = sınırsız.', sPerUser: 'Kişi başı şarkı', sPerUserHint: 'Bir kişinin sırada aynı anda bekleyebilecek şarkı sayısı. 0 = sınır yok. DJ\'ler ve yöneticiler sınırlanmaz.', 'err.user-limit': 'Sırada izin verilen sayıda bekleyen şarkınız var. Biri çalınca yenisini ekleyebilirsiniz.', sMaxDurShared: 'En uzun şarkı süresi tüm botlar için geçerli.',
+    sMaxDurHint: '0 = sınırsız.', sPerUser: 'Kişi başı şarkı', sPerUserHint: 'Bir kişinin sırada aynı anda bekleyebilecek şarkı sayısı. 0 = sınır yok. DJ\'ler ve yöneticiler sınırlanmaz.', 'err.user-limit': 'Sırada izin verilen sayıda bekleyen şarkınız var. Biri çalınca yenisini ekleyebilirsiniz.',
     save: 'Kaydet', reconnect: 'Botu yeniden bağla',
     sCookies: 'YouTube çerezleri', sCookiesHelp: 'YouTube "bot olmadığınızı doğrulayın" derse: gizli/özel bir pencere açın, YouTube\'a giriş yapın, bir "cookies.txt" tarayıcı eklentisiyle çerezleri dışa aktarın, buraya yapıştırın ve o pencereyi kapatın.',
     chooseFile: 'Dosya seç', saveCookies: 'Çerezleri kaydet', removeCookies: 'Çerezleri kaldır', cookiesOn: 'Çerezler var ✓', cookiesOff: 'Çerez yok',
@@ -129,8 +141,8 @@ const I18N = {
     'err.queue-full': 'Sıra dolu.', 'err.wrong-password': 'Şifre yanlış.', 'err.too-many-attempts': 'Çok fazla deneme — birkaç dakika bekleyin.',
     'err.password-too-short': 'Yeni şifre en az 6 karakter olmalı.', 'err.cookies-invalid': 'Bu bir YouTube cookies.txt dosyasına benzemiyor.',
     'err.too-large': 'Dosya çok büyük.', 'err.missing': 'Sunucuda eksik araç: ',
-    'err.timeout': 'YouTube zamanında cevap vermedi — tekrar dene.', 'err.no-bot': 'Bu bot artık yok.',
-    library: 'Kütüphane', savedBadge: 'kayıtlı', fromLibrary: 'Kütüphanenden', fromYouTube: 'YouTube\'dan', libFilter: 'Kayıtlı şarkılarda ara',
+    'err.timeout': 'Zamanında cevap gelmedi — tekrar dene.', 'err.no-bot': 'Bu bot artık yok.',
+    library: 'Kütüphane', savedBadge: 'kayıtlı', fromLibrary: 'Kütüphanenden', libFilter: 'Kayıtlı şarkılarda ara',
     usage: (a, b) => `${a} / ${b}`, libOff: 'Kaydetme kapalı — Ayarlar\'dan açabilirsin.', libEmpty: 'Henüz kayıtlı şarkı yok. Şarkılar istendikçe kaydedilir.',
     libNoMatch: 'Eşleşen kayıtlı şarkı yok.', libCapped: 'En çok dinlenen 500 şarkı gösteriliyor — diğerleri için aramayı kullan.', showMore: 'Daha fazla göster',
     plays: n => `${n} kez çalındı`, requests: n => `${n} şarkı`, delete: 'Sil', deleted: 'Silindi', confirmLibDelete: x => `"${x}" kütüphaneden silinsin mi?`,
@@ -172,7 +184,7 @@ const I18N = {
     stats: 'İstatistikler', statsRange: 'Aralık', last7: 'Son 7 gün', last30: 'Son 30 gün', last365: 'Son 1 yıl', allTime: 'Tüm zamanlar',
     thisBot: 'Bu bot', allBots: 'Tüm botlar', statsEmpty: 'Bu aralıkta bir şey çalınmadı.', sPlays: 'çalma', sListened: 'dinlendi',
     sSongs: 'farklı şarkı', sPeople: 'kişi', topSongs: 'En çok çalınanlar', topPeople: 'En çok isteyenler', activity: 'Hareketlilik', byHour: 'Saatlere göre',
-    sPerm: "Sohbet yetkileri", sEveryone: "Sunucudaki herkes botu kullanabilir", sEveryoneHint: "Kapalıyken sadece aşağıdakiler, DJ'ler ve yöneticiler kullanabilir.", sMembers: "Botu kullanabilenler", sAdmins: "Yöneticiler (tüm yetkiler)", sDjs: "DJ'ler", sBlocked: "Engellenenler", sPeopleHint: "Sunucudaki kişileri ya da sunucu gruplarını seçin veya benzersiz kimlik yapıştırın. Sohbetteki yöneticiler ve DJ'ler panel kullanıcılarından ayrıdır.", addPerson: "Ekle", pickTitle: "Sunucudan ekle", pickSearch: "Kişi ve grup ara", pickGroups: "Sunucu grupları", pickPeople: "Şu an çevrimiçi", pickUid: "Ya da benzersiz kimlik yapıştırın", pickOffline: "Bot bağlı değil; yine de benzersiz kimlik yapıştırabilirsiniz.", pickNoGroups: "Bot sunucu gruplarını göremiyor (b_virtualserver_servergroup_list).", noOne: "Henüz kimse yok", sOthers: "Başkalarının şarkılarını kim geçebilir, silebilir, taşıyabilir", lvlEveryone: "Herkes", lvlDj: "DJ'ler ve yöneticiler", lvlAdmin: "Sadece yöneticiler", sVoteSkip: "Yetkisi olmayanlar oylamayla geçebilir", sVoteSkipHint: "Başkasının şarkısını geçemeyenler !geç ile oy verir; botun kanalındakilerin yarısı oy verince şarkı geçilir. Şarkıyı isteyen her zaman geçebilir, panel de hemen geçer.", sOnlyChannel: "Komutları sadece botun kanalındakiler verebilir", sOnlyChannelHint: "Yöneticiler her yerden verebilir; !şimdi gibi sorular her zaman cevaplanır.", sCmdLevels: "Hangi komutu kim kullanabilir", sRecommended: "Önerilen ayarı kullan", sRecommendedHint: "Şarkı ekleme ve oylama herkese; duraklatma, ses, sıra ve gerisi DJ'lere. Kalması için kaydedin.", sChecks: "Botun sunucudaki izinleri", sChecksHint: "Botun, sunucu grubunun izinleriyle neler yapabildiği. \"Henüz denenmedi\" yazanlar bot kullanıldıkça dolar.", pcOk: "Çalışıyor", pcUnknown: "Henüz denenmedi", pcOffline: "Bot bağlı değil.", refresh: "Yenile", sKeys: "API anahtarları", sKeysHint: "Panda'yı giriş yapmadan kullanan programlar için (bir betik, bir yönetim paneli). Anahtarı \"Authorization: Bearer <anahtar>\" olarak gönderirler ve rolün yetkilerini alırlar.", keyName: "Ad", addKey: "Anahtar oluştur", keyShown: "Anahtarı şimdi kopyalayın; bir daha gösterilmeyecek.", copy: "Kopyala", copied: "Kopyalandı", keyMade: "Anahtar oluşturuldu", keyRevoked: "Anahtar iptal edildi", keyNever: "Hiç kullanılmadı", revoke: "İptal et", "err.bad-key-name": "Anahtar adı 1–40 karakter olmalı ve köşeli parantez içermemeli.", "err.too-many-keys": "Zaten 50 anahtar var.", "err.key-exists": "Bu adda bir anahtar zaten var.", "pc.talk": "Kanalda duyulmak", "pc.chat": "Sohbete yazmak", "pc.description": "Şarkıyı açıklamasında göstermek", "pc.move": "Kanal değiştirmek (!gel, !takip)", "pc.groups": "Sunucu gruplarını görmek", "cmd.play": "Şarkı ekle", "cmd.search": "Ara ve seç", "cmd.playnow": "Hemen çal", "cmd.skip": "Geç (kendi şarkısını ya da oylayarak)", "cmd.remove": "Sıradan sil", "cmd.move": "Sırada taşı", "cmd.skipto": "Bir şarkıya atla", "cmd.back": "Önceki şarkı", "cmd.seek": "İleri geri sar", "cmd.pause": "Duraklat ve devam ettir", "cmd.stop": "Durdur ve temizle", "cmd.clear": "Sırayı temizle", "cmd.shuffle": "Karıştır", "cmd.loop": "Tekrarla", "cmd.vol": "Ses düzeyi", "cmd.radio": "Radyo", "cmd.playlist": "Kayıtlı listeyi çal", "cmd.fav": "Favorilere kaydet", "cmd.join": "Kanalıma gel", "cmd.follow": "Beni takip et",
+    sPerm: "Sohbet yetkileri", sEveryone: "Sunucudaki herkes botu kullanabilir", sEveryoneHint: "Kapalıyken sadece aşağıdakiler, DJ'ler ve yöneticiler kullanabilir.", sMembers: "Botu kullanabilenler", sAdmins: "Yöneticiler (tüm yetkiler)", sDjs: "DJ'ler", sBlocked: "Engellenenler", sPeopleHint: "Sunucudaki kişileri ya da sunucu gruplarını seçin veya benzersiz kimlik yapıştırın. Sohbetteki yöneticiler ve DJ'ler panel kullanıcılarından ayrıdır.", addPerson: "Ekle", pickTitle: "Sunucudan ekle", pickSearch: "Kişi ve grup ara", pickGroups: "Sunucu grupları", pickPeople: "Şu an çevrimiçi", pickUid: "Ya da benzersiz kimlik yapıştırın", pickOffline: "Bot bağlı değil; yine de benzersiz kimlik yapıştırabilirsiniz.", pickNoGroups: "Bot sunucu gruplarını göremiyor (b_virtualserver_servergroup_list).", noOne: "Henüz kimse yok", sOthers: "Başkalarının şarkılarını kim geçebilir, silebilir, taşıyabilir", lvlEveryone: "Herkes", lvlDj: "DJ'ler ve yöneticiler", lvlAdmin: "Sadece yöneticiler", sVoteSkip: "Yetkisi olmayanlar oylamayla geçebilir", sVoteSkipHint: "Başkasının şarkısını geçemeyenler !geç ile oy verir; botun kanalındakilerin yarısı oy verince şarkı geçilir. Şarkıyı isteyen her zaman geçebilir, panel de hemen geçer.", sOnlyChannel: "Komutları sadece botun kanalındakiler verebilir", sOnlyChannelHint: "Yöneticiler her yerden verebilir; !şimdi gibi sorular her zaman cevaplanır.", sCmdLevels: "Hangi komutu kim kullanabilir", sRecommended: "Önerilen ayarı kullan", sRecommendedHint: "Şarkı ekleme ve oylama herkese; duraklatma, ses, sıra ve gerisi DJ'lere. Kalması için kaydedin.", sChecks: "Botun sunucudaki izinleri", sChecksHint: "Botun, sunucu grubunun izinleriyle neler yapabildiği. \"Henüz denenmedi\" yazanlar bot kullanıldıkça dolar.", pcOk: "Çalışıyor", pcUnknown: "Henüz denenmedi", pcOffline: "Bot bağlı değil.", refresh: "Yenile", sKeys: "API anahtarları", sKeysHint: "Panda'yı giriş yapmadan kullanan programlar için (bir betik, bir yönetim paneli). Anahtarı \"Authorization: Bearer <anahtar>\" olarak gönderirler ve rolün yetkilerini alırlar.", keyName: "Ad", addKey: "Anahtar oluştur", keyShown: "Anahtarı şimdi kopyalayın; bir daha gösterilmeyecek.", copy: "Kopyala", copied: "Kopyalandı", keyMade: "Anahtar oluşturuldu", keyRevoked: "Anahtar iptal edildi", keyNever: "Hiç kullanılmadı", revoke: "İptal et", "err.bad-key-name": "Anahtar adı 1–40 karakter olmalı ve köşeli parantez içermemeli.", "err.too-many-keys": "Zaten 50 anahtar var.", "err.key-exists": "Bu adda bir anahtar zaten var.", "pc.talk": "Kanalda duyulmak", "pc.chat": "Sohbete yazmak", "pc.description": "Şarkıyı açıklamasında göstermek", "pc.move": "Kanal değiştirmek (!gel, !takip)", "pc.groups": "Sunucu gruplarını görmek", "cmd.play": "Şarkı ekle", "cmd.search": "Ara ve seç", "cmd.playnow": "Hemen çal", "cmd.skip": "Geç (kendi şarkısını ya da oylayarak)", "cmd.remove": "Sıradan sil", "cmd.move": "Sırada taşı", "cmd.skipto": "Bir şarkıya atla", "cmd.back": "Önceki şarkı", "cmd.seek": "İleri geri sar", "cmd.pause": "Duraklat ve devam ettir", "cmd.stop": "Durdur ve temizle", "cmd.clear": "Sırayı temizle", "cmd.shuffle": "Karıştır", "cmd.loop": "Tekrarla", "cmd.vol": "Ses düzeyi", "cmd.playlist": "Kayıtlı listeyi çal", "cmd.fav": "Favorilere kaydet", "cmd.join": "Kanalıma gel", "cmd.follow": "Beni takip et",
     pcMissing: x => `Eksik: botun sunucu grubuna ${x} iznini verin.`, pcTalk: (h, n) => `Konuşma gücü ${h}, kanal ${n} istiyor.`, confirmKeyRevoke: x => `"${x}" anahtarı iptal edilsin mi? Onu kullanan programlar çalışmayı bırakır.`, keyUsed: x => `Son kullanım: ${x}`
   },
   fr: {
@@ -181,14 +193,20 @@ const I18N = {
     nowPlaying: 'En cours de lecture', live: 'EN DIRECT', napping: 'Panda fait la sieste 💤 — ajoutez un morceau !', seek: 'Position',
     shuffle: 'Mélanger la file', stop: 'Arrêter', play: 'Lecture', pause: 'Pause', skip: 'Passer', mute: 'Couper le son', unmute: 'Rétablir le son', volume: 'Volume',
     loopOff: 'Répétition : désactivée', loopAll: 'Répétition : toute la file', loopOne: 'Répétition : ce morceau',
-    radioOn: 'Radio : activée — des morceaux similaires suivent quand la file est finie', radioOff: 'Radio : désactivée', radioToast: '📻 Radio activée : des morceaux similaires suivent quand la file est finie',
+    autoplayOn: 'Lecture auto : activée — des morceaux similaires suivent quand la file est finie', autoplayOff: 'Lecture auto : désactivée', autoplayToast: '✨ Lecture auto activée : des morceaux similaires suivent quand la file est finie',
+    radio: 'Radio', radioTitle: 'Radio sur Internet', radioFavs: 'Radios favorites', radioFavsEmpty: 'Pas encore de radios favorites. Trouvez-en une ci-dessous et ajoutez une étoile.', radioFind: 'Trouver une radio', radioName: 'Nom', radioCountry: 'Pays', radioTag: 'Genre', radioAny: 'Tous', radioSearch: 'Chercher', radioHint: "Les radios viennent de Radio Browser (radio-browser.info), une liste libre et gratuite. Panda lit le flux de chaque radio et n'enregistre rien.", radioNone: 'Aucune radio trouvée 🐾', radioFav: 'Ajouter aux radios favorites', radioUnfav: 'Retirer des radios favorites', radioFaved: 'Ajoutée aux radios favorites', radioUnfaved: 'Retirée des radios favorites',
+    fromSearch: 'Résultats de la recherche', listAdding: (n, x) => `${n} autres morceaux de « ${x} » arrivent`,
+    sSources: 'Sources', sSearchIn: 'Chercher sur', sFallback: "Si rien n'est trouvé, essayer les autres", sSearchWarn: 'Les morceaux de SoundCloud ne sont pas enregistrés dans la bibliothèque, et la lecture auto ne suit que les morceaux YouTube.', sPrefixes: 'Dans le chat, « sc: » cherche sur SoundCloud et « ytm: » sur YouTube Music, quel que soit le choix ici (!jouer sc:lofi).', srcSites: 'Autres sites (Bandcamp, Mixcloud, Vimeo, Twitch…) et fichiers audio', srcServices: 'Liens Spotify, Apple Music, Deezer et Tidal (cherchés sur YouTube)', srcPages: 'Tout autre lien : chercher le titre de la page sur YouTube', srcRadio: 'Radio sur Internet (liens de flux, !fm, la liste des radios)', srcLocal: 'Liens vers le réseau local (une radio ou un NAS à la maison)', sSourcesHint: "YouTube est toujours activé. Les morceaux des autres sites sont lus directement depuis là-bas ; seuls les morceaux YouTube sont enregistrés dans la bibliothèque. Les liens vers le réseau local sont refusés sauf autorisation, pour que personne ne fasse ouvrir à Panda la page d'un routeur.",
+    sSearchCount: 'Résultats de !chercher', ytHideLive: 'Exclure les directs des recherches', ytHideShort: "Exclure les vidéos de moins d'une minute des recherches", sQuality: 'Qualité audio', qBest: 'La meilleure', qSaver: 'Économie de données (environ 70 kbps ; les morceaux enregistrés sont plus petits aussi)', ytSponsorBlock: 'Passer les parties qui ne sont pas de la musique (SponsorBlock)', sSponsorHint: "Parties marquées par des gens sur SponsorBlock (sponsor.ajay.app). Panda n'envoie que les premiers caractères d'un code tiré de l'identifiant de la vidéo, pas la vidéo qui joue.", 'sb.music_offtopic': 'Paroles dans les clips', 'sb.sponsor': 'Sponsors', 'sb.selfpromo': 'Autopromotion', 'sb.intro': 'Intros', 'sb.outro': 'Fins',
+    sAttempts: 'Essais quand YouTube refuse un morceau', sClients: 'Clients YouTube à partir du troisième essai', sRetryHint: 'YouTube refuse parfois un morceau (403) ; un nouvel essai marche en général. Les clients sont les noms player_client de yt-dlp ; vide = le choix de yt-dlp.', sAutoplay: 'Lecture auto', sNoRepeat: 'Ne pas rejouer les … derniers morceaux', ytSameArtist: 'Le même artiste peut revenir', sAutoplayHint: "La lecture auto (✨ sous le lecteur) continue avec des morceaux proches du dernier quand la file est finie, d'après le Mix de YouTube.",
+    'err.source-off': 'Cette source est désactivée dans Paramètres → Sources.', 'err.link-private': 'Les liens vers le réseau local sont désactivés (Paramètres → Sources).', 'err.link-unreachable': "Ce lien n'a pas pu être ouvert.", 'err.link-unplayable': "Rien à lire n'a été trouvé à ce lien.", 'err.radio-list-down': 'La liste des radios (Radio Browser) ne répond pas pour l’instant.', 'err.fm-full': 'Il y a déjà 200 radios favorites.', 'cmd.autoplay': 'Lecture auto', 'cmd.fm': 'Radio sur Internet',
     playlists: 'Playlists', plEmpty: 'Aucune playlist enregistrée pour l\'instant.', plSaveQueue: 'Enregistrer la file comme playlist', plAdd: 'Ajouter à une playlist', plNew: 'Nouvelle playlist…',
     plName: 'Nom de la playlist :', plPlay: 'Ajouter à la file', plShuffle: 'Ajouter dans le désordre', plRename: 'Renommer', plDelete: 'Supprimer la playlist',
     confirmPlDelete: x => `Supprimer la playlist « ${x} » ?`, plQueued: (n, x) => `${n} morceaux de « ${x} » ajoutés`, plSaved: x => `Enregistré dans « ${x} »`,
     plFull: (x, n) => `« ${x} » est pleine (500 morceaux) : ${n <= 1 ? '1 morceau n\'a pas pu être ajouté' : `${n} morceaux n'ont pas pu être ajoutés`}.`,
     plRenamed: 'Playlist renommée', plDeleted: 'Playlist supprimée', 'err.bad-playlist-name': 'Un nom de playlist fait 1 à 40 caractères, avec au moins une lettre ou un chiffre, et sans barre oblique.',
     'err.playlist-exists': 'Une playlist porte déjà ce nom.',
-    addSong: 'Ajouter un morceau', addPh: 'Nom du morceau ou lien YouTube', add: 'Ajouter', playNow: 'Lire maintenant', added: 'Ajouté', results: 'Résultats',
+    addSong: 'Ajouter un morceau', addPh: 'Nom du morceau ou lien', add: 'Ajouter', playNow: 'Lire maintenant', added: 'Ajouté', results: 'Résultats',
     noResults: 'Aucun résultat 🐾', close: 'Fermer', queue: 'File d\'attente', clear: 'Vider', queueEmpty: 'La file est vide. Cherchez quelque chose ci-dessus !',
     history: 'Écoutés récemment', historyEmpty: 'Rien n\'a encore été joué.', today: 'Aujourd\'hui', yesterday: 'Hier', addAgain: 'Rajouter', remove: 'Retirer', moveUp: 'Monter', moveDown: 'Descendre',
     requestedBy: 'demandé par', songs: n => n <= 1 ? `${n} morceau` : `${n} morceaux`,
@@ -199,7 +217,7 @@ const I18N = {
     sNick: 'Pseudo', removePw: 'Supprimer le mot de passe', unchanged: 'inchangé', sBot: 'Bot', sLang: 'Langue du chat', sPrefix: 'Préfixe des commandes',
     sAnnounce: 'Annoncer chaque morceau dans le chat', sConfirm: 'Confirmer les commandes du chat',
     sChatHint: 'L\'annonce publie chaque morceau quand il commence. Les confirmations sont les réponses courtes aux commandes comme !jouer et !passer. Les questions (!encours, !file, !aide) et les erreurs reçoivent toujours une réponse.', sDesc: 'Afficher le morceau dans la description du bot', sMaxQueue: 'Longueur max. de la file', sMaxDur: 'Durée max. d\'un morceau (min)',
-    sMaxDurHint: '0 = illimitée.', sPerUser: 'Morceaux par personne', sPerUserHint: 'Combien de morceaux une personne peut avoir en attente dans la file. 0 = pas de limite. Les DJ et les admins ne sont pas limités.', 'err.user-limit': 'Vous avez déjà autant de morceaux en attente que permis. Ajoutez-en quand l\'un d\'eux aura été joué.', sMaxDurShared: 'La durée max. d\'un morceau est commune à tous les bots.',
+    sMaxDurHint: '0 = illimitée.', sPerUser: 'Morceaux par personne', sPerUserHint: 'Combien de morceaux une personne peut avoir en attente dans la file. 0 = pas de limite. Les DJ et les admins ne sont pas limités.', 'err.user-limit': 'Vous avez déjà autant de morceaux en attente que permis. Ajoutez-en quand l\'un d\'eux aura été joué.',
     save: 'Enregistrer', reconnect: 'Reconnecter le bot',
     sCookies: 'Cookies YouTube', sCookiesHelp: 'Si YouTube demande de « confirmer que vous n\'êtes pas un robot » : ouvrez une fenêtre de navigation privée, connectez-vous à YouTube, exportez les cookies avec une extension « cookies.txt », collez-les ici, puis fermez cette fenêtre.',
     chooseFile: 'Choisir un fichier', saveCookies: 'Enregistrer les cookies', removeCookies: 'Supprimer les cookies', cookiesOn: 'Cookies présents ✓', cookiesOff: 'Aucun cookie',
@@ -215,8 +233,8 @@ const I18N = {
     'err.queue-full': 'La file est pleine.', 'err.wrong-password': 'Mot de passe incorrect.', 'err.too-many-attempts': 'Trop de tentatives — patientez quelques minutes.',
     'err.password-too-short': 'Le nouveau mot de passe doit faire au moins 6 caractères.', 'err.cookies-invalid': 'Ça ne ressemble pas à un cookies.txt de YouTube.',
     'err.too-large': 'Ce fichier est trop volumineux.', 'err.missing': 'Outil manquant sur le serveur : ',
-    'err.timeout': 'YouTube n\'a pas répondu à temps — réessayez.', 'err.no-bot': 'Ce bot n\'existe plus.',
-    library: 'Bibliothèque', savedBadge: 'enregistré', fromLibrary: 'Dans votre bibliothèque', fromYouTube: 'Sur YouTube', libFilter: 'Filtrer les morceaux enregistrés',
+    'err.timeout': 'Pas de réponse à temps — réessayez.', 'err.no-bot': 'Ce bot n\'existe plus.',
+    library: 'Bibliothèque', savedBadge: 'enregistré', fromLibrary: 'Dans votre bibliothèque', libFilter: 'Filtrer les morceaux enregistrés',
     usage: (a, b) => `${a} sur ${b}`, libOff: 'L\'enregistrement est désactivé — activez-le dans les Paramètres.', libEmpty: 'Aucun morceau enregistré pour l\'instant. Les morceaux sont enregistrés à mesure qu\'ils sont demandés.',
     libNoMatch: 'Aucun morceau enregistré ne correspond.', libCapped: 'Affichage des 500 morceaux les plus joués — utilisez le filtre pour trouver les autres.', showMore: 'Afficher plus',
     plays: n => n <= 1 ? `${n} écoute` : `${n} écoutes`, requests: n => n <= 1 ? `${n} morceau` : `${n} morceaux`, delete: 'Supprimer', deleted: 'Supprimé', confirmLibDelete: x => `Supprimer « ${x} » de la bibliothèque ?`,
@@ -258,7 +276,7 @@ const I18N = {
     stats: 'Statistiques', statsRange: 'Période', last7: '7 derniers jours', last30: '30 derniers jours', last365: 'Dernière année', allTime: 'Depuis le début',
     thisBot: 'Ce bot', allBots: 'Tous les bots', statsEmpty: 'Rien n\'a été joué sur cette période.', sPlays: 'écoutes', sListened: 'd\'écoute',
     sSongs: 'morceaux différents', sPeople: 'personnes', topSongs: 'Les plus joués', topPeople: 'Ceux qui en demandent le plus', activity: 'Activité', byHour: 'Par heure de la journée',
-    sPerm: "Droits dans le chat", sEveryone: "Tout le monde sur le serveur peut utiliser le bot", sEveryoneHint: "Si désactivé, seules les personnes ci-dessous, les DJ et les admins peuvent l'utiliser.", sMembers: "Qui peut utiliser le bot", sAdmins: "Admins (tout)", sDjs: "DJ", sBlocked: "Bloqués", sPeopleHint: "Choisissez des personnes ou des groupes du serveur, ou collez un identifiant unique. Les admins et DJ du chat ne sont pas les utilisateurs du panneau.", addPerson: "Ajouter", pickTitle: "Ajouter depuis le serveur", pickSearch: "Chercher des personnes et des groupes", pickGroups: "Groupes du serveur", pickPeople: "En ligne", pickUid: "Ou collez un identifiant unique", pickOffline: "Le bot n'est pas connecté ; vous pouvez quand même coller un identifiant unique.", pickNoGroups: "Le bot ne voit pas les groupes du serveur (b_virtualserver_servergroup_list).", noOne: "Personne pour l'instant", sOthers: "Qui peut passer, retirer ou déplacer les morceaux des autres", lvlEveryone: "Tout le monde", lvlDj: "DJ et admins", lvlAdmin: "Admins seulement", sVoteSkip: "Les autres peuvent voter pour passer", sVoteSkipHint: "Ceux qui ne peuvent pas passer le morceau d'un autre votent avec !passer ; il est passé quand la moitié du canal du bot a voté. Celui qui l'a demandé peut toujours le passer, et le panneau le passe tout de suite.", sOnlyChannel: "Seules les personnes dans le canal du bot peuvent donner des commandes", sOnlyChannelHint: "Les admins peuvent en donner de partout ; les questions comme !encours ont toujours une réponse.", sCmdLevels: "Qui peut utiliser chaque commande", sRecommended: "Utiliser la configuration recommandée", sRecommendedHint: "Ajouter des morceaux et voter pour tout le monde ; pause, volume, file et le reste pour les DJ. Enregistrez pour la garder.", sChecks: "Droits du bot sur le serveur", sChecksHint: "Ce que le bot peut faire avec les droits de son groupe. « Pas encore essayé » se remplit à l'usage.", pcOk: "Fonctionne", pcUnknown: "Pas encore essayé", pcOffline: "Le bot n'est pas connecté.", refresh: "Actualiser", sKeys: "Clés d'API", sKeysHint: "Pour les programmes qui utilisent Panda sans se connecter (un script, un panneau de gestion). Ils envoient la clé en « Authorization: Bearer <clé> » et ont les droits du rôle.", keyName: "Nom", addKey: "Créer une clé", keyShown: "Copiez la clé maintenant ; elle ne sera plus affichée.", copy: "Copier", copied: "Copié", keyMade: "Clé créée", keyRevoked: "Clé révoquée", keyNever: "Jamais utilisée", revoke: "Révoquer", "err.bad-key-name": "Un nom de clé fait 1 à 40 caractères, sans crochets.", "err.too-many-keys": "Il y a déjà 50 clés.", "err.key-exists": "Une clé porte déjà ce nom.", "pc.talk": "Être entendu dans le canal", "pc.chat": "Écrire dans le chat", "pc.description": "Afficher le morceau dans sa description", "pc.move": "Changer de canal (!viens, !suivre)", "pc.groups": "Voir les groupes du serveur", "cmd.play": "Ajouter un morceau", "cmd.search": "Chercher et choisir", "cmd.playnow": "Lire tout de suite", "cmd.skip": "Passer (son propre morceau, ou par vote)", "cmd.remove": "Retirer de la file", "cmd.move": "Déplacer dans la file", "cmd.skipto": "Aller à un morceau", "cmd.back": "Morceau précédent", "cmd.seek": "Avancer ou reculer", "cmd.pause": "Pause et reprise", "cmd.stop": "Arrêter et vider", "cmd.clear": "Vider la file", "cmd.shuffle": "Mélanger", "cmd.loop": "Répétition", "cmd.vol": "Volume", "cmd.radio": "Radio", "cmd.playlist": "Lire une playlist enregistrée", "cmd.fav": "Enregistrer dans les Favoris", "cmd.join": "Viens dans mon canal", "cmd.follow": "Suis-moi",
+    sPerm: "Droits dans le chat", sEveryone: "Tout le monde sur le serveur peut utiliser le bot", sEveryoneHint: "Si désactivé, seules les personnes ci-dessous, les DJ et les admins peuvent l'utiliser.", sMembers: "Qui peut utiliser le bot", sAdmins: "Admins (tout)", sDjs: "DJ", sBlocked: "Bloqués", sPeopleHint: "Choisissez des personnes ou des groupes du serveur, ou collez un identifiant unique. Les admins et DJ du chat ne sont pas les utilisateurs du panneau.", addPerson: "Ajouter", pickTitle: "Ajouter depuis le serveur", pickSearch: "Chercher des personnes et des groupes", pickGroups: "Groupes du serveur", pickPeople: "En ligne", pickUid: "Ou collez un identifiant unique", pickOffline: "Le bot n'est pas connecté ; vous pouvez quand même coller un identifiant unique.", pickNoGroups: "Le bot ne voit pas les groupes du serveur (b_virtualserver_servergroup_list).", noOne: "Personne pour l'instant", sOthers: "Qui peut passer, retirer ou déplacer les morceaux des autres", lvlEveryone: "Tout le monde", lvlDj: "DJ et admins", lvlAdmin: "Admins seulement", sVoteSkip: "Les autres peuvent voter pour passer", sVoteSkipHint: "Ceux qui ne peuvent pas passer le morceau d'un autre votent avec !passer ; il est passé quand la moitié du canal du bot a voté. Celui qui l'a demandé peut toujours le passer, et le panneau le passe tout de suite.", sOnlyChannel: "Seules les personnes dans le canal du bot peuvent donner des commandes", sOnlyChannelHint: "Les admins peuvent en donner de partout ; les questions comme !encours ont toujours une réponse.", sCmdLevels: "Qui peut utiliser chaque commande", sRecommended: "Utiliser la configuration recommandée", sRecommendedHint: "Ajouter des morceaux et voter pour tout le monde ; pause, volume, file et le reste pour les DJ. Enregistrez pour la garder.", sChecks: "Droits du bot sur le serveur", sChecksHint: "Ce que le bot peut faire avec les droits de son groupe. « Pas encore essayé » se remplit à l'usage.", pcOk: "Fonctionne", pcUnknown: "Pas encore essayé", pcOffline: "Le bot n'est pas connecté.", refresh: "Actualiser", sKeys: "Clés d'API", sKeysHint: "Pour les programmes qui utilisent Panda sans se connecter (un script, un panneau de gestion). Ils envoient la clé en « Authorization: Bearer <clé> » et ont les droits du rôle.", keyName: "Nom", addKey: "Créer une clé", keyShown: "Copiez la clé maintenant ; elle ne sera plus affichée.", copy: "Copier", copied: "Copié", keyMade: "Clé créée", keyRevoked: "Clé révoquée", keyNever: "Jamais utilisée", revoke: "Révoquer", "err.bad-key-name": "Un nom de clé fait 1 à 40 caractères, sans crochets.", "err.too-many-keys": "Il y a déjà 50 clés.", "err.key-exists": "Une clé porte déjà ce nom.", "pc.talk": "Être entendu dans le canal", "pc.chat": "Écrire dans le chat", "pc.description": "Afficher le morceau dans sa description", "pc.move": "Changer de canal (!viens, !suivre)", "pc.groups": "Voir les groupes du serveur", "cmd.play": "Ajouter un morceau", "cmd.search": "Chercher et choisir", "cmd.playnow": "Lire tout de suite", "cmd.skip": "Passer (son propre morceau, ou par vote)", "cmd.remove": "Retirer de la file", "cmd.move": "Déplacer dans la file", "cmd.skipto": "Aller à un morceau", "cmd.back": "Morceau précédent", "cmd.seek": "Avancer ou reculer", "cmd.pause": "Pause et reprise", "cmd.stop": "Arrêter et vider", "cmd.clear": "Vider la file", "cmd.shuffle": "Mélanger", "cmd.loop": "Répétition", "cmd.vol": "Volume", "cmd.playlist": "Lire une playlist enregistrée", "cmd.fav": "Enregistrer dans les Favoris", "cmd.join": "Viens dans mon canal", "cmd.follow": "Suis-moi",
     pcMissing: x => `Manquant : donnez ${x} au groupe de serveur du bot.`, pcTalk: (h, n) => `Puissance de parole ${h}, le canal demande ${n}.`, confirmKeyRevoke: x => `Révoquer la clé « ${x} » ? Les programmes qui l'utilisent cesseront de fonctionner.`, keyUsed: x => `Dernière utilisation : ${x}`
   },
   de: {
@@ -267,14 +285,20 @@ const I18N = {
     nowPlaying: 'Läuft gerade', live: 'LIVE', napping: 'Panda macht ein Nickerchen 💤 — füg einen Song hinzu!', seek: 'Position',
     shuffle: 'Warteschlange mischen', stop: 'Stopp', play: 'Abspielen', pause: 'Pause', skip: 'Überspringen', mute: 'Stummschalten', unmute: 'Ton an', volume: 'Lautstärke',
     loopOff: 'Wiederholung: aus', loopAll: 'Wiederholung: ganze Warteschlange', loopOne: 'Wiederholung: dieser Song',
-    radioOn: 'Radio: an — ähnliche Songs folgen, wenn die Warteschlange leer ist', radioOff: 'Radio: aus', radioToast: '📻 Radio an: ähnliche Songs folgen, wenn die Warteschlange leer ist',
+    autoplayOn: 'Autoplay: an — ähnliche Songs folgen, wenn die Warteschlange leer ist', autoplayOff: 'Autoplay: aus', autoplayToast: '✨ Autoplay an: ähnliche Songs folgen, wenn die Warteschlange leer ist',
+    radio: 'Radio', radioTitle: 'Internetradio', radioFavs: 'Lieblingssender', radioFavsEmpty: 'Noch keine Lieblingssender. Such unten einen und gib ihm einen Stern.', radioFind: 'Sender finden', radioName: 'Name', radioCountry: 'Land', radioTag: 'Genre', radioAny: 'Alle', radioSearch: 'Suchen', radioHint: 'Die Sender kommen von Radio Browser (radio-browser.info), einer freien, offenen Liste. Panda spielt den eigenen Stream jedes Senders und speichert nichts.', radioNone: 'Keine Sender gefunden 🐾', radioFav: 'Zu den Lieblingssendern', radioUnfav: 'Aus den Lieblingssendern entfernen', radioFaved: 'Zu den Lieblingssendern hinzugefügt', radioUnfaved: 'Aus den Lieblingssendern entfernt',
+    fromSearch: 'Suchergebnisse', listAdding: (n, x) => `${n} weitere Songs aus „${x}“ kommen`,
+    sSources: 'Quellen', sSearchIn: 'Suchen auf', sFallback: 'Wenn dort nichts gefunden wird, die anderen versuchen', sSearchWarn: 'Songs von SoundCloud werden nicht in der Bibliothek gespeichert, und Autoplay folgt nur YouTube-Songs.', sPrefixes: 'Im Chat sucht „sc:“ bei SoundCloud und „ytm:“ bei YouTube Music, egal was hier gewählt ist (!spielen sc:lofi).', srcSites: 'Andere Seiten (Bandcamp, Mixcloud, Vimeo, Twitch…) und Audiodateien', srcServices: 'Links von Spotify, Apple Music, Deezer und Tidal (auf YouTube gesucht)', srcPages: 'Jeder andere Link: den Titel der Seite auf YouTube suchen', srcRadio: 'Internetradio (Stream-Links, !fm, die Senderliste)', srcLocal: 'Links ins lokale Netzwerk (ein Radio oder NAS zu Hause)', sSourcesHint: 'YouTube ist immer an. Songs von anderen Seiten werden direkt von dort gespielt; nur YouTube-Songs werden in der Bibliothek gespeichert. Links ins lokale Netzwerk werden abgelehnt, außer es ist erlaubt – so kann niemand Panda die Seite eines Routers öffnen lassen.',
+    sSearchCount: 'Ergebnisse von !suchen', ytHideLive: 'Livestreams aus Suchen weglassen', ytHideShort: 'Videos unter einer Minute aus Suchen weglassen', sQuality: 'Audioqualität', qBest: 'Beste', qSaver: 'Daten sparen (etwa 70 kbps; gespeicherte Songs werden auch kleiner)', ytSponsorBlock: 'Teile ohne Musik überspringen (SponsorBlock)', sSponsorHint: 'Teile, die Leute bei SponsorBlock (sponsor.ajay.app) markiert haben. Panda schickt nur die ersten Zeichen eines Codes aus der Video-ID, nicht welches Video läuft.', 'sb.music_offtopic': 'Gerede in Musikvideos', 'sb.sponsor': 'Sponsoren', 'sb.selfpromo': 'Eigenwerbung', 'sb.intro': 'Intros', 'sb.outro': 'Abspänne',
+    sAttempts: 'Versuche, wenn YouTube einen Song ablehnt', sClients: 'YouTube-Clients ab dem dritten Versuch', sRetryHint: 'YouTube lehnt ab und zu einen Song ab (403); ein neuer Versuch klappt meistens. Die Clients sind die player_client-Namen von yt-dlp; leer = die Wahl von yt-dlp.', sAutoplay: 'Autoplay', sNoRepeat: 'Keinen der letzten … Songs wiederholen', ytSameArtist: 'Derselbe Künstler darf wiederkommen', sAutoplayHint: 'Autoplay (✨ unter dem Player) spielt weiter Songs wie den letzten, wenn die Warteschlange leer ist – aus dem Mix von YouTube.',
+    'err.source-off': 'Diese Quelle ist unter Einstellungen → Quellen ausgeschaltet.', 'err.link-private': 'Links ins lokale Netzwerk sind ausgeschaltet (Einstellungen → Quellen).', 'err.link-unreachable': 'Der Link konnte nicht geöffnet werden.', 'err.link-unplayable': 'Unter dem Link wurde nichts zum Abspielen gefunden.', 'err.radio-list-down': 'Die Senderliste (Radio Browser) antwortet gerade nicht.', 'err.fm-full': 'Es gibt schon 200 Lieblingssender.', 'cmd.autoplay': 'Autoplay', 'cmd.fm': 'Internetradio',
     playlists: 'Playlists', plEmpty: 'Noch keine gespeicherten Playlists.', plSaveQueue: 'Warteschlange als Playlist speichern', plAdd: 'Zu Playlist hinzufügen', plNew: 'Neue Playlist…',
     plName: 'Name der Playlist:', plPlay: 'Zur Warteschlange hinzufügen', plShuffle: 'Gemischt hinzufügen', plRename: 'Umbenennen', plDelete: 'Playlist löschen',
     confirmPlDelete: x => `Playlist „${x}“ löschen?`, plQueued: (n, x) => `${n} Songs aus „${x}“ hinzugefügt`, plSaved: x => `In „${x}“ gespeichert`,
     plFull: (x, n) => `„${x}“ ist voll (500 Songs): ${n === 1 ? '1 Song hat' : `${n} Songs haben`} nicht mehr reingepasst.`,
     plRenamed: 'Playlist umbenannt', plDeleted: 'Playlist gelöscht', 'err.bad-playlist-name': 'Playlist-Namen haben 1–40 Zeichen, mindestens einen Buchstaben oder eine Ziffer und keine Schrägstriche.',
     'err.playlist-exists': 'Es gibt schon eine Playlist mit diesem Namen.',
-    addSong: 'Song hinzufügen', addPh: 'Songname oder YouTube-Link', add: 'Hinzufügen', playNow: 'Sofort abspielen', added: 'Hinzugefügt', results: 'Ergebnisse',
+    addSong: 'Song hinzufügen', addPh: 'Songname oder Link', add: 'Hinzufügen', playNow: 'Sofort abspielen', added: 'Hinzugefügt', results: 'Ergebnisse',
     noResults: 'Keine Ergebnisse 🐾', close: 'Schließen', queue: 'Warteschlange', clear: 'Leeren', queueEmpty: 'Die Warteschlange ist leer. Such oben nach etwas!',
     history: 'Zuletzt gespielt', historyEmpty: 'Noch nichts gespielt.', today: 'Heute', yesterday: 'Gestern', addAgain: 'Nochmal hinzufügen', remove: 'Entfernen', moveUp: 'Nach oben', moveDown: 'Nach unten',
     requestedBy: 'gewünscht von', songs: n => n === 1 ? '1 Song' : `${n} Songs`,
@@ -285,7 +309,7 @@ const I18N = {
     sNick: 'Nickname', removePw: 'Passwort entfernen', unchanged: 'unverändert', sBot: 'Bot', sLang: 'Chat-Sprache', sPrefix: 'Befehlspräfix',
     sAnnounce: 'Jeden Song im Chat ankündigen', sConfirm: 'Chat-Befehle bestätigen',
     sChatHint: 'Ankündigungen posten jeden Song, wenn er beginnt. Bestätigungen sind die kurzen Antworten auf Befehle wie !spielen und !überspringen. Fragen (!läuft, !warteschlange, !hilfe) und Fehler werden immer beantwortet.', sDesc: 'Song in der Bot-Beschreibung zeigen', sMaxQueue: 'Max. Länge der Warteschlange', sMaxDur: 'Max. Songlänge (Min.)',
-    sMaxDurHint: '0 = unbegrenzt.', sPerUser: 'Songs pro Person', sPerUserHint: 'Wie viele Songs eine Person gleichzeitig in der Warteschlange haben darf. 0 = kein Limit. DJs und Admins sind nicht begrenzt.', 'err.user-limit': 'Du hast schon so viele Songs in der Warteschlange wie erlaubt. Füg neue hinzu, wenn einer gespielt wurde.', sMaxDurShared: 'Die max. Songlänge gilt für alle Bots.',
+    sMaxDurHint: '0 = unbegrenzt.', sPerUser: 'Songs pro Person', sPerUserHint: 'Wie viele Songs eine Person gleichzeitig in der Warteschlange haben darf. 0 = kein Limit. DJs und Admins sind nicht begrenzt.', 'err.user-limit': 'Du hast schon so viele Songs in der Warteschlange wie erlaubt. Füg neue hinzu, wenn einer gespielt wurde.',
     save: 'Speichern', reconnect: 'Bot neu verbinden',
     sCookies: 'YouTube-Cookies', sCookiesHelp: 'Wenn YouTube „Bestätige, dass du kein Bot bist“ sagt: Öffne ein privates Fenster, melde dich bei YouTube an, exportiere die Cookies mit einer „cookies.txt“-Browsererweiterung, füge sie hier ein und schließ das Fenster.',
     chooseFile: 'Datei wählen', saveCookies: 'Cookies speichern', removeCookies: 'Cookies entfernen', cookiesOn: 'Cookies gesetzt ✓', cookiesOff: 'Keine Cookies',
@@ -301,8 +325,8 @@ const I18N = {
     'err.queue-full': 'Die Warteschlange ist voll.', 'err.wrong-password': 'Falsches Passwort.', 'err.too-many-attempts': 'Zu viele Versuche — warte ein paar Minuten.',
     'err.password-too-short': 'Das neue Passwort braucht mindestens 6 Zeichen.', 'err.cookies-invalid': 'Das sieht nicht nach einer YouTube-cookies.txt aus.',
     'err.too-large': 'Die Datei ist zu groß.', 'err.missing': 'Fehlendes Programm auf dem Server: ',
-    'err.timeout': 'YouTube hat nicht rechtzeitig geantwortet — versuch es nochmal.', 'err.no-bot': 'Diesen Bot gibt es nicht mehr.',
-    library: 'Bibliothek', savedBadge: 'gespeichert', fromLibrary: 'Aus deiner Bibliothek', fromYouTube: 'Von YouTube', libFilter: 'Gespeicherte Songs filtern',
+    'err.timeout': 'Keine rechtzeitige Antwort — versuch es nochmal.', 'err.no-bot': 'Diesen Bot gibt es nicht mehr.',
+    library: 'Bibliothek', savedBadge: 'gespeichert', fromLibrary: 'Aus deiner Bibliothek', libFilter: 'Gespeicherte Songs filtern',
     usage: (a, b) => `${a} von ${b}`, libOff: 'Speichern ist aus — schalte es in den Einstellungen ein.', libEmpty: 'Noch keine gespeicherten Songs. Songs werden gespeichert, sobald sie gewünscht werden.',
     libNoMatch: 'Keine gespeicherten Songs passen.', libCapped: 'Die 500 meistgespielten Songs werden gezeigt — nutz den Filter für die anderen.', showMore: 'Mehr zeigen',
     plays: n => n === 1 ? '1-mal gespielt' : `${n}-mal gespielt`, requests: n => n === 1 ? '1 Song' : `${n} Songs`, delete: 'Löschen', deleted: 'Gelöscht', confirmLibDelete: x => `„${x}“ aus der Bibliothek löschen?`,
@@ -344,7 +368,7 @@ const I18N = {
     stats: 'Statistiken', statsRange: 'Zeitraum', last7: 'Letzte 7 Tage', last30: 'Letzte 30 Tage', last365: 'Letztes Jahr', allTime: 'Gesamte Zeit',
     thisBot: 'Dieser Bot', allBots: 'Alle Bots', statsEmpty: 'In diesem Zeitraum wurde nichts gespielt.', sPlays: 'Wiedergaben', sListened: 'gehört',
     sSongs: 'verschiedene Songs', sPeople: 'Personen', topSongs: 'Meistgespielt', topPeople: 'Wer am meisten gewünscht hat', activity: 'Aktivität', byHour: 'Nach Tageszeit',
-    sPerm: "Rechte im Chat", sEveryone: "Alle auf dem Server können den Bot benutzen", sEveryoneHint: "Wenn aus, können nur die Leute unten, DJs und Admins ihn benutzen.", sMembers: "Wer den Bot benutzen darf", sAdmins: "Admins (alles)", sDjs: "DJs", sBlocked: "Gesperrt", sPeopleHint: "Wähl Leute oder Servergruppen vom Server oder füg eine Unique-ID ein. Admins und DJs im Chat sind nicht die Nutzer des Panels.", addPerson: "Hinzufügen", pickTitle: "Vom Server hinzufügen", pickSearch: "Leute und Gruppen suchen", pickGroups: "Servergruppen", pickPeople: "Gerade online", pickUid: "Oder eine Unique-ID einfügen", pickOffline: "Der Bot ist nicht verbunden; eine Unique-ID kannst du trotzdem einfügen.", pickNoGroups: "Der Bot sieht die Servergruppen nicht (b_virtualserver_servergroup_list).", noOne: "Noch niemand", sOthers: "Wer Songs anderer überspringen, entfernen oder verschieben darf", lvlEveryone: "Alle", lvlDj: "DJs und Admins", lvlAdmin: "Nur Admins", sVoteSkip: "Die anderen können fürs Überspringen abstimmen", sVoteSkipHint: "Wer Songs anderer nicht überspringen darf, stimmt mit !überspringen ab; der Song wird übersprungen, wenn die Hälfte der Leute im Channel des Bots abgestimmt hat. Wer ihn gewünscht hat, kann ihn immer überspringen, und das Panel überspringt sofort.", sOnlyChannel: "Nur Leute im Channel des Bots können Befehle geben", sOnlyChannelHint: "Admins können das von überall; Fragen wie !läuft werden immer beantwortet.", sCmdLevels: "Wer welchen Befehl benutzen darf", sRecommended: "Empfohlene Einstellung verwenden", sRecommendedHint: "Songs hinzufügen und abstimmen für alle; Pause, Lautstärke, Warteschlange und der Rest für DJs. Zum Behalten speichern.", sChecks: "Rechte des Bots auf dem Server", sChecksHint: "Was der Bot mit den Rechten seiner Servergruppe kann. „Noch nicht versucht“ füllt sich, während der Bot benutzt wird.", pcOk: "Funktioniert", pcUnknown: "Noch nicht versucht", pcOffline: "Der Bot ist nicht verbunden.", refresh: "Aktualisieren", sKeys: "API-Schlüssel", sKeysHint: "Für Programme, die Panda ohne Anmeldung benutzen (ein Skript, ein Verwaltungspanel). Sie senden den Schlüssel als „Authorization: Bearer <Schlüssel>“ und bekommen die Rechte der Rolle.", keyName: "Name", addKey: "Schlüssel erstellen", keyShown: "Kopier den Schlüssel jetzt; er wird nicht noch einmal gezeigt.", copy: "Kopieren", copied: "Kopiert", keyMade: "Schlüssel erstellt", keyRevoked: "Schlüssel widerrufen", keyNever: "Noch nie benutzt", revoke: "Widerrufen", "err.bad-key-name": "Schlüsselnamen haben 1–40 Zeichen, ohne eckige Klammern.", "err.too-many-keys": "Es gibt schon 50 Schlüssel.", "err.key-exists": "Es gibt schon einen Schlüssel mit diesem Namen.", "pc.talk": "Im Channel zu hören sein", "pc.chat": "Im Chat schreiben", "pc.description": "Den Song in der Beschreibung zeigen", "pc.move": "Den Channel wechseln (!komm, !folgen)", "pc.groups": "Die Servergruppen sehen", "cmd.play": "Song hinzufügen", "cmd.search": "Suchen und wählen", "cmd.playnow": "Sofort abspielen", "cmd.skip": "Überspringen (eigener Song oder abstimmen)", "cmd.remove": "Aus der Warteschlange entfernen", "cmd.move": "In der Warteschlange verschieben", "cmd.skipto": "Zu einem Song springen", "cmd.back": "Vorheriger Song", "cmd.seek": "Spulen", "cmd.pause": "Pausieren und fortsetzen", "cmd.stop": "Stoppen und leeren", "cmd.clear": "Warteschlange leeren", "cmd.shuffle": "Mischen", "cmd.loop": "Wiederholen", "cmd.vol": "Lautstärke", "cmd.radio": "Radio", "cmd.playlist": "Gespeicherte Playlist abspielen", "cmd.fav": "In Favoriten speichern", "cmd.join": "Komm in meinen Channel", "cmd.follow": "Folge mir",
+    sPerm: "Rechte im Chat", sEveryone: "Alle auf dem Server können den Bot benutzen", sEveryoneHint: "Wenn aus, können nur die Leute unten, DJs und Admins ihn benutzen.", sMembers: "Wer den Bot benutzen darf", sAdmins: "Admins (alles)", sDjs: "DJs", sBlocked: "Gesperrt", sPeopleHint: "Wähl Leute oder Servergruppen vom Server oder füg eine Unique-ID ein. Admins und DJs im Chat sind nicht die Nutzer des Panels.", addPerson: "Hinzufügen", pickTitle: "Vom Server hinzufügen", pickSearch: "Leute und Gruppen suchen", pickGroups: "Servergruppen", pickPeople: "Gerade online", pickUid: "Oder eine Unique-ID einfügen", pickOffline: "Der Bot ist nicht verbunden; eine Unique-ID kannst du trotzdem einfügen.", pickNoGroups: "Der Bot sieht die Servergruppen nicht (b_virtualserver_servergroup_list).", noOne: "Noch niemand", sOthers: "Wer Songs anderer überspringen, entfernen oder verschieben darf", lvlEveryone: "Alle", lvlDj: "DJs und Admins", lvlAdmin: "Nur Admins", sVoteSkip: "Die anderen können fürs Überspringen abstimmen", sVoteSkipHint: "Wer Songs anderer nicht überspringen darf, stimmt mit !überspringen ab; der Song wird übersprungen, wenn die Hälfte der Leute im Channel des Bots abgestimmt hat. Wer ihn gewünscht hat, kann ihn immer überspringen, und das Panel überspringt sofort.", sOnlyChannel: "Nur Leute im Channel des Bots können Befehle geben", sOnlyChannelHint: "Admins können das von überall; Fragen wie !läuft werden immer beantwortet.", sCmdLevels: "Wer welchen Befehl benutzen darf", sRecommended: "Empfohlene Einstellung verwenden", sRecommendedHint: "Songs hinzufügen und abstimmen für alle; Pause, Lautstärke, Warteschlange und der Rest für DJs. Zum Behalten speichern.", sChecks: "Rechte des Bots auf dem Server", sChecksHint: "Was der Bot mit den Rechten seiner Servergruppe kann. „Noch nicht versucht“ füllt sich, während der Bot benutzt wird.", pcOk: "Funktioniert", pcUnknown: "Noch nicht versucht", pcOffline: "Der Bot ist nicht verbunden.", refresh: "Aktualisieren", sKeys: "API-Schlüssel", sKeysHint: "Für Programme, die Panda ohne Anmeldung benutzen (ein Skript, ein Verwaltungspanel). Sie senden den Schlüssel als „Authorization: Bearer <Schlüssel>“ und bekommen die Rechte der Rolle.", keyName: "Name", addKey: "Schlüssel erstellen", keyShown: "Kopier den Schlüssel jetzt; er wird nicht noch einmal gezeigt.", copy: "Kopieren", copied: "Kopiert", keyMade: "Schlüssel erstellt", keyRevoked: "Schlüssel widerrufen", keyNever: "Noch nie benutzt", revoke: "Widerrufen", "err.bad-key-name": "Schlüsselnamen haben 1–40 Zeichen, ohne eckige Klammern.", "err.too-many-keys": "Es gibt schon 50 Schlüssel.", "err.key-exists": "Es gibt schon einen Schlüssel mit diesem Namen.", "pc.talk": "Im Channel zu hören sein", "pc.chat": "Im Chat schreiben", "pc.description": "Den Song in der Beschreibung zeigen", "pc.move": "Den Channel wechseln (!komm, !folgen)", "pc.groups": "Die Servergruppen sehen", "cmd.play": "Song hinzufügen", "cmd.search": "Suchen und wählen", "cmd.playnow": "Sofort abspielen", "cmd.skip": "Überspringen (eigener Song oder abstimmen)", "cmd.remove": "Aus der Warteschlange entfernen", "cmd.move": "In der Warteschlange verschieben", "cmd.skipto": "Zu einem Song springen", "cmd.back": "Vorheriger Song", "cmd.seek": "Spulen", "cmd.pause": "Pausieren und fortsetzen", "cmd.stop": "Stoppen und leeren", "cmd.clear": "Warteschlange leeren", "cmd.shuffle": "Mischen", "cmd.loop": "Wiederholen", "cmd.vol": "Lautstärke", "cmd.playlist": "Gespeicherte Playlist abspielen", "cmd.fav": "In Favoriten speichern", "cmd.join": "Komm in meinen Channel", "cmd.follow": "Folge mir",
     pcMissing: x => `Fehlt: gib der Servergruppe des Bots ${x}.`, pcTalk: (h, n) => `Talk Power ${h}, der Channel braucht ${n}.`, confirmKeyRevoke: x => `Den Schlüssel „${x}“ widerrufen? Programme, die ihn benutzen, funktionieren dann nicht mehr.`, keyUsed: x => `Zuletzt benutzt: ${x}`
   },
 };
@@ -360,6 +384,7 @@ const t = (k, ...a) => { const v = I18N[lang][k] ?? I18N.en[k] ?? k; return type
 
 /** Only http(s) URLs are allowed into href/src. */
 function safeUrl(u) {
+  if (!u) return null;   // songs from elsewhere may have no picture
   try { const x = new URL(u, location.href); return /^https?:$/.test(x.protocol) ? x.href : null; } catch { return null; }
 }
 function fmt(sec) {
@@ -692,11 +717,14 @@ function renderNow() {
       $('np-channel').textContent = tr.channel;
     }
     $('np-req').textContent = `${t('requestedBy')} ${tr.requestedBy}`;
+    // A radio station names the song it plays.
+    $('np-stream').hidden = !cur.streamTitle; $('np-stream-title').textContent = cur.streamTitle || '';
+    setLabel($('np-save'), t(isStation(tr) ? 'radioFav' : 'plAdd'));
     $('seek').hidden = tr.isLive;
     $('seek').disabled = !isAdmin();
     $('seek').max = Math.max(1, tr.duration);
     $('t-dur').textContent = tr.isLive ? t('live') : fmt(tr.duration);
-    document.title = `${playing ? '▶' : '⏸'} ${tr.title} — Panda 🐼`;
+    document.title = `${playing ? '▶' : '⏸'} ${cur.streamTitle ? cur.streamTitle + ' · ' : ''}${tr.title} — Panda 🐼`;
   } else {
     shownTrackId = null; $('np-bg').hidden = true; document.title = 'Panda 🐼';
   }
@@ -705,9 +733,9 @@ function renderNow() {
   setIcon(lb, loop === 'One' ? 'repeat1' : 'repeat');
   lb.classList.toggle('on', loop !== 'Off');
   setLabel(lb, t('loop' + loop)); lb.setAttribute('aria-pressed', String(loop !== 'Off'));
-  const rb = $('btn-radio');
-  rb.classList.toggle('on', !!p.radio); rb.setAttribute('aria-pressed', String(!!p.radio));
-  setLabel(rb, t(p.radio ? 'radioOn' : 'radioOff'));
+  const ab = $('btn-autoplay');
+  ab.classList.toggle('on', !!p.autoplay); ab.setAttribute('aria-pressed', String(!!p.autoplay));
+  setLabel(ab, t(p.autoplay ? 'autoplayOn' : 'autoplayOff'));
 
   if (!volDragging) showVolume(p.volume);
   tick();
@@ -748,10 +776,10 @@ $('btn-loop').addEventListener('click', () => {
   S.player.loop = next; renderNow();                       // optimistic
   act(() => api('POST', B('/loop'), { mode: next })).then(r => { if (r === undefined) resync(); });
 });
-$('btn-radio').addEventListener('click', () => {
-  const on = !S.player.radio;
-  S.player.radio = on; renderNow();                         // optimistic
-  act(() => api('POST', B('/radio'), { on }), on ? t('radioToast') : null).then(r => { if (r === undefined) resync(); });
+$('btn-autoplay').addEventListener('click', () => {
+  const on = !S.player.autoplay;
+  S.player.autoplay = on; renderNow();                      // optimistic
+  act(() => api('POST', B('/autoplay'), { on }), on ? t('autoplayToast') : null).then(r => { if (r === undefined) resync(); });
 });
 
 // Seek bar: preview while dragging, commit on change.
@@ -785,7 +813,9 @@ $('vol').addEventListener('input', e => setVolume(+e.target.value));
 $('btn-mute').addEventListener('click', () => setVolume(+$('vol').value === 0 ? (lastVol || 50) : 0));
 
 /* ---------------- add / search ---------------- */
-const looksLikeUrl = q => /^(https?:\/\/|www\.)|(^|\.)youtu(\.be|be\.com)\//i.test(q);
+const looksLikeUrl = q => /^(https?:\/\/|www\.)|(^|\.)youtu(\.be|be\.com)\/|^([a-z0-9-]+\.)+[a-z]{2,}\/\S*$/i.test(q);
+/** "Added: song", and for an album or playlist how many more are on the way. */
+const addedMsg = (r, label) => `${label}: ${r.title}` + (r.more ? ` — ${t('listAdding', r.more, r.list || '')}` : '');
 let searchSeq = 0;
 
 $('add-form').addEventListener('submit', async e => {
@@ -794,7 +824,7 @@ $('add-form').addEventListener('submit', async e => {
   if (!q) return $('add-q').focus();
   await busy($('add-go'), async () => {
     if (looksLikeUrl(q)) {
-      const tr = await act(() => api('POST', B('/play'), { query: q }), r => `${t('added')}: ${r.title}`);
+      const tr = await act(() => api('POST', B('/play'), { query: q }), r => addedMsg(r, t('added')));
       if (tr) $('add-q').value = '';
       return;
     }
@@ -839,7 +869,7 @@ function playButtons(tr, labelled, ...more) {
 }
 async function addTrack(btn, tr, now) {
   await busy(btn, async () => {
-    const r = await act(() => api('POST', B('/play'), { query: tr.url, now }), r => `${now ? t('playNow') : t('added')}: ${r.title}`);
+    const r = await act(() => api('POST', B('/play'), { query: tr.url, now }), r => addedMsg(r, now ? t('playNow') : t('added')));
     // A short tick on the row (the toast says the rest); a lasting one stuck on lists that rarely redraw.
     const li = btn.closest('li');
     if (r && li) { li.classList.add('done'); setTimeout(() => li.classList.remove('done'), 2500); }
@@ -850,10 +880,21 @@ async function addTrack(btn, tr, now) {
 function trackText(tr, { req = true, extra = [] } = {}) {
   const href = safeUrl(tr.url);
   const title = el(href ? 'a' : 'span', { class: 'tt', text: tr.title, title: tr.title, href, target: href && '_blank', rel: href && 'noopener noreferrer' });
-  const meta = el('span', { class: 'tm' }, el('span', { text: tr.channel }),
+  const meta = el('span', { class: 'tm' }, srcBadge(tr), el('span', { text: tr.channel }),
     el('span', { class: tr.isLive ? 'badge live sm' : '', text: tr.isLive ? t('live') : fmt(tr.duration) }), ...extra);
   if (req && tr.requestedBy) meta.append(el('span', { class: 'req' }, icon('user', 'ic sm'), document.createTextNode(tr.requestedBy)));
   return el('div', { class: 'tx' }, title, meta);
+}
+
+/** A radio station (playing, in the queue or the history). */
+const isStation = tr => !!tr && !!tr.isLive && String(tr.id || '').startsWith('radio:');
+/** "📻" for a station, the site's name for a song from elsewhere, nothing for YouTube. */
+function srcBadge(tr) {
+  if (!tr.source) return null;
+  if (isStation(tr)) return el('span', { class: 'badge src sm', text: '📻' });
+  let host = '';
+  try { host = new URL(tr.url).hostname.replace(/^(www|m|on|open)\./, ''); } catch { }
+  return host ? el('span', { class: 'badge src sm', text: host }) : null;
 }
 
 /* ---------------- library ---------------- */
@@ -1163,6 +1204,17 @@ function fillSettings(s) {
     f[k + 'Remove'].checked = false;
     f[k + 'Remove'].closest('label').hidden = !has;
   }
+  const so = s.sources || {}, yt = s.youTube || {};
+  f.srcSearch.value = so.search || 'youtube'; f.srcFallback.checked = so.fallback !== false;
+  f.srcYouTubeMusic.checked = so.youTubeMusic !== false; f.srcSoundCloud.checked = so.soundCloud !== false;
+  f.srcSites.checked = so.sites !== false; f.srcServices.checked = so.services !== false; f.srcPages.checked = so.pages !== false;
+  f.srcRadio.checked = so.radio !== false; f.srcLocal.checked = !!so.localLinks;
+  f.ytQuality.value = yt.quality || 'best'; f.ytSearchResults.value = yt.searchResults ?? 5;
+  f.ytHideLive.checked = !!yt.hideLive; f.ytHideShort.checked = !!yt.hideShort; f.ytSponsorBlock.checked = !!yt.sponsorBlock;
+  f.ytPlayAttempts.value = yt.playAttempts ?? 3; f.ytRetryClients.value = yt.retryPlayerClients ?? '';
+  f.ytNoRepeat.value = yt.autoplayNoRepeat ?? 30; f.ytSameArtist.checked = yt.autoplaySameArtist !== false;
+  renderSbCats(yt.sponsorBlockCategories || []);
+  srcWarn();
   const c = $('cookie-status');
   c.textContent = t(s.hasCookies ? 'cookiesOn' : 'cookiesOff'); c.classList.toggle('on', s.hasCookies);
   $('cookie-remove').hidden = !s.hasCookies;
@@ -1171,6 +1223,18 @@ for (const k of ['serverPassword', 'channelPassword']) {
   F()[k].addEventListener('input', () => { pwTouched[k] = true; });
   F()[k + 'Remove'].addEventListener('change', e => { F()[k].disabled = e.target.checked; if (e.target.checked) F()[k].value = ''; });
 }
+const SB_CATS = ['music_offtopic', 'sponsor', 'selfpromo', 'intro', 'outro'];
+function renderSbCats(on) {
+  $('sb-cats').replaceChildren(...SB_CATS.map(c => el('label', { class: 'check' },
+    el('input', { type: 'checkbox', value: c, checked: on.includes(c) }), el('span', { 'data-i18n': 'sb.' + c, text: t('sb.' + c) }))));
+  sbEnable();
+}
+function sbEnable() { for (const i of $('sb-cats').querySelectorAll('input')) i.disabled = !F().ytSponsorBlock.checked; }
+F().ytSponsorBlock.addEventListener('change', sbEnable);
+// Searching SoundCloud first: its songs aren't saved and autoplay can't follow them.
+function srcWarn() { $('src-warn').hidden = F().srcSearch.value !== 'soundcloud'; }
+F().srcSearch.addEventListener('change', srcWarn);
+
 /** Password fields: null = keep, "" = remove (only via the checkbox), otherwise the new value. */
 function pwValue(k) {
   const f = F();
@@ -1196,6 +1260,16 @@ $('set-form').addEventListener('submit', async e => {
     members: perm.members, memberGroups: perm.memberGroups, admins: perm.admins, adminGroups: perm.adminGroups, djs: perm.djs, djGroups: perm.djGroups, blocked: perm.blocked,
     commandLevels: perm.commandLevels,
     libraryEnabled: f.libraryEnabled.checked, libraryMaxSizeMb: Math.round(gb * 1024), normalizeVolume: f.normalizeVolume.checked,
+    sources: {
+      search: f.srcSearch.value, fallback: f.srcFallback.checked, youTubeMusic: f.srcYouTubeMusic.checked, soundCloud: f.srcSoundCloud.checked,
+      sites: f.srcSites.checked, services: f.srcServices.checked, pages: f.srcPages.checked, radio: f.srcRadio.checked, localLinks: f.srcLocal.checked,
+    },
+    youTube: {
+      quality: f.ytQuality.value, searchResults: +f.ytSearchResults.value, hideLive: f.ytHideLive.checked, hideShort: f.ytHideShort.checked,
+      sponsorBlock: f.ytSponsorBlock.checked, sponsorBlockCategories: [...$('sb-cats').querySelectorAll('input:checked')].map(x => x.value),
+      playAttempts: +f.ytPlayAttempts.value, retryPlayerClients: f.ytRetryClients.value.trim(),
+      autoplayNoRepeat: +f.ytNoRepeat.value, autoplaySameArtist: f.ytSameArtist.checked,
+    },
   };
   const old = settings;
   const reconnects = body.serverAddress !== old.serverAddress || body.channel !== old.channel || body.nickname !== old.nickname ||
@@ -1384,7 +1458,7 @@ $('pw-form').addEventListener('submit', async e => {
 /* ---------------- playlists ---------------- */
 const plBox = $('pl-box');
 let lastPlSig = '', openPl = null;
-const asSong = tr => ({ id: tr.id, title: tr.title, channel: tr.channel, duration: tr.duration });
+const asSong = tr => ({ id: tr.id, title: tr.title, channel: tr.channel, duration: tr.duration, source: tr.source || null, link: tr.source ? tr.link : null, art: tr.source ? tr.art : null });
 const plUrl = name => '/api/playlists/' + encodeURIComponent(name);
 
 plBox.open = store.get('panda.plOpen') === '1';
@@ -1472,13 +1546,91 @@ $('pl-menu-new').addEventListener('click', async () => {
 document.addEventListener('click', e => { if (!e.target.closest('#pl-menu, .js-star, #np-save')) closePlMenu(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closePlMenu(); });
 addEventListener('scroll', closePlMenu, { passive: true });
-$('np-save').addEventListener('click', e => { const cur = S?.player.current; if (cur) openPlMenu(e.currentTarget, [cur.track]); });
+$('np-save').addEventListener('click', e => {
+  const cur = S?.player.current;
+  if (!cur) return;
+  // A station goes to the favorite stations, a song to a playlist.
+  if (isStation(cur.track)) act(() => api('POST', '/api/radio/favorites', { fromBot: botId }), t('radioFaved')).then(() => { if ($('radio').open) loadFavs(); });
+  else openPlMenu(e.currentTarget, [cur.track]);
+});
 /** Star button for a track row (admins). */
 function starButton(tr) {
+  if (isStation(tr)) return null;   // stations are favorite stations (the radio list), not playlist songs
   const b = el('button', { class: 'icon-btn sm admin-only js-star', type: 'button', title: t('plAdd'), 'aria-label': `${t('plAdd')}: ${tr.title}` }, icon('star'));
   b.addEventListener('click', () => openPlMenu(b, [tr]));
   return b;
 }
+
+/* ---------------- internet radio ---------------- */
+let radioFavs = [], radioSeq = 0, radioMeta = false;
+
+async function openRadio() {
+  if (!$('radio').open) $('radio').showModal();
+  loadFavs();
+  if (!radioMeta) { radioMeta = true; loadRadioMeta(); }
+}
+$('open-radio').addEventListener('click', openRadio);
+$('radio').addEventListener('click', e => {
+  if (e.target === $('radio') || e.target.closest('[data-close]')) $('radio').close();   // backdrop / close button
+});
+
+async function loadFavs() {
+  const r = await act(() => api('GET', '/api/radio/favorites'));
+  if (!r) return;
+  radioFavs = r;
+  $('radio-favs').replaceChildren(...radioFavs.map(stationRow));
+  $('radio-favs-empty').hidden = radioFavs.length > 0;
+  for (const b of document.querySelectorAll('#radio-results .js-fav')) favState(b, b.dataset.uuid);
+}
+
+// Countries (by name) and the common genres, once.
+async function loadRadioMeta() {
+  const [countries, tags] = await Promise.all([api('GET', '/api/radio/countries').catch(() => []), api('GET', '/api/radio/tags').catch(() => [])]);
+  const sel = $('radio-form').elements.country;
+  sel.append(...[...countries].sort((a, b) => a.name.localeCompare(b.name)).map(c => el('option', { value: c.code, text: c.name })));
+  $('radio-tags').replaceChildren(...tags.map(x => el('option', { value: x.name })));
+  if (!countries.length && !tags.length) radioMeta = false;   // ask again next time
+}
+
+function stationRow(s) {
+  const tags = (s.tags || '').split(',').map(x => x.trim()).filter(Boolean).slice(0, 3).join(', ');
+  const tr = { title: s.name, channel: [s.country, tags].filter(Boolean).join(' · '), isLive: true, thumbnail: s.favicon, url: s.homepage || '' };
+  const add = el('button', { class: 'btn soft sm', type: 'button', title: t('add'), 'aria-label': `${t('add')}: ${s.name}` }, icon('plus'), el('span', { class: 'lbl', text: t('add') }));
+  add.addEventListener('click', () => playStation(add, s, false));
+  const now = el('button', { class: 'icon-btn sm admin-only', type: 'button', title: t('playNow'), 'aria-label': `${t('playNow')}: ${s.name}` }, icon('play'));
+  now.addEventListener('click', () => playStation(now, s, true));
+  const fav = el('button', { class: 'icon-btn sm admin-only js-fav', type: 'button', 'data-uuid': s.uuid }, icon('star'));
+  favState(fav, s.uuid);
+  fav.addEventListener('click', () => toggleFav(fav, s));
+  const extra = s.bitrate ? [el('span', { text: `${s.bitrate} kbps` })] : [];
+  return el('li', { class: 'track' }, thumb(tr), trackText(tr, { req: false, extra }), el('div', { class: 'acts' }, add, now, fav));
+}
+function favState(b, uuid) {
+  const on = radioFavs.some(f => f.uuid === uuid);
+  b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on));
+  setLabel(b, t(on ? 'radioUnfav' : 'radioFav'));
+}
+async function toggleFav(b, s) {
+  const on = radioFavs.some(f => f.uuid === s.uuid);
+  await busy(b, () => act(() => on ? api('DELETE', '/api/radio/favorites/' + encodeURIComponent(s.uuid)) : api('POST', '/api/radio/favorites', { uuid: s.uuid }),
+    t(on ? 'radioUnfaved' : 'radioFaved')));
+  loadFavs();
+}
+function playStation(btn, s, now) {
+  busy(btn, () => act(() => api('POST', B('/fm'), { uuid: s.uuid, now }), r => `${now ? t('playNow') : t('added')}: ${r.title}`));
+}
+
+$('radio-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const f = e.target.elements, q = { name: f.name.value.trim(), country: f.country.value, tag: f.tag.value.trim() };
+  if (!q.name && !q.country && !q.tag) return f.name.focus();
+  const seq = ++radioSeq;
+  await busy($('radio-go'), async () => {
+    const r = await act(() => api('GET', '/api/radio/search?' + new URLSearchParams(q)));
+    if (!r || seq !== radioSeq) return;
+    $('radio-results').replaceChildren(...(r.length ? r.map(stationRow) : [el('li', { class: 'empty muted', text: t('radioNone') })]));
+  });
+});
 
 /* ---------------- statistics ---------------- */
 const statsBox = $('stats-box');

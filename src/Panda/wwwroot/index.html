@@ -54,6 +54,7 @@
     <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.3 5.9.9-4.2 4.1 1 5.8-5.3-2.8-5.3 2.8 1-5.8-4.2-4.1 5.9-.9z"/></symbol>
     <symbol id="i-pencil" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></symbol>
     <symbol id="i-radio" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><path d="M16.2 7.8a6 6 0 0 1 0 8.4M7.8 16.2a6 6 0 0 1 0-8.4M19.1 4.9a10 10 0 0 1 0 14.2M4.9 19.1a10 10 0 0 1 0-14.2"/></symbol>
+    <symbol id="i-auto" viewBox="0 0 24 24"><path d="M12 12c-2-2.7-3.6-4.5-6-4.5a4.5 4.5 0 0 0 0 9c2.4 0 4-1.8 6-4.5zm0 0c2 2.7 3.6 4.5 6 4.5a4.5 4.5 0 0 0 0-9c-2.4 0-4 1.8-6 4.5z"/></symbol>
     <symbol id="i-chart" viewBox="0 0 24 24"><path d="M5 20V11M11 20V5M17 20v-6M2 20h20"/></symbol>
     <symbol id="i-pulse" viewBox="0 0 24 24"><path d="M2 12h4l3-8 5 16 3-8h5"/></symbol>
     <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></symbol>
@@ -129,6 +130,7 @@
         <div class="np-art"><img id="np-thumb" alt="" referrerpolicy="no-referrer"></div>
         <a id="np-title" class="np-title" target="_blank" rel="noopener noreferrer"></a>
         <p class="np-meta"><span id="np-channel"></span></p>
+        <p id="np-stream" class="np-stream" hidden><span class="eq" aria-hidden="true"><i></i><i></i><i></i></span><span id="np-stream-title"></span></p>
         <p class="np-req"><svg class="ic sm"><use href="#i-user"/></svg><span id="np-req"></span>
           <button id="np-save" class="icon-btn sm admin-only" type="button" data-i18n-aria="plAdd"><svg class="ic"><use href="#i-star"/></svg></button></p>
         <div class="seek">
@@ -142,7 +144,7 @@
         <button id="btn-toggle" class="play-btn" type="button" data-i18n-aria="play"><svg class="ic"><use href="#i-play"/></svg></button>
         <button id="btn-skip" class="icon-btn" type="button" data-i18n-aria="skip"><svg class="ic"><use href="#i-skip"/></svg></button>
         <button id="btn-loop" class="icon-btn" type="button"><svg class="ic"><use href="#i-repeat"/></svg></button>
-        <button id="btn-radio" class="icon-btn" type="button" aria-pressed="false"><svg class="ic"><use href="#i-radio"/></svg></button>
+        <button id="btn-autoplay" class="icon-btn" type="button" aria-pressed="false"><svg class="ic"><use href="#i-auto"/></svg></button>
       </div>
       <div class="volume admin-only">
         <button id="btn-mute" class="icon-btn" type="button" data-i18n-aria="mute"><svg class="ic"><use href="#i-vol"/></svg></button>
@@ -159,6 +161,7 @@
           <svg class="ic add-ic" aria-hidden="true"><use href="#i-search"/></svg>
           <input id="add-q" type="text" autocomplete="off" enterkeyhint="search" data-i18n-ph="addPh" data-i18n-aria="addPh">
           <button id="add-go" class="btn primary" type="submit"><svg class="ic"><use href="#i-plus"/></svg><span class="lbl" data-i18n="add">Add</span></button>
+          <button id="open-radio" class="btn ghost js-radio" type="button" data-i18n-aria="radioTitle"><svg class="ic"><use href="#i-radio"/></svg><span class="lbl" data-i18n="radio">Radio</span></button>
         </form>
         <div id="results-wrap" hidden>
           <div class="list-head">
@@ -167,7 +170,7 @@
           </div>
           <h4 id="lib-res-h" class="eyebrow sub" data-i18n="fromLibrary">From your library</h4>
           <ul id="lib-results" class="tracks"></ul>
-          <h4 id="yt-res-h" class="eyebrow sub" data-i18n="fromYouTube">From YouTube</h4>
+          <h4 id="yt-res-h" class="eyebrow sub" data-i18n="fromSearch">Search results</h4>
           <ul id="results" class="tracks"></ul>
         </div>
       </section>
@@ -280,14 +283,10 @@
         <div class="row2">
           <label class="field"><span data-i18n="sMaxQueue">Max queue length</span>
             <input name="maxQueueLength" type="number" min="1" max="1000" required></label>
-          <label class="field"><span data-i18n="sMaxDur">Max song length (min)</span>
-            <input name="maxDurationMinutes" type="number" min="0" max="1440" required></label>
+          <label class="field"><span data-i18n="sPerUser">Songs per person</span>
+            <input name="maxSongsPerUser" type="number" min="0" max="1000" required></label>
         </div>
-        <p class="hint" data-i18n="sMaxDurHint">0 = unlimited.</p>
-        <label class="field"><span data-i18n="sPerUser">Songs per person</span>
-          <input name="maxSongsPerUser" type="number" min="0" max="1000" required></label>
         <p class="hint" data-i18n="sPerUserHint">How many songs one person can have waiting in the queue. 0 = no limit. Panel admins aren't limited.</p>
-        <p class="hint js-many" hidden data-i18n="sMaxDurShared">Max song length is shared by all bots.</p>
       </fieldset>
 
       <fieldset class="group">
@@ -340,6 +339,55 @@
         <p class="hint" data-i18n="sLibMaxHint"></p>
         <label class="switch"><input type="checkbox" name="normalizeVolume"><span class="track" aria-hidden="true"></span><span data-i18n="sNorm">Play songs equally loud</span></label>
         <p class="hint" data-i18n="sNormHint"></p>
+      </fieldset>
+
+      <fieldset class="group">
+        <legend>🎵 <span data-i18n="sSources">Sources</span></legend>
+        <p class="hint js-many" hidden data-i18n="sShared">Shared by all bots.</p>
+        <label class="field"><span data-i18n="sSearchIn">Search on</span>
+          <select name="srcSearch"><option value="youtube">YouTube</option><option value="youtubeMusic">YouTube Music</option><option value="soundcloud">SoundCloud</option></select></label>
+        <label class="switch"><input type="checkbox" name="srcFallback"><span class="track" aria-hidden="true"></span><span data-i18n="sFallback">When nothing is found there, try the others</span></label>
+        <p id="src-warn" class="hint warn" hidden data-i18n="sSearchWarn"></p>
+        <p class="hint" data-i18n="sPrefixes"></p>
+        <label class="switch"><input type="checkbox" name="srcYouTubeMusic"><span class="track" aria-hidden="true"></span><span>YouTube Music</span></label>
+        <label class="switch"><input type="checkbox" name="srcSoundCloud"><span class="track" aria-hidden="true"></span><span>SoundCloud</span></label>
+        <label class="switch"><input type="checkbox" name="srcSites"><span class="track" aria-hidden="true"></span><span data-i18n="srcSites">Other sites and audio files</span></label>
+        <label class="switch"><input type="checkbox" name="srcServices"><span class="track" aria-hidden="true"></span><span data-i18n="srcServices">Spotify, Apple Music, Deezer and Tidal links</span></label>
+        <label class="switch"><input type="checkbox" name="srcPages"><span class="track" aria-hidden="true"></span><span data-i18n="srcPages">Any other link: look up the page's title</span></label>
+        <label class="switch"><input type="checkbox" name="srcRadio"><span class="track" aria-hidden="true"></span><span data-i18n="srcRadio">Internet radio</span></label>
+        <label class="switch"><input type="checkbox" name="srcLocal"><span class="track" aria-hidden="true"></span><span data-i18n="srcLocal">Links into the local network</span></label>
+        <p class="hint" data-i18n="sSourcesHint"></p>
+      </fieldset>
+
+      <fieldset class="group">
+        <legend>▶️ <span>YouTube</span></legend>
+        <p class="hint js-many" hidden data-i18n="sShared">Shared by all bots.</p>
+        <div class="row2">
+          <label class="field"><span data-i18n="sMaxDur">Max song length (min)</span>
+            <input name="maxDurationMinutes" type="number" min="0" max="1440" required></label>
+          <label class="field"><span data-i18n="sSearchCount">Results of !search</span>
+            <input name="ytSearchResults" type="number" min="1" max="10" required></label>
+        </div>
+        <p class="hint" data-i18n="sMaxDurHint">0 = unlimited.</p>
+        <label class="switch"><input type="checkbox" name="ytHideLive"><span class="track" aria-hidden="true"></span><span data-i18n="ytHideLive">Leave live streams out of searches</span></label>
+        <label class="switch"><input type="checkbox" name="ytHideShort"><span class="track" aria-hidden="true"></span><span data-i18n="ytHideShort">Leave videos under a minute out of searches</span></label>
+        <label class="field"><span data-i18n="sQuality">Audio quality</span>
+          <select name="ytQuality"><option value="best" data-i18n="qBest">Best</option><option value="saver" data-i18n="qSaver">Save data</option></select></label>
+        <label class="switch"><input type="checkbox" name="ytSponsorBlock"><span class="track" aria-hidden="true"></span><span data-i18n="ytSponsorBlock">Skip the parts that aren't music (SponsorBlock)</span></label>
+        <div id="sb-cats" class="sb-cats"></div>
+        <p class="hint" data-i18n="sSponsorHint"></p>
+        <div class="row2">
+          <label class="field"><span data-i18n="sAttempts">Tries when YouTube refuses a song</span>
+            <input name="ytPlayAttempts" type="number" min="1" max="10" required></label>
+          <label class="field"><span data-i18n="sClients">YouTube clients from the third try</span>
+            <input name="ytRetryClients" type="text" maxlength="200" autocomplete="off" spellcheck="false"></label>
+        </div>
+        <p class="hint" data-i18n="sRetryHint"></p>
+        <h4 class="eyebrow sub" data-i18n="sAutoplay">Autoplay</h4>
+        <label class="field"><span data-i18n="sNoRepeat">Don't repeat any of the last … songs</span>
+          <input name="ytNoRepeat" type="number" min="0" max="30" required></label>
+        <label class="switch"><input type="checkbox" name="ytSameArtist"><span class="track" aria-hidden="true"></span><span data-i18n="ytSameArtist">The same artist may come again</span></label>
+        <p class="hint" data-i18n="sAutoplayHint"></p>
       </fieldset>
       <div class="save-row">
         <button id="set-save" class="btn primary" type="submit"><svg class="ic"><use href="#i-check"/></svg><span data-i18n="save">Save</span></button>
@@ -415,6 +463,35 @@
       <span>Panda <span id="version"></span></span>
       <a href="https://github.com/KaanBahaSever/panda" target="_blank" rel="noopener noreferrer">GitHub <svg class="ic sm"><use href="#i-ext"/></svg></a>
     </footer>
+  </div>
+</dialog>
+
+<!-- ============ Internet radio ============ -->
+<dialog id="radio" class="sheet" aria-labelledby="radio-title">
+  <div class="sheet-head">
+    <h2 id="radio-title">📻 <span data-i18n="radioTitle">Internet radio</span></h2>
+    <button class="icon-btn" type="button" data-close data-i18n-aria="close"><svg class="ic"><use href="#i-x"/></svg></button>
+  </div>
+  <div class="sheet-body">
+    <section class="group">
+      <h3 class="legend">⭐ <span data-i18n="radioFavs">Favorite stations</span></h3>
+      <ul id="radio-favs" class="tracks"></ul>
+      <p id="radio-favs-empty" class="empty muted" data-i18n="radioFavsEmpty"></p>
+    </section>
+    <form id="radio-form" class="group" role="search">
+      <h3 class="legend">🔎 <span data-i18n="radioFind">Find a station</span></h3>
+      <label class="field"><span data-i18n="radioName">Name</span>
+        <input name="name" type="search" maxlength="100" autocomplete="off" enterkeyhint="search"></label>
+      <div class="row2">
+        <label class="field"><span data-i18n="radioCountry">Country</span>
+          <select name="country"><option value="" data-i18n="radioAny">Any</option></select></label>
+        <label class="field"><span data-i18n="radioTag">Genre</span>
+          <input name="tag" type="text" maxlength="40" list="radio-tags" autocomplete="off"><datalist id="radio-tags"></datalist></label>
+      </div>
+      <div class="save-row"><button id="radio-go" class="btn primary" type="submit"><svg class="ic"><use href="#i-search"/></svg><span data-i18n="radioSearch">Search</span></button></div>
+      <ul id="radio-results" class="tracks"></ul>
+      <p class="hint" data-i18n="radioHint"></p>
+    </form>
   </div>
 </dialog>
 

@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Panda 🐼 — a cute YouTube music bot for TeamSpeak 6</title>
-<meta name="description" content="Panda is a tiny, open-source YouTube music bot for TeamSpeak 6 with a lovely web panel, a song library and a one-line installer.">
-<meta property="og:title" content="Panda 🐼 — YouTube music bot for TeamSpeak 6">
+<title>Panda 🐼 — a cute music bot for TeamSpeak 6</title>
+<meta name="description" content="Panda is a tiny, open-source music bot for TeamSpeak 6: YouTube, SoundCloud, Spotify links and internet radio, with a lovely web panel, a song library and a one-line installer.">
+<meta property="og:title" content="Panda 🐼 — music bot for TeamSpeak 6">
 <meta property="og:description" content="Tiny, cute and open source. Song library, web panel, one-line install.">
 <meta property="og:image" content="https://kaanbahasever.github.io/panda/img/now-playing.png">
 <meta name="theme-color" content="#2bbf6f">
@@ -30,7 +30,7 @@
   <section class="hero">
     <img class="mascot" src="img/logo.svg" alt="Panda mascot with headphones" width="180" height="180">
     <h1>Panda <span class="wave">🐼</span></h1>
-    <p class="tagline" data-i18n="hero.tagline">A tiny, cute YouTube music bot for <b>TeamSpeak 6</b> — with a lovely web panel.</p>
+    <p class="tagline" data-i18n="hero.tagline">A tiny, cute music bot for <b>TeamSpeak 6</b> — with a lovely web panel.</p>
     <div class="chips">
       <span class="chip" data-i18n="chip.ts6">Works with TeamSpeak 6</span>
       <span class="chip" data-i18n="chip.oss">Open source</span>
@@ -56,8 +56,9 @@
       <article class="card"><div class="ico">🐼</div><h3 data-i18n="f1.t">Made for TeamSpeak 6</h3><p data-i18n="f1.d">Talks to the server directly. No TeamSpeak client, no X server, no plugins running in the background. TS3 servers work too.</p></article>
       <article class="card"><div class="ico">📚</div><h3 data-i18n="f2.t">A song library</h3><p data-i18n="f2.d">Every requested song is saved. Favourites start instantly and never hit YouTube again; when it's full, the least played songs make room.</p></article>
       <article class="card"><div class="ico">⚡</div><h3 data-i18n="f3.t">No waiting</h3><p data-i18n="f3.d">Upcoming songs are downloaded ahead of time, so the next song starts the moment the last one ends.</p></article>
-      <article class="card"><div class="ico">🎵</div><h3 data-i18n="f4.t">Any YouTube link</h3><p data-i18n="f4.d">Song names, youtube.com, youtu.be, YouTube Music, Shorts. Playlist links add just one song instead of loading the whole list.</p></article>
-      <article class="card"><div class="ico">📻</div><h3 data-i18n="f9.t">Radio</h3><p data-i18n="f9.d">When the queue runs out, Panda keeps playing songs like the last one, from YouTube's Mix. Off until you turn it on.</p></article>
+      <article class="card"><div class="ico">🎵</div><h3 data-i18n="f4.t">Links from anywhere</h3><p data-i18n="f4.d">Song names and YouTube first, plus SoundCloud, Bandcamp, Mixcloud and audio files. Spotify, Apple Music, Deezer and Tidal links are found on YouTube, whole Spotify playlists too.</p></article>
+      <article class="card"><div class="ico">📻</div><h3 data-i18n="f14.t">Internet radio</h3><p data-i18n="f14.d">Paste a station's stream, or find thousands of stations by country and genre in the panel. <code>!fm jazz</code> plays one; the song on air shows in the bot's description.</p></article>
+      <article class="card"><div class="ico">✨</div><h3 data-i18n="f9.t">Autoplay</h3><p data-i18n="f9.d">When the queue runs out, Panda keeps playing songs like the last one, from YouTube's Mix. Off until you turn it on.</p></article>
       <article class="card"><div class="ico">🤖</div><h3 data-i18n="f10.t">Several bots, one panel</h3><p data-i18n="f10.d">Run a bot per server or channel, each with its own queue and settings, from a single install and a single song library.</p></article>
       <article class="card"><div class="ico">📃</div><h3 data-i18n="f12.t">Playlists &amp; favorites</h3><p data-i18n="f12.d">Save the queue or single songs into playlists and play them with <code>!playlist</code>. <code>!fav</code> keeps the song you like.</p></article>
       <article class="card"><div class="ico">🔊</div><h3 data-i18n="f13.t">Equal loudness</h3><p data-i18n="f13.d">Saved songs are measured once and play equally loud, so nobody has to ride the volume slider.</p></article>
@@ -125,7 +126,8 @@ docker compose logs panda   # panel password</code></pre><button class="copy" ty
       <div><code>!loop</code><code>!tekrar</code><span data-i18n="cmd.loop">Repeat one song or the whole queue</span></div>
       <div><code>!join</code><code>!gel</code><span data-i18n="cmd.join">Come to my channel</span></div>
       <div><code>!follow</code><code>!takip</code><span data-i18n="cmd.follow">Follow me from channel to channel</span></div>
-      <div><code>!radio</code><code>!radyo</code><span data-i18n="cmd.radio">Keep playing similar songs when the queue ends</span></div>
+      <div><code>!autoplay</code><code>!otomatik</code><span data-i18n="cmd.radio">Keep playing similar songs when the queue ends</span></div>
+      <div><code>!fm jazz</code><code>!fm jazz</code><span data-i18n="cmd.fm">Play an internet radio station</span></div>
       <div><code>!playlist rock</code><code>!liste rock</code><span data-i18n="cmd.playlist">Queue a saved playlist</span></div>
       <div><code>!fav</code><code>!fav</code><span data-i18n="cmd.fav">Save the song playing to Favorites</span></div>
     </div>

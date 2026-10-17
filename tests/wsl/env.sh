@@ -1,6 +1,7 @@
 #!/bin/bash
 # WSL: starts the TeamSpeak 6 test server and a Panda (panel on port 8097) whose library holds one
-# generated test song, with a yt-dlp stand-in (fake-yt-dlp.sh): the tests never reach YouTube.
+# generated test song, with a yt-dlp stand-in (fake-yt-dlp.sh) and a web stand-in (fake-web.py, port 8096:
+# radio, pages, music services, Radio Browser, SponsorBlock): the tests never leave the machine.
 # usage: env.sh <linux panda binary>      env.sh ts (only the TeamSpeak server)      env.sh stop
 set -eu
 T=$HOME/panda-test-env
@@ -10,6 +11,7 @@ Q() { curl -s -H "x-api-key: $KEY" "http://127.0.0.1:10080/1/$1"; }
 
 if [ "${1:-}" = stop ]; then
 	pkill -f "$T/panda" || true
+	pkill -f "fake-web.py" || true
 	pkill -f "tsserver --accept-license" || true
 	exit 0
 fi
@@ -37,13 +39,25 @@ SIZE=$(stat -c %s "$T/data/library/tstTone0001.audio")
 mkdir -p "$T/fake-yt-dlp"
 cp "$T/data/library/tstTone0001.audio" "$T/fake-yt-dlp/tone.webm"
 cp "$(dirname "$0")/fake-yt-dlp.sh" "$T/fake-yt-dlp/yt-dlp"; chmod +x "$T/fake-yt-dlp/yt-dlp"
+# The web stand-in: a radio station, an audio file and the services' answers.
+pkill -f "fake-web.py" || true
+mkdir -p "$T/web"
+ffmpeg -loglevel error -f lavfi -i "sine=frequency=330:duration=20" -c:a libmp3lame -b:a 128k "$T/web/radio.mp3"
+ffmpeg -loglevel error -f lavfi -i "sine=frequency=550:duration=60" -metadata title="Web Song" -metadata artist="Web Artist" -c:a libmp3lame -b:a 128k "$T/web/song.mp3"
+cp "$(dirname "$0")/fake-web.py" "$T/web/fake-web.py"
+setsid nohup python3 "$T/web/fake-web.py" "$T/web" > "$T/web.log" 2>&1 < /dev/null &
+for _ in $(seq 20); do curl -s http://127.0.0.1:8096/page.html >/dev/null && break; sleep 0.5; done
 cat > "$T/data/library/library.json" <<EOF
 { "songs": [ { "id": "tstTone0001", "title": "Test Tone Song", "channel": "Tester", "duration": 90, "size": $SIZE, "added": "2026-10-15T00:00:00Z" } ], "stats": {} }
 EOF
-printf '{ "bots": [ { "id": "1", "server": { "address": "127.0.0.1" } } ], "panel": { "port": 8097 }, "youTube": { "ytDlpPath": "%s" } }\n' \
+printf '{ "bots": [ { "id": "1", "server": { "address": "127.0.0.1" } } ], "panel": { "port": 8097 },
+  "youTube": { "ytDlpPath": "%s", "sponsorBlockUrl": "http://127.0.0.1:8096/sb" },
+  "sources": { "localLinks": true, "radioBrowserUrl": "http://127.0.0.1:8096/rb" } }\n' \
 	"$T/fake-yt-dlp/yt-dlp" > "$T/data/config.json"
 "$T/panda" --data "$T/data" set-password testpass123 admin >/dev/null
-setsid nohup "$T/panda" --data "$T/data" > "$T/log.txt" 2>&1 < /dev/null &
+# Spotify and Deezer are asked at the web stand-in.
+PANDA_TEST_REWRITE="https://open.spotify.com/=http://127.0.0.1:8096/spotify/;https://api.deezer.com/=http://127.0.0.1:8096/deezer/" \
+	setsid nohup "$T/panda" --data "$T/data" > "$T/log.txt" 2>&1 < /dev/null &
 for _ in $(seq 40); do grep -q "Connected to" "$T/log.txt" 2>/dev/null && break; sleep 1; done
 grep -m1 "Connected to" "$T/log.txt" || { echo "Panda did not connect"; tail -5 "$T/log.txt"; exit 1; }
 # Another Panda on the test server (one left over from an interrupted test) would answer too.

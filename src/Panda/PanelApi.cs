@@ -59,19 +59,43 @@ public static class PanelApi
 		bot.MapGet("/state", async (BotInstance b, BotManager bots, Library library, Playlists lists) => await Snapshot(b, bots, library, lists));
 		bot.MapGet("/events", Events);
 
-		bot.MapPost("/play", async (PlayRequest req, BotInstance b, Library library, HttpContext ctx) =>
+		bot.MapPost("/play", async (PlayRequest req, BotInstance b, Sources sources, HttpContext ctx) =>
 		{
 			var isAdmin = ctx.User.IsInRole(Roles.Admin);
 			if (req.Now && !isAdmin) return Results.StatusCode(StatusCodes.Status403Forbidden); // it skips the current song
 			try
 			{
 				var by = isAdmin && req.RequestedBy is { Length: > 0 } r ? r : "🌐 " + ctx.User.Identity?.Name;
-				var track = await library.ResolveAsync(req.Query ?? "", by) with { RequesterId = "panel:" + ctx.User.Identity?.Name };
+				var requester = "panel:" + ctx.User.Identity?.Name;
+				var found = await sources.ResolveAsync(req.Query ?? "", by);
+				var track = found.Track with { RequesterId = requester };
 				if (req.Now) b.Player.PlayNow(track, exempt: true);   // admins only
+				else b.Player.Enqueue(track, exempt: isAdmin);
+				// An album or a playlist of a music service: the rest comes in the background.
+				if (found.More is { Count: > 0 } more) AddLater(b, sources, more, by, requester, isAdmin);
+				return Added(ctx, track, found.More?.Count ?? 0, found.ListName);
+			}
+			catch (YouTubeException ex) { return Problem(ex.Message); }
+			catch (QueueFullException) { return Problem("queue-full"); }
+			catch (UserLimitException) { return Problem("user-limit"); }
+		});
+		bot.MapPost("/fm", async (FmRequest req, BotInstance b, RadioBrowser radios, RadioFavorites favorites, PandaConfig config, HttpContext ctx) =>
+		{
+			if (!config.Sources.Radio) return Problem("source-off");
+			var isAdmin = ctx.User.IsInRole(Roles.Admin);
+			if (req.Now && !isAdmin) return Results.StatusCode(StatusCodes.Status403Forbidden);
+			Station? station;
+			try { station = await FindStationAsync(req.Uuid ?? "", radios, favorites, ctx.RequestAborted); }
+			catch (RadioException) { return Problem("radio-list-down"); }
+			if (station is null) return Results.NotFound();
+			radios.Played(station);
+			var track = station.ToTrack("🌐 " + ctx.User.Identity?.Name) with { RequesterId = "panel:" + ctx.User.Identity?.Name };
+			try
+			{
+				if (req.Now) b.Player.PlayNow(track, exempt: true);
 				else b.Player.Enqueue(track, exempt: isAdmin);
 				return Results.Ok(track);
 			}
-			catch (YouTubeException ex) { return Problem(ex.Message); }
 			catch (QueueFullException) { return Problem("queue-full"); }
 			catch (UserLimitException) { return Problem("user-limit"); }
 		});
@@ -91,7 +115,9 @@ public static class PanelApi
 		botAdmin.MapPost("/seek", (SeekRequest req, BotInstance b) => Done(b.Player.Seek((int)Math.Round(req.Seconds))));
 		botAdmin.MapPost("/volume", (VolumeRequest req, BotInstance b) => Done(Run(() => b.Player.SetVolume(req.Volume))));
 		botAdmin.MapPost("/loop", (LoopRequest req, BotInstance b) => Done(Run(() => b.Player.SetLoop(req.Mode))));
-		botAdmin.MapPost("/radio", (RadioRequest req, BotInstance b) => Done(Run(() => b.Player.SetRadio(req.On))));
+		botAdmin.MapPost("/autoplay", (AutoplayRequest req, BotInstance b) => Done(Run(() => b.Player.SetAutoplay(req.On))));
+		// The name up to 0.5.
+		botAdmin.MapPost("/radio", (AutoplayRequest req, BotInstance b) => Done(Run(() => b.Player.SetAutoplay(req.On))));
 		// The song id guards against the queue having moved on since the panel showed it.
 		botAdmin.MapDelete("/queue/{index:int}", (int index, string? id, BotInstance b) => Done(b.Player.Remove(index, id) != null));
 		botAdmin.MapPost("/queue/move", (MoveRequest req, BotInstance b) => Done(b.Player.Move(req.From, req.To, req.Id)));
@@ -112,11 +138,45 @@ public static class PanelApi
 
 		// --- shared by all bots ---
 
-		authed.MapGet("/search", async (string q, YouTube yt, HttpContext ctx) =>
+		authed.MapGet("/search", async (string q, Sources sources, HttpContext ctx) =>
 		{
-			try { return Results.Ok(await yt.SearchAsync(q, 10, "🌐 " + ctx.User.Identity?.Name, ctx.RequestAborted)); }
+			try { return Results.Ok(await sources.SearchAnyAsync(q, 10, "🌐 " + ctx.User.Identity?.Name, ctx.RequestAborted)); }
 			catch (YouTubeException ex) { return Problem(ex.Message); }
 		});
+
+		// --- internet radio: Radio Browser's list and the favorite stations (shared by all bots) ---
+
+		authed.MapGet("/radio/search", async (string? name, string? country, string? tag, RadioBrowser radios, HttpContext ctx) =>
+		{
+			if (string.IsNullOrWhiteSpace(name) && string.IsNullOrWhiteSpace(country) && string.IsNullOrWhiteSpace(tag)) return Results.Ok(Array.Empty<Station>());
+			try { return Results.Ok(await radios.SearchAsync(Cut(name, 100), Cut(country, 2), Cut(tag, 40), 60, ctx.RequestAborted)); }
+			catch (RadioException) { return Problem("radio-list-down"); }
+		});
+		authed.MapGet("/radio/countries", async (RadioBrowser radios, HttpContext ctx) =>
+		{
+			try { return Results.Ok(await radios.CountriesAsync(ctx.RequestAborted)); }
+			catch (RadioException) { return Problem("radio-list-down"); }
+		});
+		authed.MapGet("/radio/tags", async (RadioBrowser radios, HttpContext ctx) =>
+		{
+			try { return Results.Ok(await radios.TagsAsync(ctx.RequestAborted)); }
+			catch (RadioException) { return Problem("radio-list-down"); }
+		});
+		authed.MapGet("/radio/favorites", (RadioFavorites favorites) => favorites.All());
+		// A station from Radio Browser (by its id), or what a bot is playing.
+		admin.MapPost("/radio/favorites", async (FavoriteRequest req, RadioBrowser radios, RadioFavorites favorites, BotManager bots, HttpContext ctx) =>
+		{
+			Station? station = null;
+			if (req.FromBot != null && bots.Get(req.FromBot)?.Player.Current is { } now) station = Stations.FromTrack(now);
+			else if (req.Uuid is { Length: > 0 } uuid)
+			{
+				try { station = await FindStationAsync(uuid, radios, favorites, ctx.RequestAborted); }
+				catch (RadioException) { return Problem("radio-list-down"); }
+			}
+			if (station is null) return Results.NotFound();
+			return favorites.Add(station) ? Results.Ok(station) : Problem("fm-full");
+		});
+		admin.MapDelete("/radio/favorites/{uuid}", (string uuid, RadioFavorites favorites) => Done(favorites.Remove(uuid)));
 
 		authed.MapGet("/library", (string? q, Library library) => library.GetInfo(q));
 		// bot: an id or "all"; days: 0 = everything; tz: the browser's getTimezoneOffset().
@@ -270,6 +330,42 @@ public static class PanelApi
 	static IResult Done(bool ok) => ok ? Results.NoContent() : Results.Conflict();
 	static bool Run(Action a) { a(); return true; }
 	static IResult Problem(string code) => Results.BadRequest(new { error = code });
+
+	// The song as before, plus for a list how many more are on the way ("more") and its name ("list").
+	static IResult Added(HttpContext ctx, Track track, int more, string? list)
+	{
+		var opts = ctx.RequestServices.GetRequiredService<Microsoft.Extensions.Options.IOptions<Microsoft.AspNetCore.Http.Json.JsonOptions>>().Value.SerializerOptions;
+		var json = JsonSerializer.SerializeToNode(track, opts)!.AsObject();
+		if (more > 0)
+		{
+			json["more"] = more;
+			json["list"] = list;
+		}
+		return Results.Json(json, opts);
+	}
+
+	static string? Cut(string? s, int max) => s?.Trim() is { } t && t.Length > max ? t[..max] : s?.Trim();
+
+	// Stations are looked up by id, never taken from the request: where Panda connects stays Radio Browser's
+	// (or an admin's favorite).
+	static async Task<Station?> FindStationAsync(string uuid, RadioBrowser radios, RadioFavorites favorites, CancellationToken ct)
+	{
+		if (uuid.Length is 0 or > 64) return null;
+		if (favorites.All().FirstOrDefault(s => s.Uuid == uuid) is { } saved) return saved;
+		return uuid.StartsWith("link-") ? null : await radios.FindAsync(uuid, ct);
+	}
+
+	// The rest of a music service's album or playlist, added as it's found (until the queue is full or cleared).
+	static void AddLater(BotInstance b, Sources sources, IReadOnlyList<string> songs, string by, string requester, bool exempt)
+	{
+		var epoch = b.Player.Epoch;
+		_ = Task.Run(() => sources.AddAllAsync(songs, by, t =>
+		{
+			if (b.Player.Disposed || b.Player.Epoch != epoch) return false;
+			try { b.Player.Enqueue(t with { RequesterId = requester }, exempt); return true; }
+			catch (Exception ex) when (ex is QueueFullException or UserLimitException) { return false; }
+		}));
+	}
 
 	// --- login with a small brute-force guard ---
 
@@ -438,12 +534,18 @@ public static class PanelApi
 	public sealed record SeekRequest(double Seconds);
 	public sealed record VolumeRequest(int Volume);
 	public sealed record LoopRequest(LoopMode Mode);
-	public sealed record RadioRequest(bool On);
+	public sealed record AutoplayRequest(bool On);
+	public sealed record FmRequest(string? Uuid, bool Now = false);
+	public sealed record FavoriteRequest(string? Uuid = null, string? FromBot = null);
+
 	public sealed record PlaylistRequest(string? Name, List<PlaylistSong>? Songs = null, string? FromBot = null);
 	public sealed record PlayPlaylistRequest(string? Name, bool Shuffle = false);
 
+	// A YouTube video, or a song from another site with its link (not a radio station: that's a favorite station).
 	static bool IsValidSong(PlaylistSong s) =>
-		s.Id is { Length: 11 } id && id.All(c => char.IsAsciiLetterOrDigit(c) || c is '-' or '_')
+		(s.Source is null ? s.Id is { } id && Media.IsVideoId(id)
+			: s.Source is Media.Link or Media.Direct && s.Id is { Length: > 0 and <= 120 } other && !other.Any(char.IsControl)
+				&& Media.IsWebLink(s.Link) && (s.Art is null || Media.IsWebLink(s.Art)))
 		&& s.Title is { Length: > 0 and <= 300 } && (s.Channel ?? "").Length <= 200 && s.Duration is >= 0 and <= 86400;
 	public sealed record MoveRequest(int From, int To, string? Id = null);
 	public sealed record PasswordRequest(string? Current, string? New);
@@ -485,6 +587,37 @@ public sealed class SettingsDto
 	public int LibraryMaxSizeMb { get; set; }
 	public bool NormalizeVolume { get; set; }
 	public bool HasCookies { get; set; }
+	/// <summary>Shared by all bots: where songs may come from (see <see cref="SourcesSettings"/>).</summary>
+	public SourcesDto? Sources { get; set; }
+	/// <summary>Shared by all bots: YouTube's own settings.</summary>
+	public YouTubeDto? YouTube { get; set; }
+
+	public sealed class SourcesDto
+	{
+		public string Search { get; set; } = "youtube";
+		public bool Fallback { get; set; } = true;
+		public bool YouTubeMusic { get; set; } = true;
+		public bool SoundCloud { get; set; } = true;
+		public bool Sites { get; set; } = true;
+		public bool Services { get; set; } = true;
+		public bool Pages { get; set; } = true;
+		public bool Radio { get; set; } = true;
+		public bool LocalLinks { get; set; }
+	}
+
+	public sealed class YouTubeDto
+	{
+		public string Quality { get; set; } = "best";
+		public int SearchResults { get; set; } = 5;
+		public bool HideLive { get; set; }
+		public bool HideShort { get; set; }
+		public bool SponsorBlock { get; set; }
+		public List<string> SponsorBlockCategories { get; set; } = [];
+		public int PlayAttempts { get; set; } = 3;
+		public string RetryPlayerClients { get; set; } = "";
+		public int AutoplayNoRepeat { get; set; } = 30;
+		public bool AutoplaySameArtist { get; set; } = true;
+	}
 
 	/// <summary>The bot's own settings plus the shared ones (library, YouTube).</summary>
 	public static SettingsDto From(PandaConfig c, BotConfig b) => new()
@@ -519,6 +652,18 @@ public sealed class SettingsDto
 		LibraryMaxSizeMb = c.Library.MaxSizeMb,
 		NormalizeVolume = c.Audio.Normalize,
 		HasCookies = c.YouTube.CookiesFile.Length > 0 && File.Exists(c.YouTube.CookiesFile),
+		Sources = new()
+		{
+			Search = c.Sources.Search, Fallback = c.Sources.Fallback, YouTubeMusic = c.Sources.YouTubeMusic, SoundCloud = c.Sources.SoundCloud,
+			Sites = c.Sources.Sites, Services = c.Sources.Services, Pages = c.Sources.Pages, Radio = c.Sources.Radio, LocalLinks = c.Sources.LocalLinks,
+		},
+		YouTube = new()
+		{
+			Quality = c.YouTube.Quality, SearchResults = c.YouTube.SearchResults, HideLive = c.YouTube.HideLive, HideShort = c.YouTube.HideShort,
+			SponsorBlock = c.YouTube.SponsorBlock, SponsorBlockCategories = c.YouTube.SponsorBlockCategories,
+			PlayAttempts = c.YouTube.PlayAttempts, RetryPlayerClients = c.YouTube.RetryPlayerClients,
+			AutoplayNoRepeat = c.YouTube.AutoplayNoRepeat, AutoplaySameArtist = c.YouTube.AutoplaySameArtist,
+		},
 	};
 
 	// Unique ids as TeamSpeak shows them; names only for showing.
@@ -568,6 +713,34 @@ public sealed class SettingsDto
 		c.Library.Enabled = LibraryEnabled;
 		if (LibraryMaxSizeMb is 0 or (>= 100 and <= 1_000_000)) c.Library.MaxSizeMb = LibraryMaxSizeMb;
 		c.Audio.Normalize = NormalizeVolume;
+		// Left out (an older panel, a script): kept as they are.
+		if (Sources is { } s)
+		{
+			if (SourcesSettings.Searches.Contains(s.Search)) c.Sources.Search = s.Search;
+			c.Sources.Fallback = s.Fallback;
+			c.Sources.YouTubeMusic = s.YouTubeMusic;
+			c.Sources.SoundCloud = s.SoundCloud;
+			c.Sources.Sites = s.Sites;
+			c.Sources.Services = s.Services;
+			c.Sources.Pages = s.Pages;
+			c.Sources.Radio = s.Radio;
+			c.Sources.LocalLinks = s.LocalLinks;
+		}
+		if (YouTube is { } y)
+		{
+			if (YouTubeSettings.Qualities.Contains(y.Quality)) c.YouTube.Quality = y.Quality;
+			if (y.SearchResults is >= 1 and <= 10) c.YouTube.SearchResults = y.SearchResults;
+			c.YouTube.HideLive = y.HideLive;
+			c.YouTube.HideShort = y.HideShort;
+			c.YouTube.SponsorBlock = y.SponsorBlock;
+			c.YouTube.SponsorBlockCategories = (y.SponsorBlockCategories ?? []).Where(YouTubeSettings.SponsorCategories.Contains).Distinct().ToList();
+			if (y.PlayAttempts is >= 1 and <= 10) c.YouTube.PlayAttempts = y.PlayAttempts;
+			// yt-dlp's client names: letters, digits, "_", "-" and commas.
+			var clients = (y.RetryPlayerClients ?? "").Replace(" ", "");
+			if (clients.Length <= 200 && clients.All(ch => char.IsAsciiLetterOrDigit(ch) || ch is '_' or '-' or ',')) c.YouTube.RetryPlayerClients = clients;
+			if (y.AutoplayNoRepeat is >= 0 and <= PlayHistory.RecentSize) c.YouTube.AutoplayNoRepeat = y.AutoplayNoRepeat;
+			c.YouTube.AutoplaySameArtist = y.AutoplaySameArtist;
+		}
 		// A vote is for the people who may not skip others' songs; with everyone allowed there'd be none.
 		if (b.Bot.VoteSkip && b.Bot.OthersSongs == "everyone") b.Bot.OthersSongs = "dj";
 		return reconnect;

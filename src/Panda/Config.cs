@@ -13,6 +13,7 @@ public sealed class PandaConfig
 	public YouTubeSettings YouTube { get; set; } = new();
 	public LibrarySettings Library { get; set; } = new();
 	public AudioSettings Audio { get; set; } = new();
+	public SourcesSettings Sources { get; set; } = new();
 
 	// Up to 0.2 there was one bot, set up by these two at the top level. Load moves them into Bots.
 	[JsonPropertyName("server"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
@@ -60,6 +61,9 @@ public sealed class PandaConfig
 		foreach (var b in cfg.Bots)
 			ChatPermissions.Upgrade(b.Bot);
 		cfg.Panel.ApiKeys.RemoveAll(k => k.Hash.Length == 0 || !Roles.IsValid(k.Role));
+		// A hand-edited config.json may say null.
+		cfg.Sources ??= new();
+		cfg.YouTube.SponsorBlockCategories = (cfg.YouTube.SponsorBlockCategories ?? []).Where(YouTubeSettings.SponsorCategories.Contains).Distinct().ToList();
 		return cfg;
 	}
 
@@ -443,8 +447,11 @@ public sealed class BotSettings
 	public int MaxSongsPerUser { get; set; }
 	/// <summary>People who may not change others' songs vote to skip them; half of the bot's channel skips the song.</summary>
 	public bool VoteSkip { get; set; }
-	/// <summary>When the queue runs out, keep playing songs like the last one.</summary>
-	public bool Radio { get; set; }
+	/// <summary>When the queue runs out, keep playing songs like the last one (YouTube's Mix).</summary>
+	public bool Autoplay { get; set; }
+	/// <summary>Autoplay up to 0.5, when it was called radio; Load moves it.</summary>
+	[JsonPropertyName("radio"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+	public bool? OldRadio { get; set; }
 }
 
 public sealed class PanelSettings
@@ -473,6 +480,70 @@ public sealed class YouTubeSettings
 	public int PlayAttempts { get; set; } = 3;
 	/// <summary>YouTube clients yt-dlp uses from the third try on (yt-dlp's player_client); empty = yt-dlp's own choice.</summary>
 	public string RetryPlayerClients { get; set; } = "android_vr,tv,web_safari";
+	/// <summary>"best", or "saver": a smaller audio stream (about 70 kbps), less data and smaller saved songs.</summary>
+	public string Quality { get; set; } = "best";
+	/// <summary>Results !search shows (1–10).</summary>
+	public int SearchResults { get; set; } = 5;
+	/// <summary>Searches leave out live streams.</summary>
+	public bool HideLive { get; set; }
+	/// <summary>Searches leave out videos under a minute (Shorts, clips).</summary>
+	public bool HideShort { get; set; }
+	/// <summary>Skip the parts of a video that aren't music, as marked on SponsorBlock (sponsor.ajay.app).</summary>
+	public bool SponsorBlock { get; set; }
+	/// <summary>SponsorBlock's kinds of parts to skip: music_offtopic, sponsor, selfpromo, intro, outro.</summary>
+	public List<string> SponsorBlockCategories { get; set; } = ["music_offtopic"];
+	/// <summary>The SponsorBlock server.</summary>
+	public string SponsorBlockUrl { get; set; } = "https://sponsor.ajay.app";
+	/// <summary>Autoplay doesn't pick a song played among the last this many (up to 30).</summary>
+	public int AutoplayNoRepeat { get; set; } = 30;
+	/// <summary>Autoplay may pick the same artist (channel) as the song before.</summary>
+	public bool AutoplaySameArtist { get; set; } = true;
+
+	public static readonly string[] Qualities = ["best", "saver"];
+	public static readonly string[] SponsorCategories = ["music_offtopic", "sponsor", "selfpromo", "intro", "outro"];
+}
+
+/// <summary>Where songs may come from besides YouTube, and where a search looks.</summary>
+public sealed class SourcesSettings
+{
+	/// <summary>Where a search (!play with words, !search, the panel) looks first: "youtube",
+	/// "youtubeMusic" or "soundcloud". The others are asked next when it finds nothing (see <see cref="Fallback"/>).</summary>
+	public string Search { get; set; } = "youtube";
+	public bool Fallback { get; set; } = true;
+	public bool YouTubeMusic { get; set; } = true;
+	public bool SoundCloud { get; set; } = true;
+	/// <summary>Links to other sites yt-dlp can play (Bandcamp, Mixcloud, Vimeo, Twitch...) and audio files.</summary>
+	public bool Sites { get; set; } = true;
+	/// <summary>Spotify, Apple Music, Deezer and Tidal links: the song is looked up on YouTube.</summary>
+	public bool Services { get; set; } = true;
+	/// <summary>Any other link: the page's title is looked up on YouTube.</summary>
+	public bool Pages { get; set; } = true;
+	/// <summary>Internet radio: stream links, !fm and the radio list.</summary>
+	public bool Radio { get; set; } = true;
+	/// <summary>Links may point into the local network (a radio or a NAS at home). Off: such links are refused,
+	/// so nobody can make Panda open a router's page or a cloud metadata service.</summary>
+	public bool LocalLinks { get; set; }
+	/// <summary>The Radio Browser server; empty = one of radio-browser.info's.</summary>
+	public string RadioBrowserUrl { get; set; } = "";
+
+	public static readonly string[] Searches = ["youtube", "youtubeMusic", "soundcloud"];
+
+	/// <summary>The searches to try, in order.</summary>
+	public IEnumerable<string> SearchOrder()
+	{
+		var first = Searches.Contains(Search) && Enabled(Search) ? Search : "youtube";
+		yield return first;
+		if (!Fallback) yield break;
+		foreach (var s in Searches)
+			if (s != first && Enabled(s)) yield return s;
+	}
+
+	public bool Enabled(string search) => search switch
+	{
+		"youtubeMusic" => YouTubeMusic,
+		"soundcloud" => SoundCloud,
+		_ => true,
+	};
 }
 
 public static class PasswordHasher

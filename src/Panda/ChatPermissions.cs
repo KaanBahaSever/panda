@@ -13,16 +13,16 @@ public static class ChatPermissions
 	public static readonly string[] Commands =
 	[
 		"play", "search", "playnow", "skip", "remove", "move", "skipto", "back", "seek", "pause", "stop", "clear",
-		"shuffle", "loop", "vol", "radio", "playlist", "fav", "join", "follow",
+		"shuffle", "loop", "vol", "autoplay", "fm", "playlist", "fav", "join", "follow",
 	];
 
 	/// <summary>A sensible setup for a busy channel: adding and asking is for everyone, steering is for DJs.</summary>
 	public static readonly IReadOnlyDictionary<string, string> Recommended = new Dictionary<string, string>
 	{
 		["play"] = "everyone", ["search"] = "everyone", ["skip"] = "everyone", ["remove"] = "everyone",
-		["playlist"] = "everyone", ["fav"] = "everyone",
+		["playlist"] = "everyone", ["fav"] = "everyone", ["fm"] = "everyone",
 		["playnow"] = "dj", ["move"] = "dj", ["skipto"] = "dj", ["back"] = "dj", ["seek"] = "dj", ["pause"] = "dj",
-		["stop"] = "dj", ["clear"] = "dj", ["shuffle"] = "dj", ["loop"] = "dj", ["vol"] = "dj", ["radio"] = "dj",
+		["stop"] = "dj", ["clear"] = "dj", ["shuffle"] = "dj", ["loop"] = "dj", ["vol"] = "dj", ["autoplay"] = "dj",
 		["join"] = "dj", ["follow"] = "dj",
 	};
 
@@ -87,6 +87,14 @@ public static class ChatPermissions
 		bot.AllowedUsers = null;
 		bot.AllowedServerGroups = null;
 		bot.OthersSongs ??= bot.VoteSkip ? "dj" : "everyone";
+		// Up to 0.5 autoplay was called radio; !fm (internet radio) gets what !radio had.
+		if (bot.OldRadio is { } on) bot.Autoplay = on;
+		bot.OldRadio = null;
+		if (bot.CommandLevels.Remove("radio", out var radioLevel))
+		{
+			bot.CommandLevels.TryAdd("autoplay", radioLevel);
+			bot.CommandLevels.TryAdd("fm", radioLevel);
+		}
 		foreach (var key in bot.CommandLevels.Keys.Where(k => !Commands.Contains(k) || !IsLevel(bot.CommandLevels[k])).ToList())
 			bot.CommandLevels.Remove(key);
 	}

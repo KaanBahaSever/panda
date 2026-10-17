@@ -1,5 +1,6 @@
 #!/bin/bash
-# Test stand-in for yt-dlp: searches always find "Fake <words>" (90 s), and every song is the test tone.
+# Test stand-in for yt-dlp: searches always find "Fake <words>" (90 s), SoundCloud's "SC <words>", YouTube
+# Music's "Music <words>"; soundcloud.com links are "SC Linked"; every song is the test tone.
 # YouTube's failures are acted out on request: the file $FAKE/fail holds "<mode> <count>" and the next
 # <count> calls of that kind fail:
 #   403 N      downloads fail at once with HTTP 403        cut N   downloads break off after a few seconds
@@ -40,6 +41,27 @@ if [ $json = 1 ]; then
 				printf '%s\t%s\n' "$id" "$t" >> "$FAKE/titles"   # a later lookup of the video says the same title
 			done
 			printf ']}\n' ;;
+		scsearch*:*)
+			# SoundCloud: "SC words", "SC words 2"...
+			q=${url#*:}; n=${url%%:*}; n=${n#scsearch}; sep=""
+			printf '{"entries":['
+			for i in $(seq "${n:-1}"); do
+				if [ "$i" = 1 ]; then t="SC $q"; else t="SC $q $i"; fi
+				slug=$(printf '%s' "$t" | tr ' ' '-' | tr -cd 'A-Za-z0-9-')
+				printf '%s{"id":"55%s","title":"%s","uploader":"Fake SC","duration":90,"ie_key":"Soundcloud","webpage_url":"https://soundcloud.com/fake/%s"}' \
+					"$sep" "$(printf '%s' "$t" | md5sum | cut -c1-8 | tr -cd '0-9')" "$t" "$slug"; sep=,
+			done
+			printf ']}\n' ;;
+		https://music.youtube.com/search*)
+			# YouTube Music only names the songs; their lookup (watch?v=) says the rest.
+			q=$(python3 -c 'import sys,urllib.parse as u; print(u.parse_qs(u.urlparse(sys.argv[1]).query)["q"][0])' "$url")
+			id=$(id_for "ytm|$q")
+			printf '%s\t%s\n' "$id" "Music $q" >> "$FAKE/titles"
+			printf '{"entries":[{"_type":"url","ie_key":"Youtube","id":"%s","title":"Music %s","url":"https://music.youtube.com/watch?v=%s"}]}\n' "$id" "$q" "$id" ;;
+		https://soundcloud.com/*)
+			t="SC Linked"; case "$url" in *fake/SC-*) t=$(printf '%s' "${url##*/}" | tr '-' ' ') ;; esac
+			printf '{"id":"77%s","title":"%s","uploader":"Fake SC","duration":90,"extractor_key":"Soundcloud","webpage_url":"%s"}\n' \
+				"$(printf '%s' "$url" | md5sum | cut -c1-8 | tr -cd '0-9')" "$t" "$url" ;;
 		*list=RD*) echo '{"entries":[]}' ;;
 		*v=*)
 			id=${url##*v=}

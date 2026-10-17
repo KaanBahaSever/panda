@@ -8,7 +8,8 @@
 //   x                 the last message got no reply           n <text>   none of its replies contains <text>
 //   w <seconds>       wait (replies that come meanwhile count for the last message)
 //   s key=value ...   change bot 1's settings through the panel (values: true/false, numbers, text, or JSON
-//                     without spaces like [{"uid":"$ME"}]); $ME is the test client's unique id, $GROUP its server group
+//                     without spaces like [{"uid":"$ME"}]); $ME is the test client's unique id, $GROUP its server group;
+//                     "sources.radio=false" changes one value of a group (sources, youTube)
 //   A / B             the test client goes to another channel (Away) / Back to Panda's
 //   d                 print Panda's description        d <text>  it contains <text>        d !  it is empty
 //                     (read from the server's HTTP query when $PANDA_TEST_QUERY is "<url> <api key>", else from the client)
@@ -18,6 +19,9 @@
 //   + <name>          another client joins Panda's channel, until the scenario ends
 //   o <text>          the first of those clients sends <text> to the channel (replies count like after "c")
 //   P <song>          a panel admin adds a song (it isn't the test client's own song)
+//   N <text>          the song playing (its title, or what the radio station says it plays) contains <text>
+//   t <min> <max>     the song playing is between <min> and <max> seconds in
+//   q <count>         the queue holds <count> songs
 // Exit code: the number of failed checks.
 using System.Globalization;
 using System.Net;
@@ -40,6 +44,10 @@ var defaults = new Dictionary<string, string>
 	["maxQueueLength"] = "100", ["maxDurationMinutes"] = "60", ["maxSongsPerUser"] = "0", ["voteSkip"] = "false",
 	["everyoneCanUse"] = "true", ["members"] = "[]", ["memberGroups"] = "[]", ["admins"] = "[]", ["adminGroups"] = "[]", ["djs"] = "[]", ["djGroups"] = "[]", ["blocked"] = "[]",
 	["commandLevels"] = "{}", ["othersSongs"] = "everyone", ["onlyFromChannel"] = "false",
+	// The test's own web server (radio, pages, music services) is on 127.0.0.1.
+	["sources.localLinks"] = "true", ["sources.search"] = "youtube", ["sources.fallback"] = "true", ["sources.youTubeMusic"] = "true",
+	["sources.soundCloud"] = "true", ["sources.sites"] = "true", ["sources.services"] = "true", ["sources.pages"] = "true", ["sources.radio"] = "true",
+	["youTube.sponsorBlock"] = "false", ["youTube.searchResults"] = "5", ["youTube.hideLive"] = "false", ["youTube.hideShort"] = "false",
 };
 var panel = new Panel(args[1], Environment.GetEnvironmentVariable("PANDA_TEST_PASSWORD") ?? "testpass123");
 await panel.LoginAsync();
@@ -168,6 +176,26 @@ await scheduler.InvokeAsync(async () =>
 					break;
 				case 'P': Console.WriteLine($"-> [panel] play {arg}"); await panel.PlayAsync(arg); await Task.Delay(1500); break;
 				case 'Y': Check(FakeYtDlp.Calls().Any(l => l.Contains(arg)), $"yt-dlp was called with \"{arg}\""); break;
+				case 'N':
+				{
+					var now = (await panel.StateAsync())["player"]?["current"];
+					var text = now is null ? "" : $"{now["track"]?["title"]} {now["streamTitle"]}";
+					Check(text.Contains(arg), $"playing \"{arg}\" (\"{text.Trim()}\")");
+					break;
+				}
+				case 't':
+				{
+					var range = arg.Split(' ').Select(x => double.Parse(x, CultureInfo.InvariantCulture)).ToArray();
+					var at = (double?)(await panel.StateAsync())["player"]?["current"]?["position"] ?? -1;
+					Check(at >= range[0] && at <= range[1], $"position {range[0]}–{range[1]} s ({at:0.0})");
+					break;
+				}
+				case 'q':
+				{
+					var n = (await panel.StateAsync())["player"]?["queue"]?.AsArray().Count ?? -1;
+					Check(n == int.Parse(arg), $"{arg} songs in the queue ({n})");
+					break;
+				}
 				default: Console.WriteLine($"?? unknown line: {line}"); failed++; break;
 				}			}
 			catch (Exception ex) { Check(false, $"{line}: {ex.GetType().Name}: {ex.Message}"); }
@@ -194,12 +222,20 @@ sealed class Panel(string url, string password)
 	{
 		var s = await http.GetFromJsonAsync<JsonObject>("/api/bots/1/settings") ?? throw new InvalidOperationException("no settings");
 		foreach (var (k, v) in values)
-			s[k] = v.StartsWith('[') || v.StartsWith('{') ? JsonNode.Parse(v)
+		{
+			JsonNode? value = v.StartsWith('[') || v.StartsWith('{') ? JsonNode.Parse(v)
 				: bool.TryParse(v, out var b) ? JsonValue.Create(b)
 				: int.TryParse(v, out var i) ? JsonValue.Create(i)
 				: JsonValue.Create(v);
+			// "sources.radio": one value inside a group.
+			if (k.Split('.', 2) is [var group, var inner]) s[group]![inner] = value;
+			else s[k] = value;
+		}
 		(await http.PutAsJsonAsync("/api/bots/1/settings", s)).EnsureSuccessStatusCode();
 	}
+
+	public async Task<JsonObject> StateAsync() =>
+		await http.GetFromJsonAsync<JsonObject>("/api/bots/1/state") ?? throw new InvalidOperationException("no state");
 
 	public async Task PlayAsync(string query) =>
 		(await http.PostAsJsonAsync("/api/bots/1/play", new { query })).EnsureSuccessStatusCode();

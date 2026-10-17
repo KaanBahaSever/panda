@@ -1,0 +1,70 @@
+# Search prefixes: sc: searches SoundCloud, ytm: YouTube Music.
+s announce=false
+c !play sc:night drive
+e Now playing
+e SC night drive
+Y scsearch1:night drive
+c !play ytm:morning song
+e Added to the queue (#1)
+e Music morning song
+Y music.youtube.com/search?q=morning
+# A SoundCloud link plays from SoundCloud.
+c !play https://soundcloud.com/fake/linked-song
+e SC Linked
+# !search with a prefix; the number of results is a setting.
+s youTube.searchResults=3
+c !search sc:rain
+e SC rain 3
+n 4.[/b]
+c !2
+e SC rain 2
+# SoundCloud as the search to use.
+s sources.search=soundcloud
+c !play evening
+e SC evening
+s sources.search=youtube
+# A source turned off.
+s sources.soundCloud=false
+c !play sc:anything
+e That source is turned off in the panel.
+s sources.soundCloud=true
+# Any other link: the page's title is looked up (here it finds the saved test song).
+c !stop
+c !play http://127.0.0.1:8096/page.html
+e Now playing
+e Test Tone Song
+s sources.pages=false
+c !play http://127.0.0.1:8096/page.html
+e I found nothing to play at that link.
+s sources.pages=true sources.localLinks=false
+c !play http://127.0.0.1:8096/page.html
+e I don't open links into the local network.
+s sources.localLinks=true
+# An audio file plays straight from the web, with the title in its tags.
+c !stop
+c !play http://127.0.0.1:8096/song.mp3
+e Now playing
+e Web Song
+w 2
+N Web Song
+t 1 8
+# Music services: the song is looked up (Spotify: "Tester - test tone", the saved test song).
+c !stop
+c !play https://open.spotify.com/track/abcdefghij1234567890
+e Test Tone Song
+c !play https://www.deezer.com/track/3135556
+e Fake Fake - Deezer Song
+s sources.services=false
+c !play https://www.deezer.com/track/3135556
+e That source is turned off in the panel.
+s sources.services=true
+# A Spotify playlist: the first song plays, the others are looked up and come one by one.
+c !stop
+c !play https://open.spotify.com/playlist/abcdefghij1234567890
+e 2 more songs from [b]Test Mix[/b]
+w 6
+e Done: 3 songs from [b]Test Mix[/b]
+q 2
+# !stop ends a list that is still coming.
+c !stop
+q 0

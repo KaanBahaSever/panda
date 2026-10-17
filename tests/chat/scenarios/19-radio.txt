@@ -1,0 +1,52 @@
+# A radio stream link plays live; what the station plays shows in the panel and the description.
+s announce=false
+c !play http://127.0.0.1:8096/radio
+e Now playing
+e Test FM
+e LIVE
+w 4
+N Song A
+d 📻 Test FM: Test Artist - Song A
+# Playlist files (.m3u, .pls) name the stream.
+c !stop
+c !play http://127.0.0.1:8096/radio.pls
+e Test FM
+c !stop
+c !play http://127.0.0.1:8096/radio.m3u
+e Test FM
+# !fm finds a station on Radio Browser; !fav keeps it; !fm alone lists the favorites.
+c !stop
+c !fm test
+e Now playing
+e Test Station
+w 3
+N Song A
+c !fav
+e is now a favorite station
+c !fm
+e 1.[/b] Test Station
+c !stop
+c !fm 1
+e Test Station
+c !fm nothing like this
+e No radio station called
+# Up to 0.5 !radio was autoplay: alone it still is (with a note); with a name it plays a station.
+c !stop
+c !radio
+e Autoplay on
+e This is now
+c !radio off
+e Autoplay off.
+c !radio test
+e Test Station
+c !autoplay on
+e Autoplay on
+c !otomatik kapat
+e Autoplay off.
+# Radio turned off in the panel.
+c !stop
+s sources.radio=false
+c !fm test
+e That source is turned off in the panel.
+c !play http://127.0.0.1:8096/radio
+e That source is turned off in the panel.

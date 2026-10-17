@@ -2,8 +2,11 @@ namespace Panda;
 
 public sealed record StatsSong(string Id, string Title, string Channel, int Duration, int Plays, long Listened)
 {
-	public string Url => $"https://www.youtube.com/watch?v={Id}";
-	public string Thumbnail => $"https://i.ytimg.com/vi/{Id}/hqdefault.jpg";
+	public string? Source { get; init; }
+	public string? Link { get; init; }
+	public string? Art { get; init; }
+	public string Url => Media.Url(Id, Source, Link);
+	public string? Thumbnail => Media.Thumbnail(Id, Source, Art);
 	public bool IsLive => Duration <= 0;
 }
 
@@ -71,11 +74,11 @@ public sealed class Stats(BotManager bots)
 		foreach (var p in plays) hours[Local(p).Hour]++;
 
 		var topSongs = plays.GroupBy(p => p.Id)
-			.Select(g => { var latest = g.MaxBy(p => p.PlayedAt)!; return new StatsSong(g.Key, latest.Title, latest.Channel, latest.Duration, g.Count(), g.Sum(p => (long)p.Listened)); })
+			.Select(g => { var latest = g.MaxBy(p => p.PlayedAt)!; return new StatsSong(g.Key, latest.Title, latest.Channel, latest.Duration, g.Count(), g.Sum(p => (long)p.Listened)) { Source = latest.Source, Link = latest.Link, Art = latest.Art }; })
 			.OrderByDescending(s => s.Plays).ThenByDescending(s => s.Listened)
 			.Take(Top).ToList();
-		// Radio picks ("📻 Radio", or "📻 Radyo" in Turkish) are nobody's request.
-		var people = plays.Where(p => !p.RequestedBy.StartsWith("📻 ")).ToList();
+		// Autoplay picks ("✨ Autoplay"; up to 0.5 "📻 Radio", "📻 Radyo"...) are nobody's request.
+		var people = plays.Where(p => !p.RequestedBy.StartsWith("📻 ") && !p.RequestedBy.StartsWith("✨ ")).ToList();
 		var topPeople = people.GroupBy(p => p.RequestedBy)
 			.Select(g => new StatsPerson(g.Key, g.Count(), g.Sum(p => (long)p.Listened)))
 			.OrderByDescending(s => s.Plays).ThenByDescending(s => s.Listened)

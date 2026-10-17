@@ -4,6 +4,10 @@ namespace Panda;
 
 public sealed record BotSummary(string Id, string Nickname, string State, string? Song, long Played);
 
+/// <summary>What every bot shares: where songs come from and where they are kept.</summary>
+public sealed record BotShared(YouTube YouTube, Library Library, Playlists Playlists, Sources Sources, SponsorBlock SponsorBlock,
+	RadioBrowser Radios, RadioFavorites Favorites);
+
 /// <summary>One bot: its TeamSpeak connection, its player and its play history.</summary>
 public sealed class BotInstance : IDisposable
 {
@@ -16,15 +20,15 @@ public sealed class BotInstance : IDisposable
 	readonly string sessionPath;
 	readonly ILogger log;
 
-	internal BotInstance(BotConfig config, PandaConfig global, YouTube youtube, Library library, Playlists playlists, string dir, ILoggerFactory logs)
+	internal BotInstance(BotConfig config, PandaConfig global, BotShared s, string dir, ILoggerFactory logs)
 	{
 		Config = config;
 		Directory.CreateDirectory(dir);
 		sessionPath = Path.Combine(dir, "session.json");
 		log = logs.CreateLogger($"Panda.Bot.{config.Id}");
 		History = new PlayHistory(dir, logs.CreateLogger<PlayHistory>());
-		Player = new Player(config, global, youtube, library, History, logs.CreateLogger($"Panda.Player.{config.Id}"));
-		Ts = new TsBot(config, Player, library, youtube, playlists, dir, logs.CreateLogger($"Panda.TsBot.{config.Id}"));
+		Player = new Player(config, global, s.YouTube, s.Library, s.SponsorBlock, History, logs.CreateLogger($"Panda.Player.{config.Id}"));
+		Ts = new TsBot(config, global, Player, s.Library, s.Sources, s.Radios, s.Favorites, s.Playlists, dir, logs.CreateLogger($"Panda.TsBot.{config.Id}"));
 		RestoreSession();
 	}
 
@@ -79,7 +83,7 @@ public sealed class BotInstance : IDisposable
 }
 
 /// <summary>Starts a bot for every entry in config.Bots; bots can be added and removed while running.</summary>
-public sealed class BotManager(PandaConfig config, YouTube youtube, Library library, Playlists playlists, DataPaths paths, ILoggerFactory logs, ILogger<BotManager> log)
+public sealed class BotManager(PandaConfig config, BotShared shared, DataPaths paths, ILoggerFactory logs, ILogger<BotManager> log)
 	: IHostedService, IDisposable
 {
 	readonly object gate = new();
@@ -101,7 +105,7 @@ public sealed class BotManager(PandaConfig config, YouTube youtube, Library libr
 
 	async Task<BotInstance> StartBotAsync(BotConfig c, CancellationToken ct)
 	{
-		var b = new BotInstance(c, config, youtube, library, playlists, paths.BotDir(c.Id), logs);
+		var b = new BotInstance(c, config, shared, paths.BotDir(c.Id), logs);
 		b.Player.Changed += RaiseChanged;
 		b.Ts.StatusChanged += RaiseChanged;
 		lock (gate) bots.Add(b);
@@ -145,7 +149,7 @@ public sealed class BotManager(PandaConfig config, YouTube youtube, Library libr
 			b.Ts.StatusChanged -= RaiseChanged;
 			await b.Ts.StopAsync(CancellationToken.None);
 			b.Dispose();
-			library.Forget(id);
+			shared.Library.Forget(id);
 			try { Directory.Delete(paths.BotDir(id), recursive: true); }
 			catch (Exception ex) { log.LogWarning("Could not delete {Dir}: {Error}", paths.BotDir(id), ex.Message); }
 			log.LogInformation("Removed bot {Id}", id);

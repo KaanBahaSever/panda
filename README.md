@@ -5,7 +5,7 @@
 <h1 align="center">Panda 🐼</h1>
 
 <p align="center">
-  A tiny, cute YouTube music bot for <b>TeamSpeak 6</b> — with a lovely web panel.<br>
+  A tiny, cute music bot for <b>TeamSpeak 6</b> — with a lovely web panel.<br>
   <a href="https://kaanbahasever.github.io/panda/">Website</a> ·
   <a href="README.tr.md">Türkçe</a>
 </p>
@@ -18,8 +18,8 @@
 
 ---
 
-Panda joins your TeamSpeak server and plays music from YouTube. Type `!play` and a song name or link
-in the chat, or use the web panel. No plugins, no scripts, no TeamSpeak client running in the background:
+Panda joins your TeamSpeak server and plays music from YouTube (and SoundCloud, Spotify links, internet
+radio…). Type `!play` and a song name or link in the chat, or use the web panel. No plugins, no scripts, no TeamSpeak client running in the background:
 Panda talks to the server directly, so it stays light: the bot itself uses about 130 MB of RAM, and
 `yt-dlp` + `ffmpeg` only run while a song is playing.
 
@@ -27,14 +27,22 @@ Panda talks to the server directly, so it stays light: the bot itself uses about
 
 ## Features
 
-- 🎵 **YouTube only, done well** — search by name or paste any link: `youtube.com`, `youtu.be`,
-  **YouTube Music**, Shorts. Playlist and album links add just one song (the one in the link,
+- 🎵 **YouTube first** — search by name or paste any link: `youtube.com`, `youtu.be`,
+  **YouTube Music**, Shorts. YouTube playlist links add just one song (the one in the link,
   or the first one of the list) instead of loading the whole list.
+- 🔗 **Links from anywhere** — SoundCloud, Bandcamp, Mixcloud, Vimeo, Twitch and audio files play from
+  there; **Spotify, Apple Music, Deezer and Tidal** links are looked up on YouTube (a Spotify album or
+  playlist comes song by song); any other page: its title is looked up. Each source can be turned off.
+- 📻 **Internet radio** — paste a station's stream link (Icecast/Shoutcast, `.m3u`, `.pls`), or find
+  stations by name, country and genre in the panel (from [Radio Browser](https://www.radio-browser.info/))
+  and with `!fm <name>`. What the station plays shows in the panel and the bot's description.
 - 📚 **Song library** — every song you request is saved on disk. Songs you play again start instantly
   and never touch YouTube again; when the library is full, the least played songs make room.
 - ⚡ **No waiting between songs** — the next songs in the queue are downloaded ahead of time.
-- 📻 **Radio** — when the queue runs out, Panda keeps playing songs like the last one (YouTube's Mix).
-  Off by default; `!radio` or the radio button turns it on.
+- ✨ **Autoplay** — when the queue runs out, Panda keeps playing songs like the last one (YouTube's Mix).
+  Off by default; `!autoplay` or the ✨ button turns it on. (Up to 0.5 this was called "radio".)
+- ⏭️ **SponsorBlock** — skips the parts of a video that aren't music (talk before the song, ads), if you
+  turn it on.
 - 🔊 **Equal loudness** — saved songs are measured once and play equally loud.
 - 📃 **Playlists & favorites** — save the queue or single songs into playlists, play them with
   `!playlist <name>`, star a song with `!fav`.
@@ -67,6 +75,36 @@ Saving can be turned off in **Settings → Library**; Panda then only downloads 
 of time and deletes them after playing.
 
 ![The library in dark mode](docs/library.png)
+
+## Where songs come from
+
+**Settings → Sources** decides where a search looks first (YouTube, YouTube Music or SoundCloud) and
+whether the others are tried when it finds nothing. In the chat, `sc:` and `ytm:` pick one for a search:
+`!play sc:lofi`, `!search ytm:blinding lights`.
+
+| You send | Panda plays |
+|---|---|
+| Words | The best saved song that matches, else the first search result |
+| A YouTube or YouTube Music link | That video |
+| SoundCloud, Bandcamp, Mixcloud, Vimeo, Twitch… (anything [yt-dlp](https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md) knows) | The song from there |
+| An audio file (`.mp3`, `.ogg`…) | The file itself |
+| Spotify, Apple Music, Deezer, Tidal | The same song from YouTube (their audio is protected); albums and playlists of Spotify and Deezer come song by song |
+| A radio stream (Icecast/Shoutcast, `.m3u`, `.pls`, HLS) | The station, live |
+| Any other page | Its title, looked up on YouTube |
+
+Only YouTube songs are saved to the library; songs from elsewhere are played as they come, and autoplay
+follows the last YouTube song. Links into your own network (a router's page, `192.168.x.x`) are refused
+unless **Links into the local network** is on, so nobody can make Panda open them.
+
+**Internet radio**: the 📻 button next to the search opens the radio list (stations from
+[Radio Browser](https://www.radio-browser.info/), a free, open list; Panda plays each station's own stream).
+Star stations to keep them; `!fm` lists the favorites, `!fm <name or number>` plays one, `!fav` while a
+station plays adds it.
+
+**YouTube settings** (Settings → YouTube): max song length, the number of `!search` results, leaving live
+streams or videos under a minute out of searches, audio quality (best, or about 70 kbps to save data),
+SponsorBlock and which parts it skips, the tries when YouTube refuses a song, and autoplay (how many
+recent songs it won't repeat, whether the same artist may come again).
 
 ## Statistics and the System screen
 
@@ -144,17 +182,21 @@ Write them in the bot's channel or in a private message to the bot.
 | `!remove <#>` / `!clear` | `!sil` / `!temizle` | `!retirer` / `!vider` | `!entfernen` / `!leeren` | Remove a song / clear the queue |
 | `!join` | `!gel` | `!viens` | `!komm` | Come to my channel |
 | `!follow` | `!takip` | `!suivre` | `!folgen` | Follow me between channels (again to stop) |
-| `!radio <on\|off>` | `!radyo <aç\|kapat>` | `!radio <oui\|non>` | `!radio <an\|aus>` | Keep playing similar songs when the queue ends |
+| `!autoplay <on\|off>` | `!otomatik <aç\|kapat>` | `!auto <oui\|non>` | `!autoplay <an\|aus>` | Keep playing similar songs when the queue ends |
+| `!fm <name or #>` | `!fm` / `!istasyon` | `!fm` / `!station` | `!fm` / `!sender` | Play an internet radio station; alone: the favorite stations |
 | `!playlist <name>` / `!pl` | `!liste <ad>` | `!playlist` | `!playlist` | Queue a saved playlist |
 | `!playlists` | `!listeler` | `!playlists` | `!playlists` | List saved playlists |
 | `!fav` | `!fav` | `!fav` | `!fav` | Save the song playing to Favorites |
-| `!search <name>` | `!ara` | `!chercher` | `!suchen` | Show 5 results; `!1` … `!5` picks one |
+| `!search <name>` | `!ara` | `!chercher` | `!suchen` | Show the results (5 by default); `!1`, `!2`… picks one |
 | `!seek <1:30 \| +10 \| -10>` | `!sar` | `!aller` | `!spulen` | Jump in the song |
 | `!back` | `!önceki` | `!précédent` | `!zurück` | Play the previous song again |
 | `!skipto <#>` | `!git` | `!allerà` | `!springen` | Jump to a song in the queue |
 | `!move <#> <#>` | `!taşı` | `!déplacer` | `!verschieben` | Move a song in the queue |
 | `!voteskip` | `!oyla` | `!voter` | `!abstimmen` | Vote to skip someone else's song (when voting is on) |
 | `!help` | `!yardım` | `!aide` | `!hilfe` | List commands |
+
+`!radio` (the old name of autoplay) still works for a while: alone or with on/off it is autoplay, with a
+name it plays a station.
 
 ### Who may do what
 
@@ -215,7 +257,7 @@ Everything is editable in the panel; the file is `/var/lib/panda/config.json` (o
       "server": { "address": "127.0.0.1:9987", "password": "", "channel": "Music", "channelPassword": "" },
       "bot": {
         "nickname": "Panda 🐼", "commandPrefix": "!", "language": "en",   // chat replies: "en", "tr", "fr" or "de"
-        "volume": 50, "showSongInDescription": true, "radio": false,
+        "volume": 50, "showSongInDescription": true, "autoplay": false,
         "announce": true,          // post every song in the channel as it starts
         "confirmCommands": true,   // short replies to !play, !skip…; questions and errors are always answered
         "maxQueueLength": 100,
@@ -233,7 +275,14 @@ Everything is editable in the panel; the file is `/var/lib/panda/config.json` (o
   "panel": { "listen": "0.0.0.0", "port": 8080, "users": [ /* set in the panel */ ] },
   "youTube": { "ytDlpPath": "yt-dlp", "ffmpegPath": "ffmpeg", "cookiesFile": "", "maxDurationMinutes": 60,
                 "playAttempts": 3,                                 // tries when YouTube refuses a song
-                "retryPlayerClients": "android_vr,tv,web_safari" },  // yt-dlp clients from the third try on
+                "retryPlayerClients": "android_vr,tv,web_safari",  // yt-dlp clients from the third try on
+                "quality": "best",                                 // or "saver" (about 70 kbps)
+                "searchResults": 5, "hideLive": false, "hideShort": false,
+                "sponsorBlock": false, "sponsorBlockCategories": ["music_offtopic"],   // also sponsor, selfpromo, intro, outro
+                "autoplayNoRepeat": 30, "autoplaySameArtist": true },
+  "sources": { "search": "youtube", "fallback": true,             // or "youtubeMusic", "soundcloud"
+               "youTubeMusic": true, "soundCloud": true, "sites": true, "services": true, "pages": true, "radio": true,
+               "localLinks": false },                              // links into the local network
   "library": { "enabled": true, "maxSizeMb": 5120, "path": "" },   // 0 MB = no limit; empty path = data/library
   "audio": { "normalize": true, "targetLufs": -14 }
 }
@@ -259,6 +308,11 @@ curl -H "Authorization: Bearer pk_..." http://your-server:8080/api/bots
 
 Revoking the key in the panel stops it at once, including open live streams.
 
+A few of the calls: `GET /api/bots/{bot}/state` (what plays, the queue), `POST /api/bots/{bot}/play`
+`{"query": "name or link"}` (for an album or playlist the answer also says how many `more` songs come),
+`POST /api/bots/{bot}/fm` `{"uuid": "<Radio Browser station id>"}`, `GET /api/radio/search?name=&country=&tag=`,
+`POST /api/bots/{bot}/autoplay` `{"on": true}`.
+
 ## Building
 
 ```bash
@@ -270,8 +324,9 @@ bash scripts/build-release.sh linux-x64   # single-file release in dist/
 
 Panda is a C# (.NET 8) app built on [TSLib](https://github.com/Splamy/TS3AudioBot), a TeamSpeak client
 library. TeamSpeak 6 servers send a new license block during the handshake that TSLib didn't understand;
-Panda carries a small patch that reads it (see [`lib/`](lib/README.md)). Audio comes from `yt-dlp`, is
-decoded by `ffmpeg` and encoded to Opus with [Concentus](https://github.com/lostromb/concentus).
+Panda carries a small patch that reads it (see [`lib/`](lib/README.md)). Audio comes from `yt-dlp` (radio
+stations straight from their stream), is decoded by `ffmpeg` and encoded to Opus with
+[Concentus](https://github.com/lostromb/concentus).
 
 ## License
 

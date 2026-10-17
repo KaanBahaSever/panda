@@ -88,6 +88,7 @@ public sealed class Library : IDisposable
 	/// <summary>A local file for this song (saved or prefetched), or null.</summary>
 	public string? GetFile(string id)
 	{
+		if (!Media.IsVideoId(id)) return null;
 		lock (gate)
 		{
 			if (songs.ContainsKey(id) && File.Exists(SongPath(id))) return SongPath(id);
@@ -114,21 +115,6 @@ public sealed class Library : IDisposable
 				.OrderByDescending(s => PlaysOf(s.Id))
 				.FirstOrDefault()?.ToTrack(requestedBy);
 		}
-	}
-
-	/// <summary>Like YouTube.ResolveAsync, but answers from the library when it can (no YouTube request).</summary>
-	public async Task<Track> ResolveAsync(string input, string requestedBy, CancellationToken ct = default)
-	{
-		var clean = YouTube.CleanInput(input);
-		var id = YouTube.ParseVideoId(clean);
-		var local = id != null ? Find(id, requestedBy)
-			: !YouTube.LooksLikeUrl(clean) ? Search(clean, requestedBy) : null;
-		if (local != null)
-		{
-			youtube.CheckLength(local);   // saved before the limit was lowered
-			return local;
-		}
-		return await youtube.ResolveAsync(clean, requestedBy, ct);
 	}
 
 	public LibraryInfo GetInfo(string? query = null, int max = 500)
@@ -211,6 +197,7 @@ public sealed class Library : IDisposable
 
 	public bool Delete(string id)
 	{
+		if (!Media.IsVideoId(id)) return false;
 		lock (gate)
 		{
 			TryDelete(PrefetchPath(id));
@@ -307,7 +294,8 @@ public sealed class Library : IDisposable
 	{
 		lock (gate)
 		{
-			var list = queue.Where(t => !t.IsLive);
+			// Only YouTube songs are saved; songs from elsewhere are played as they come.
+			var list = queue.Where(t => !t.IsLive && t.IsYouTube);
 			wantedBy[bot] = (Enabled ? list : list.Take(PrefetchWhenDisabled)).ToList();
 			MergeWantedLocked();
 			// A prefetch nobody needs any more is cancelled when songs aren't being saved.
@@ -414,7 +402,7 @@ public sealed class Library : IDisposable
 	/// </summary>
 	public string? BeginTee(Track track)
 	{
-		if (track.IsLive || !Enabled) return null;
+		if (track.IsLive || !track.IsYouTube || !Enabled) return null;
 		lock (gate)
 		{
 			if (songs.ContainsKey(track.Id) || !busy.Add(track.Id)) return null;
