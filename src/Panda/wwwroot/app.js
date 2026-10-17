@@ -25,10 +25,10 @@ const I18N = {
     sConn: 'Connection', sConnHint: 'Changing these makes the bot reconnect.', sAddress: 'Server address', sServerPw: 'Server password',
     sChannel: 'Channel', sChannelHint: 'Path like "Music/Lounge" or an id like "/5". Empty = default channel.', sChannelPw: 'Channel password',
     sNick: 'Nickname', removePw: 'Remove password', unchanged: 'unchanged', sBot: 'Bot', sLang: 'Chat language', sPrefix: 'Command prefix',
-    sAnnounce: 'Announce each song in chat', sConfirm: 'Confirm chat commands', sVoteSkip: 'Skip by vote', sVoteSkipHint: '!skip from someone else is a vote; half of the people in the bot\'s channel skip the song. Whoever asked for it can always skip it, and the panel skips at once.',
+    sAnnounce: 'Announce each song in chat', sConfirm: 'Confirm chat commands',
     sChatHint: 'Announcing posts every song as it starts. Confirmations are the short replies to commands like !play and !skip. Questions (!np, !queue, !help) and errors are always answered.', sDesc: 'Show song in bot description', sMaxQueue: 'Max queue length', sMaxDur: 'Max song length (min)',
-    sMaxDurHint: '0 = unlimited.', sPerUser: 'Songs per person', sPerUserHint: 'How many songs one person can have waiting in the queue. 0 = no limit. Panel admins aren\'t limited.', 'err.user-limit': 'You already have as many songs waiting as allowed. Add more when one has played.', sMaxDurShared: 'Max song length is shared by all bots.', sUsers: 'Allowed users', sUsersHint: 'One TeamSpeak unique ID per line. Empty = everyone.',
-    sGroups: 'Allowed server groups', sGroupsHint: 'Comma-separated group ids. Empty = no group restriction.', save: 'Save', reconnect: 'Reconnect bot',
+    sMaxDurHint: '0 = unlimited.', sPerUser: 'Songs per person', sPerUserHint: 'How many songs one person can have waiting in the queue. 0 = no limit. DJs and admins aren\'t limited.', 'err.user-limit': 'You already have as many songs waiting as allowed. Add more when one has played.', sMaxDurShared: 'Max song length is shared by all bots.',
+    save: 'Save', reconnect: 'Reconnect bot',
     sCookies: 'YouTube cookies', sCookiesHelp: 'If YouTube says "confirm you\'re not a bot": open a private/incognito window, log in to YouTube, export cookies with a "cookies.txt" browser extension, paste them here, then close that window.',
     chooseFile: 'Choose file', saveCookies: 'Save cookies', removeCookies: 'Remove cookies', cookiesOn: 'Cookies set ✓', cookiesOff: 'No cookies',
     sPanelPw: 'Panel password', pwCurrent: 'Current password', pwNew: 'New password (min 6)', pwChange: 'Change password',
@@ -86,6 +86,8 @@ const I18N = {
     stats: 'Statistics', statsRange: 'Period', last7: 'Last 7 days', last30: 'Last 30 days', last365: 'Last year', allTime: 'All time',
     thisBot: 'This bot', allBots: 'All bots', statsEmpty: 'Nothing was played in this period.', sPlays: 'plays', sListened: 'listened',
     sSongs: 'different songs', sPeople: 'people', topSongs: 'Most played', topPeople: 'Who asked the most', activity: 'Activity', byHour: 'By hour of day',
+    sPerm: "Chat permissions", sEveryone: "Everyone on the server can use the bot", sEveryoneHint: "When off, only DJs and admins can.", sAdmins: "Admins (everything)", sDjs: "DJs", sBlocked: "Blocked", sPeopleHint: "Pick people or server groups from the server, or paste a unique ID. Chat admins and DJs are not the panel's users.", addPerson: "Add", pickTitle: "Add from the server", pickSearch: "Search people and groups", pickGroups: "Server groups", pickPeople: "Online now", pickUid: "Or paste a unique ID", pickOffline: "The bot isn't connected; you can still paste a unique ID.", pickNoGroups: "The bot can't see the server groups (b_virtualserver_servergroup_list).", noOne: "Nobody yet", sOthers: "Who may skip, remove or move other people's songs", lvlEveryone: "Everyone", lvlDj: "DJs and admins", lvlAdmin: "Admins only", sVoteSkip: "The others can vote to skip", sVoteSkipHint: "People who may not skip someone else's song vote with !skip; it's skipped when half of the bot's channel voted. Whoever asked for a song can always skip it, and the panel skips at once.", sOnlyChannel: "Only people in the bot's channel can give commands", sOnlyChannelHint: "Admins can from anywhere; questions like !np are always answered.", sCmdLevels: "Who may use each command", sRecommended: "Use the recommended setup", sRecommendedHint: "Adding songs and voting for everyone; pausing, volume, the queue and the rest for DJs. Save to keep it.", sChecks: "The bot's permissions on the server", sChecksHint: "What the bot can do with its server group's permissions. \"Not tried yet\" fills in as the bot is used.", pcOk: "Works", pcUnknown: "Not tried yet", pcOffline: "The bot isn't connected.", refresh: "Refresh", sKeys: "API keys", sKeysHint: "For programs that use Panda without logging in (a script, a management panel). They send the key as \"Authorization: Bearer <key>\" and get the role's rights.", keyName: "Name", addKey: "Make a key", keyShown: "Copy the key now; it won't be shown again.", copy: "Copy", copied: "Copied", keyMade: "Key made", keyRevoked: "Key revoked", keyNever: "Never used", revoke: "Revoke", "err.bad-key-name": "Key names are 1–40 characters.", "err.too-many-keys": "There are already 50 keys.", "pc.talk": "Be heard in the channel", "pc.chat": "Write in the chat", "pc.description": "Show the song in its description", "pc.move": "Change channels (!join, !follow)", "pc.groups": "See the server groups", "cmd.play": "Add a song", "cmd.search": "Search and pick", "cmd.playnow": "Play right away", "cmd.skip": "Skip (own song, or vote)", "cmd.remove": "Remove from the queue", "cmd.move": "Move in the queue", "cmd.skipto": "Jump to a song", "cmd.back": "Previous song", "cmd.seek": "Wind the song", "cmd.pause": "Pause and resume", "cmd.stop": "Stop and clear", "cmd.clear": "Clear the queue", "cmd.shuffle": "Shuffle", "cmd.loop": "Repeat", "cmd.vol": "Volume", "cmd.radio": "Radio", "cmd.playlist": "Play a saved playlist", "cmd.fav": "Save to Favorites", "cmd.join": "Come to my channel", "cmd.follow": "Follow me",
+    pcMissing: x => `Missing: give the bot's server group ${x}.`, pcTalk: (h, n) => `Talk power ${h}, the channel needs ${n}.`, confirmKeyRevoke: x => `Revoke the key "${x}"? Programs using it stop working.`, keyUsed: x => `Last used ${x}`
   },
   tr: {
     loginHint: 'Sevimli TeamSpeak DJ\'in', password: 'Şifre', login: 'Giriş yap', language: 'Dil: Türkçe (Français\'ye geç)',
@@ -109,10 +111,10 @@ const I18N = {
     sConn: 'Bağlantı', sConnHint: 'Bunları değiştirmek botun yeniden bağlanmasına yol açar.', sAddress: 'Sunucu adresi', sServerPw: 'Sunucu şifresi',
     sChannel: 'Kanal', sChannelHint: '"Müzik/Lounge" gibi bir yol ya da "/5" gibi bir id. Boş = varsayılan kanal.', sChannelPw: 'Kanal şifresi',
     sNick: 'Takma ad', removePw: 'Şifreyi kaldır', unchanged: 'değişmedi', sBot: 'Bot', sLang: 'Sohbet dili', sPrefix: 'Komut öneki',
-    sAnnounce: 'Her şarkıyı sohbette duyur', sConfirm: 'Sohbet komutlarını onayla', sVoteSkip: 'Oylamayla geç', sVoteSkipHint: 'Başkasının yazdığı !geç bir oy sayılır; botun kanalındakilerin yarısı oy verince şarkı geçilir. Şarkıyı isteyen kişi her zaman geçebilir, panel de hemen geçer.',
+    sAnnounce: 'Her şarkıyı sohbette duyur', sConfirm: 'Sohbet komutlarını onayla',
     sChatHint: 'Duyuru, her şarkı başlarken kanala yazılır. Onay, !çal ve !geç gibi komutlara verilen kısa cevaptır. Sorular (!şimdi, !sıra, !yardım) ve hatalar her zaman cevaplanır.', sDesc: 'Şarkıyı bot açıklamasında göster', sMaxQueue: 'En fazla sıra uzunluğu', sMaxDur: 'En uzun şarkı (dk)',
-    sMaxDurHint: '0 = sınırsız.', sPerUser: 'Kişi başı şarkı', sPerUserHint: 'Bir kişinin sırada aynı anda bekleyebilecek şarkı sayısı. 0 = sınır yok. Panel yöneticileri sınırlanmaz.', 'err.user-limit': 'Sırada izin verilen sayıda bekleyen şarkınız var. Biri çalınca yenisini ekleyebilirsiniz.', sMaxDurShared: 'En uzun şarkı süresi tüm botlar için geçerli.', sUsers: 'İzinli kullanıcılar', sUsersHint: 'Her satıra bir TeamSpeak benzersiz kimliği. Boş = herkes.',
-    sGroups: 'İzinli sunucu grupları', sGroupsHint: 'Virgülle ayrılmış grup id\'leri. Boş = grup kısıtlaması yok.', save: 'Kaydet', reconnect: 'Botu yeniden bağla',
+    sMaxDurHint: '0 = sınırsız.', sPerUser: 'Kişi başı şarkı', sPerUserHint: 'Bir kişinin sırada aynı anda bekleyebilecek şarkı sayısı. 0 = sınır yok. DJ\'ler ve yöneticiler sınırlanmaz.', 'err.user-limit': 'Sırada izin verilen sayıda bekleyen şarkınız var. Biri çalınca yenisini ekleyebilirsiniz.', sMaxDurShared: 'En uzun şarkı süresi tüm botlar için geçerli.',
+    save: 'Kaydet', reconnect: 'Botu yeniden bağla',
     sCookies: 'YouTube çerezleri', sCookiesHelp: 'YouTube "bot olmadığınızı doğrulayın" derse: gizli/özel bir pencere açın, YouTube\'a giriş yapın, bir "cookies.txt" tarayıcı eklentisiyle çerezleri dışa aktarın, buraya yapıştırın ve o pencereyi kapatın.',
     chooseFile: 'Dosya seç', saveCookies: 'Çerezleri kaydet', removeCookies: 'Çerezleri kaldır', cookiesOn: 'Çerezler var ✓', cookiesOff: 'Çerez yok',
     sPanelPw: 'Panel şifresi', pwCurrent: 'Mevcut şifre', pwNew: 'Yeni şifre (en az 6)', pwChange: 'Şifreyi değiştir',
@@ -170,6 +172,8 @@ const I18N = {
     stats: 'İstatistikler', statsRange: 'Aralık', last7: 'Son 7 gün', last30: 'Son 30 gün', last365: 'Son 1 yıl', allTime: 'Tüm zamanlar',
     thisBot: 'Bu bot', allBots: 'Tüm botlar', statsEmpty: 'Bu aralıkta bir şey çalınmadı.', sPlays: 'çalma', sListened: 'dinlendi',
     sSongs: 'farklı şarkı', sPeople: 'kişi', topSongs: 'En çok çalınanlar', topPeople: 'En çok isteyenler', activity: 'Hareketlilik', byHour: 'Saatlere göre',
+    sPerm: "Sohbet yetkileri", sEveryone: "Sunucudaki herkes botu kullanabilir", sEveryoneHint: "Kapalıyken sadece DJ'ler ve yöneticiler kullanabilir.", sAdmins: "Yöneticiler (her şey)", sDjs: "DJ'ler", sBlocked: "Engellenenler", sPeopleHint: "Sunucudaki kişileri ya da sunucu gruplarını seçin veya benzersiz kimlik yapıştırın. Sohbetteki yöneticiler ve DJ'ler panel kullanıcılarından ayrıdır.", addPerson: "Ekle", pickTitle: "Sunucudan ekle", pickSearch: "Kişi ve grup ara", pickGroups: "Sunucu grupları", pickPeople: "Şu an çevrimiçi", pickUid: "Ya da benzersiz kimlik yapıştırın", pickOffline: "Bot bağlı değil; yine de benzersiz kimlik yapıştırabilirsiniz.", pickNoGroups: "Bot sunucu gruplarını göremiyor (b_virtualserver_servergroup_list).", noOne: "Henüz kimse yok", sOthers: "Başkalarının şarkılarını kim geçebilir, silebilir, taşıyabilir", lvlEveryone: "Herkes", lvlDj: "DJ'ler ve yöneticiler", lvlAdmin: "Sadece yöneticiler", sVoteSkip: "Diğerleri geçmek için oy verebilir", sVoteSkipHint: "Başkasının şarkısını geçemeyenler !geç ile oy verir; botun kanalındakilerin yarısı oy verince şarkı geçilir. Şarkıyı isteyen her zaman geçebilir, panel de hemen geçer.", sOnlyChannel: "Komutları sadece botun kanalındakiler verebilir", sOnlyChannelHint: "Yöneticiler her yerden verebilir; !şimdi gibi sorular her zaman cevaplanır.", sCmdLevels: "Hangi komutu kim kullanabilir", sRecommended: "Önerilen ayarı kullan", sRecommendedHint: "Şarkı ekleme ve oylama herkese; duraklatma, ses, sıra ve gerisi DJ'lere. Kalması için kaydedin.", sChecks: "Botun sunucudaki izinleri", sChecksHint: "Botun, sunucu grubunun izinleriyle neler yapabildiği. \"Henüz denenmedi\" yazanlar bot kullanıldıkça dolar.", pcOk: "Çalışıyor", pcUnknown: "Henüz denenmedi", pcOffline: "Bot bağlı değil.", refresh: "Yenile", sKeys: "API anahtarları", sKeysHint: "Panda'yı giriş yapmadan kullanan programlar için (bir betik, bir yönetim paneli). Anahtarı \"Authorization: Bearer <anahtar>\" olarak gönderirler ve rolün yetkilerini alırlar.", keyName: "Ad", addKey: "Anahtar oluştur", keyShown: "Anahtarı şimdi kopyalayın; bir daha gösterilmeyecek.", copy: "Kopyala", copied: "Kopyalandı", keyMade: "Anahtar oluşturuldu", keyRevoked: "Anahtar iptal edildi", keyNever: "Hiç kullanılmadı", revoke: "İptal et", "err.bad-key-name": "Anahtar adı 1–40 karakter olmalı.", "err.too-many-keys": "Zaten 50 anahtar var.", "pc.talk": "Kanalda duyulmak", "pc.chat": "Sohbete yazmak", "pc.description": "Şarkıyı açıklamasında göstermek", "pc.move": "Kanal değiştirmek (!gel, !takip)", "pc.groups": "Sunucu gruplarını görmek", "cmd.play": "Şarkı ekle", "cmd.search": "Ara ve seç", "cmd.playnow": "Hemen çal", "cmd.skip": "Geç (kendi şarkısı ya da oy)", "cmd.remove": "Sıradan sil", "cmd.move": "Sırada taşı", "cmd.skipto": "Bir şarkıya atla", "cmd.back": "Önceki şarkı", "cmd.seek": "İleri geri sar", "cmd.pause": "Duraklat ve devam", "cmd.stop": "Durdur ve temizle", "cmd.clear": "Sırayı temizle", "cmd.shuffle": "Karıştır", "cmd.loop": "Tekrar", "cmd.vol": "Ses", "cmd.radio": "Radyo", "cmd.playlist": "Kayıtlı listeyi çal", "cmd.fav": "Favorilere kaydet", "cmd.join": "Kanalıma gel", "cmd.follow": "Beni takip et",
+    pcMissing: x => `Eksik: botun sunucu grubuna ${x} iznini verin.`, pcTalk: (h, n) => `Konuşma gücü ${h}, kanal ${n} istiyor.`, confirmKeyRevoke: x => `"${x}" anahtarı iptal edilsin mi? Onu kullanan programlar çalışmayı bırakır.`, keyUsed: x => `Son kullanım: ${x}`
   },
   fr: {
     loginHint: 'Votre DJ TeamSpeak douillet', password: 'Mot de passe', login: 'Se connecter', language: 'Langue : français (passer à Deutsch)',
@@ -193,10 +197,10 @@ const I18N = {
     sConn: 'Connexion', sConnHint: 'Modifier ces champs reconnecte le bot.', sAddress: 'Adresse du serveur', sServerPw: 'Mot de passe du serveur',
     sChannel: 'Canal', sChannelHint: 'Un chemin comme « Musique/Salon » ou un id comme « /5 ». Vide = canal par défaut.', sChannelPw: 'Mot de passe du canal',
     sNick: 'Pseudo', removePw: 'Supprimer le mot de passe', unchanged: 'inchangé', sBot: 'Bot', sLang: 'Langue du chat', sPrefix: 'Préfixe des commandes',
-    sAnnounce: 'Annoncer chaque morceau dans le chat', sConfirm: 'Confirmer les commandes du chat', sVoteSkip: 'Passer par vote', sVoteSkipHint: 'Un !passer d\'une autre personne compte comme un vote ; le morceau est passé quand la moitié du canal du bot a voté. Celui qui l\'a demandé peut toujours le passer, et le panneau le passe tout de suite.',
+    sAnnounce: 'Annoncer chaque morceau dans le chat', sConfirm: 'Confirmer les commandes du chat',
     sChatHint: 'L\'annonce publie chaque morceau quand il commence. Les confirmations sont les réponses courtes aux commandes comme !jouer et !passer. Les questions (!encours, !file, !aide) et les erreurs reçoivent toujours une réponse.', sDesc: 'Afficher le morceau dans la description du bot', sMaxQueue: 'Longueur max. de la file', sMaxDur: 'Durée max. d\'un morceau (min)',
-    sMaxDurHint: '0 = illimitée.', sPerUser: 'Morceaux par personne', sPerUserHint: 'Combien de morceaux une personne peut avoir en attente dans la file. 0 = pas de limite. Les admins du panneau ne sont pas limités.', 'err.user-limit': 'Vous avez déjà autant de morceaux en attente que permis. Ajoutez-en quand l\'un d\'eux aura été joué.', sMaxDurShared: 'La durée max. d\'un morceau est commune à tous les bots.', sUsers: 'Utilisateurs autorisés', sUsersHint: 'Un identifiant unique TeamSpeak par ligne. Vide = tout le monde.',
-    sGroups: 'Groupes de serveur autorisés', sGroupsHint: 'Ids de groupes séparés par des virgules. Vide = aucune restriction de groupe.', save: 'Enregistrer', reconnect: 'Reconnecter le bot',
+    sMaxDurHint: '0 = illimitée.', sPerUser: 'Morceaux par personne', sPerUserHint: 'Combien de morceaux une personne peut avoir en attente dans la file. 0 = pas de limite. Les DJ et les admins ne sont pas limités.', 'err.user-limit': 'Vous avez déjà autant de morceaux en attente que permis. Ajoutez-en quand l\'un d\'eux aura été joué.', sMaxDurShared: 'La durée max. d\'un morceau est commune à tous les bots.',
+    save: 'Enregistrer', reconnect: 'Reconnecter le bot',
     sCookies: 'Cookies YouTube', sCookiesHelp: 'Si YouTube demande de « confirmer que vous n\'êtes pas un robot » : ouvrez une fenêtre de navigation privée, connectez-vous à YouTube, exportez les cookies avec une extension « cookies.txt », collez-les ici, puis fermez cette fenêtre.',
     chooseFile: 'Choisir un fichier', saveCookies: 'Enregistrer les cookies', removeCookies: 'Supprimer les cookies', cookiesOn: 'Cookies présents ✓', cookiesOff: 'Aucun cookie',
     sPanelPw: 'Mot de passe du panneau', pwCurrent: 'Mot de passe actuel', pwNew: 'Nouveau mot de passe (6 caractères min.)', pwChange: 'Changer le mot de passe',
@@ -254,6 +258,8 @@ const I18N = {
     stats: 'Statistiques', statsRange: 'Période', last7: '7 derniers jours', last30: '30 derniers jours', last365: 'Dernière année', allTime: 'Depuis le début',
     thisBot: 'Ce bot', allBots: 'Tous les bots', statsEmpty: 'Rien n\'a été joué sur cette période.', sPlays: 'écoutes', sListened: 'd\'écoute',
     sSongs: 'morceaux différents', sPeople: 'personnes', topSongs: 'Les plus joués', topPeople: 'Ceux qui en demandent le plus', activity: 'Activité', byHour: 'Par heure de la journée',
+    sPerm: "Droits dans le chat", sEveryone: "Tout le monde sur le serveur peut utiliser le bot", sEveryoneHint: "Désactivé, seuls les DJ et les admins le peuvent.", sAdmins: "Admins (tout)", sDjs: "DJ", sBlocked: "Bloqués", sPeopleHint: "Choisissez des personnes ou des groupes du serveur, ou collez un identifiant unique. Les admins et DJ du chat ne sont pas les utilisateurs du panneau.", addPerson: "Ajouter", pickTitle: "Ajouter depuis le serveur", pickSearch: "Chercher des personnes et des groupes", pickGroups: "Groupes du serveur", pickPeople: "En ligne", pickUid: "Ou collez un identifiant unique", pickOffline: "Le bot n'est pas connecté ; vous pouvez quand même coller un identifiant unique.", pickNoGroups: "Le bot ne voit pas les groupes du serveur (b_virtualserver_servergroup_list).", noOne: "Personne pour l'instant", sOthers: "Qui peut passer, retirer ou déplacer les morceaux des autres", lvlEveryone: "Tout le monde", lvlDj: "DJ et admins", lvlAdmin: "Admins seulement", sVoteSkip: "Les autres peuvent voter pour passer", sVoteSkipHint: "Ceux qui ne peuvent pas passer le morceau d'un autre votent avec !passer ; il est passé quand la moitié du canal du bot a voté. Celui qui l'a demandé peut toujours le passer, et le panneau le passe tout de suite.", sOnlyChannel: "Seules les personnes dans le canal du bot peuvent donner des commandes", sOnlyChannelHint: "Les admins le peuvent de partout ; les questions comme !encours ont toujours une réponse.", sCmdLevels: "Qui peut utiliser chaque commande", sRecommended: "Utiliser la configuration recommandée", sRecommendedHint: "Ajouter des morceaux et voter pour tout le monde ; pause, volume, file et le reste pour les DJ. Enregistrez pour la garder.", sChecks: "Droits du bot sur le serveur", sChecksHint: "Ce que le bot peut faire avec les droits de son groupe. « Pas encore essayé » se remplit à l'usage.", pcOk: "Fonctionne", pcUnknown: "Pas encore essayé", pcOffline: "Le bot n'est pas connecté.", refresh: "Actualiser", sKeys: "Clés d'API", sKeysHint: "Pour les programmes qui utilisent Panda sans se connecter (un script, un panneau de gestion). Ils envoient la clé en « Authorization: Bearer <clé> » et ont les droits du rôle.", keyName: "Nom", addKey: "Créer une clé", keyShown: "Copiez la clé maintenant ; elle ne sera plus affichée.", copy: "Copier", copied: "Copié", keyMade: "Clé créée", keyRevoked: "Clé révoquée", keyNever: "Jamais utilisée", revoke: "Révoquer", "err.bad-key-name": "Un nom de clé fait 1 à 40 caractères.", "err.too-many-keys": "Il y a déjà 50 clés.", "pc.talk": "Être entendu dans le canal", "pc.chat": "Écrire dans le chat", "pc.description": "Afficher le morceau dans sa description", "pc.move": "Changer de canal (!viens, !suivre)", "pc.groups": "Voir les groupes du serveur", "cmd.play": "Ajouter un morceau", "cmd.search": "Chercher et choisir", "cmd.playnow": "Lire tout de suite", "cmd.skip": "Passer (son morceau, ou voter)", "cmd.remove": "Retirer de la file", "cmd.move": "Déplacer dans la file", "cmd.skipto": "Aller à un morceau", "cmd.back": "Morceau précédent", "cmd.seek": "Avancer ou reculer", "cmd.pause": "Pause et reprise", "cmd.stop": "Arrêter et vider", "cmd.clear": "Vider la file", "cmd.shuffle": "Mélanger", "cmd.loop": "Répétition", "cmd.vol": "Volume", "cmd.radio": "Radio", "cmd.playlist": "Lire une playlist enregistrée", "cmd.fav": "Enregistrer dans les Favoris", "cmd.join": "Viens dans mon canal", "cmd.follow": "Suis-moi",
+    pcMissing: x => `Manquant : donnez ${x} au groupe du bot.`, pcTalk: (h, n) => `Puissance de parole ${h}, le canal demande ${n}.`, confirmKeyRevoke: x => `Révoquer la clé « ${x} » ? Les programmes qui l'utilisent cesseront de fonctionner.`, keyUsed: x => `Dernière utilisation : ${x}`
   },
   de: {
     loginHint: 'Dein gemütlicher TeamSpeak-DJ', password: 'Passwort', login: 'Anmelden', language: 'Sprache: Deutsch (zu English wechseln)',
@@ -277,10 +283,10 @@ const I18N = {
     sConn: 'Verbindung', sConnHint: 'Änderungen hier verbinden den Bot neu.', sAddress: 'Serveradresse', sServerPw: 'Serverpasswort',
     sChannel: 'Channel', sChannelHint: 'Ein Pfad wie „Musik/Lounge“ oder eine ID wie „/5“. Leer = Standard-Channel.', sChannelPw: 'Channel-Passwort',
     sNick: 'Nickname', removePw: 'Passwort entfernen', unchanged: 'unverändert', sBot: 'Bot', sLang: 'Chat-Sprache', sPrefix: 'Befehlspräfix',
-    sAnnounce: 'Jeden Song im Chat ankündigen', sConfirm: 'Chat-Befehle bestätigen', sVoteSkip: 'Per Abstimmung überspringen', sVoteSkipHint: 'Ein !überspringen von jemand anderem zählt als Stimme; der Song wird übersprungen, wenn die Hälfte der Leute im Channel des Bots abgestimmt hat. Wer ihn gewünscht hat, kann ihn immer überspringen, und das Panel überspringt sofort.',
+    sAnnounce: 'Jeden Song im Chat ankündigen', sConfirm: 'Chat-Befehle bestätigen',
     sChatHint: 'Ankündigungen posten jeden Song, wenn er beginnt. Bestätigungen sind die kurzen Antworten auf Befehle wie !spielen und !überspringen. Fragen (!läuft, !warteschlange, !hilfe) und Fehler werden immer beantwortet.', sDesc: 'Song in der Bot-Beschreibung zeigen', sMaxQueue: 'Max. Länge der Warteschlange', sMaxDur: 'Max. Songlänge (Min.)',
-    sMaxDurHint: '0 = unbegrenzt.', sPerUser: 'Songs pro Person', sPerUserHint: 'Wie viele Songs eine Person gleichzeitig in der Warteschlange haben darf. 0 = kein Limit. Panel-Admins sind nicht begrenzt.', 'err.user-limit': 'Du hast schon so viele Songs in der Warteschlange wie erlaubt. Füg neue hinzu, wenn einer gespielt wurde.', sMaxDurShared: 'Die max. Songlänge gilt für alle Bots.', sUsers: 'Erlaubte Nutzer', sUsersHint: 'Eine TeamSpeak-Unique-ID pro Zeile. Leer = alle.',
-    sGroups: 'Erlaubte Servergruppen', sGroupsHint: 'Gruppen-IDs, durch Kommas getrennt. Leer = keine Gruppenbeschränkung.', save: 'Speichern', reconnect: 'Bot neu verbinden',
+    sMaxDurHint: '0 = unbegrenzt.', sPerUser: 'Songs pro Person', sPerUserHint: 'Wie viele Songs eine Person gleichzeitig in der Warteschlange haben darf. 0 = kein Limit. DJs und Admins sind nicht begrenzt.', 'err.user-limit': 'Du hast schon so viele Songs in der Warteschlange wie erlaubt. Füg neue hinzu, wenn einer gespielt wurde.', sMaxDurShared: 'Die max. Songlänge gilt für alle Bots.',
+    save: 'Speichern', reconnect: 'Bot neu verbinden',
     sCookies: 'YouTube-Cookies', sCookiesHelp: 'Wenn YouTube „Bestätige, dass du kein Bot bist“ sagt: Öffne ein privates Fenster, melde dich bei YouTube an, exportiere die Cookies mit einer „cookies.txt“-Browsererweiterung, füge sie hier ein und schließ das Fenster.',
     chooseFile: 'Datei wählen', saveCookies: 'Cookies speichern', removeCookies: 'Cookies entfernen', cookiesOn: 'Cookies gesetzt ✓', cookiesOff: 'Keine Cookies',
     sPanelPw: 'Panel-Passwort', pwCurrent: 'Aktuelles Passwort', pwNew: 'Neues Passwort (min. 6)', pwChange: 'Passwort ändern',
@@ -338,6 +344,8 @@ const I18N = {
     stats: 'Statistiken', statsRange: 'Zeitraum', last7: 'Letzte 7 Tage', last30: 'Letzte 30 Tage', last365: 'Letztes Jahr', allTime: 'Gesamte Zeit',
     thisBot: 'Dieser Bot', allBots: 'Alle Bots', statsEmpty: 'In diesem Zeitraum wurde nichts gespielt.', sPlays: 'Wiedergaben', sListened: 'gehört',
     sSongs: 'verschiedene Songs', sPeople: 'Personen', topSongs: 'Meistgespielt', topPeople: 'Wer am meisten gewünscht hat', activity: 'Aktivität', byHour: 'Nach Tageszeit',
+    sPerm: "Rechte im Chat", sEveryone: "Alle auf dem Server können den Bot benutzen", sEveryoneHint: "Wenn aus, nur DJs und Admins.", sAdmins: "Admins (alles)", sDjs: "DJs", sBlocked: "Gesperrt", sPeopleHint: "Wähl Leute oder Servergruppen vom Server oder füg eine Unique-ID ein. Admins und DJs im Chat sind nicht die Nutzer des Panels.", addPerson: "Hinzufügen", pickTitle: "Vom Server hinzufügen", pickSearch: "Leute und Gruppen suchen", pickGroups: "Servergruppen", pickPeople: "Gerade online", pickUid: "Oder eine Unique-ID einfügen", pickOffline: "Der Bot ist nicht verbunden; eine Unique-ID kannst du trotzdem einfügen.", pickNoGroups: "Der Bot sieht die Servergruppen nicht (b_virtualserver_servergroup_list).", noOne: "Noch niemand", sOthers: "Wer Songs anderer überspringen, entfernen oder verschieben darf", lvlEveryone: "Alle", lvlDj: "DJs und Admins", lvlAdmin: "Nur Admins", sVoteSkip: "Die anderen können fürs Überspringen abstimmen", sVoteSkipHint: "Wer Songs anderer nicht überspringen darf, stimmt mit !überspringen ab; der Song wird übersprungen, wenn die Hälfte der Leute im Channel des Bots abgestimmt hat. Wer ihn gewünscht hat, kann ihn immer überspringen, und das Panel überspringt sofort.", sOnlyChannel: "Nur Leute im Channel des Bots können Befehle geben", sOnlyChannelHint: "Admins können es von überall; Fragen wie !läuft werden immer beantwortet.", sCmdLevels: "Wer welchen Befehl benutzen darf", sRecommended: "Empfohlene Einstellung verwenden", sRecommendedHint: "Songs hinzufügen und abstimmen für alle; Pause, Lautstärke, Warteschlange und der Rest für DJs. Zum Behalten speichern.", sChecks: "Rechte des Bots auf dem Server", sChecksHint: "Was der Bot mit den Rechten seiner Servergruppe kann. „Noch nicht versucht“ füllt sich, während der Bot benutzt wird.", pcOk: "Geht", pcUnknown: "Noch nicht versucht", pcOffline: "Der Bot ist nicht verbunden.", refresh: "Aktualisieren", sKeys: "API-Schlüssel", sKeysHint: "Für Programme, die Panda ohne Anmeldung benutzen (ein Skript, ein Verwaltungspanel). Sie senden den Schlüssel als „Authorization: Bearer <Schlüssel>“ und bekommen die Rechte der Rolle.", keyName: "Name", addKey: "Schlüssel erstellen", keyShown: "Kopier den Schlüssel jetzt; er wird nicht noch einmal gezeigt.", copy: "Kopieren", copied: "Kopiert", keyMade: "Schlüssel erstellt", keyRevoked: "Schlüssel widerrufen", keyNever: "Noch nie benutzt", revoke: "Widerrufen", "err.bad-key-name": "Schlüsselnamen haben 1–40 Zeichen.", "err.too-many-keys": "Es gibt schon 50 Schlüssel.", "pc.talk": "Im Channel zu hören sein", "pc.chat": "Im Chat schreiben", "pc.description": "Den Song in der Beschreibung zeigen", "pc.move": "Den Channel wechseln (!komm, !folgen)", "pc.groups": "Die Servergruppen sehen", "cmd.play": "Song hinzufügen", "cmd.search": "Suchen und wählen", "cmd.playnow": "Sofort abspielen", "cmd.skip": "Überspringen (eigener Song oder abstimmen)", "cmd.remove": "Aus der Warteschlange entfernen", "cmd.move": "In der Warteschlange verschieben", "cmd.skipto": "Zu einem Song springen", "cmd.back": "Voriger Song", "cmd.seek": "Spulen", "cmd.pause": "Pause und weiter", "cmd.stop": "Stoppen und leeren", "cmd.clear": "Warteschlange leeren", "cmd.shuffle": "Mischen", "cmd.loop": "Wiederholen", "cmd.vol": "Lautstärke", "cmd.radio": "Radio", "cmd.playlist": "Gespeicherte Playlist abspielen", "cmd.fav": "In Favoriten speichern", "cmd.join": "Komm in meinen Channel", "cmd.follow": "Folge mir",
+    pcMissing: x => `Fehlt: gib der Servergruppe des Bots ${x}.`, pcTalk: (h, n) => `Sprechkraft ${h}, der Channel braucht ${n}.`, confirmKeyRevoke: x => `Den Schlüssel „${x}“ widerrufen? Programme, die ihn benutzen, funktionieren dann nicht mehr.`, keyUsed: x => `Zuletzt benutzt: ${x}`
   },
 };
 
@@ -1033,6 +1041,7 @@ async function openSettings() {
     const s = await act(() => api('GET', SB('/settings')));
     if (s && settingsBot === botId) fillSettings(s);
     loadUsers();
+    loadKeys();
   }
   await v;
 }
@@ -1068,6 +1077,38 @@ async function loadUsers() {
     return el('li', {}, el('span', { class: 'nm', text: u.name }, self && el('span', { class: 'you', text: ' ' + t('you') })), role, pw, del);
   }));
 }
+async function loadKeys() {
+  const list = await act(() => api('GET', '/api/apikeys'));
+  if (!list) return;
+  $('key-list').replaceChildren(...list.map(k => {
+    const del = el('button', { class: 'btn ghost sm danger', type: 'button' }, el('span', { text: t('revoke') }));
+    del.addEventListener('click', async () => {
+      if (!(await confirmBox(t('confirmKeyRevoke', k.name)))) return;
+      const ok = await act(() => api('DELETE', '/api/apikeys/' + encodeURIComponent(k.id)).then(() => true), t('keyRevoked'));
+      if (ok) loadKeys();
+    });
+    return el('li', {}, el('span', { class: 'nm', text: k.name }),
+      el('span', { class: 'when', text: k.lastUsed ? t('keyUsed', playedAt(k.lastUsed)) : t('keyNever') }),
+      el('span', { class: 'chip', text: t(k.role === 'admin' ? 'roleAdmin' : 'roleDj') }), del);
+  }));
+}
+$('key-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const f = e.target.elements;
+  await busy(e.submitter || e.target.querySelector('[type=submit]'), async () => {
+    const k = await act(() => api('POST', '/api/apikeys', { name: f.name.value.trim(), role: f.role.value }), t('keyMade'));
+    if (!k) return;
+    e.target.reset();
+    $('key-secret').textContent = k.secret;
+    $('key-new').hidden = false;
+    loadKeys();
+  });
+});
+$('key-copy').addEventListener('click', async () => {
+  try { await navigator.clipboard.writeText($('key-secret').textContent); toast(t('copied')); }
+  catch { getSelection().selectAllChildren($('key-secret')); }
+});
+
 $('user-form').addEventListener('submit', async e => {
   e.preventDefault();
   const f = e.target.elements;
@@ -1095,6 +1136,9 @@ $('settings').addEventListener('close', () => {
   pw.current.value = pw.new.value = '';
   $('user-form').reset();
   $('cookie-text').value = '';
+  // A new API key is shown once.
+  $('key-secret').textContent = ''; $('key-new').hidden = true; $('key-form').reset();
+  if ($('picker').open) $('picker').close();
 });
 $('settings').addEventListener('click', e => {
   if (e.target === $('settings') || e.target.closest('[data-close]')) $('settings').close();   // backdrop / close button
@@ -1107,8 +1151,9 @@ function fillSettings(s) {
   for (const k of ['serverAddress', 'channel', 'nickname', 'commandPrefix', 'language', 'maxQueueLength', 'maxDurationMinutes', 'maxSongsPerUser']) f[k].value = s[k] ?? '';
   f.announce.checked = !!s.announce; f.confirmCommands.checked = s.confirmCommands !== false; f.voteSkip.checked = !!s.voteSkip;
   f.showSongInDescription.checked = !!s.showSongInDescription;
-  f.allowedUsers.value = (s.allowedUsers || []).join('\n');
-  f.allowedServerGroups.value = (s.allowedServerGroups || []).join(', ');
+  f.everyoneCanUse.checked = s.everyoneCanUse !== false; f.onlyFromChannel.checked = !!s.onlyFromChannel;
+  f.othersSongs.value = s.othersSongs || 'everyone';
+  fillPerm(s);
   f.libraryEnabled.checked = !!s.libraryEnabled; f.normalizeVolume.checked = !!s.normalizeVolume;
   f.libraryMaxGb.value = Math.round((s.libraryMaxSizeMb || 0) / 1024 * 100) / 100;
   for (const k of ['serverPassword', 'channelPassword']) {
@@ -1146,9 +1191,10 @@ $('set-form').addEventListener('submit', async e => {
     nickname: f.nickname.value.trim(), commandPrefix: f.commandPrefix.value.trim(), language: f.language.value,
     announce: f.announce.checked, confirmCommands: f.confirmCommands.checked, voteSkip: f.voteSkip.checked, showSongInDescription: f.showSongInDescription.checked,
     maxQueueLength: +f.maxQueueLength.value, maxDurationMinutes: +f.maxDurationMinutes.value, maxSongsPerUser: +f.maxSongsPerUser.value,
-    allowedUsers: f.allowedUsers.value.split(/\r?\n/).map(x => x.trim()).filter(Boolean),
+    everyoneCanUse: f.everyoneCanUse.checked, onlyFromChannel: f.onlyFromChannel.checked, othersSongs: f.othersSongs.value,
+    admins: perm.admins, adminGroups: perm.adminGroups, djs: perm.djs, djGroups: perm.djGroups, blocked: perm.blocked,
+    commandLevels: perm.commandLevels,
     libraryEnabled: f.libraryEnabled.checked, libraryMaxSizeMb: Math.round(gb * 1024), normalizeVolume: f.normalizeVolume.checked,
-    allowedServerGroups: f.allowedServerGroups.value.split(/[,\s;]+/).map(x => x.trim()).filter(x => /^\d+$/.test(x)).map(Number),
   };
   const old = settings;
   const reconnects = body.serverAddress !== old.serverAddress || body.channel !== old.channel || body.nickname !== old.nickname ||
@@ -1159,6 +1205,141 @@ $('set-form').addEventListener('submit', async e => {
   });
 });
 $('set-reconnect').addEventListener('click', e => busy(e.currentTarget, () => act(() => api('POST', SB('/reconnect')), t('reconnectSent'))));
+
+/* ---------------- chat permissions ---------------- */
+let perm = null;       // the lists being edited in the sheet; saved with the other settings
+let tsPeople = null;   // who is on the bot's server, for the picker and the group names
+const PERM_LISTS = { admins: 'adminGroups', djs: 'djGroups', blocked: null };
+const CHAT_LEVELS = ['everyone', 'dj', 'admin'];
+const lvlKey = v => ({ everyone: 'lvlEveryone', dj: 'lvlDj', admin: 'lvlAdmin' })[v];
+// Same as ChatPermissions.Recommended on the server.
+const RECOMMENDED = { play: 'everyone', search: 'everyone', skip: 'everyone', remove: 'everyone', playlist: 'everyone', fav: 'everyone',
+  playnow: 'dj', move: 'dj', skipto: 'dj', back: 'dj', seek: 'dj', pause: 'dj', stop: 'dj', clear: 'dj', shuffle: 'dj', loop: 'dj',
+  vol: 'dj', radio: 'dj', join: 'dj', follow: 'dj' };
+
+function fillPerm(s) {
+  perm = {
+    admins: [...(s.admins || [])], adminGroups: [...(s.adminGroups || [])], djs: [...(s.djs || [])], djGroups: [...(s.djGroups || [])],
+    blocked: [...(s.blocked || [])], commandLevels: { ...(s.commandLevels || {}) },
+  };
+  renderPerm();
+  loadPeople();
+  loadChecks();
+}
+async function loadPeople() {
+  const bot = settingsBot;
+  const p = await api('GET', SB('/ts/people')).catch(() => null);
+  if (bot !== settingsBot) return;
+  tsPeople = p;
+  renderPerm();
+}
+const groupName = id => tsPeople?.groups?.find(g => g.id === id)?.name || `#${id}`;
+
+function renderPerm() {
+  if (!perm) return;
+  for (const [list, groups] of Object.entries(PERM_LISTS)) {
+    const items = [...perm[list].map(p => ({ p })), ...(groups ? perm[groups].map(id => ({ id })) : [])];
+    document.querySelector(`.people[data-list="${list}"] .pchips`).replaceChildren(...(items.length
+      ? items.map(it => permChip(list, groups, it)) : [el('li', { class: 'none', text: t('noOne') })]));
+  }
+  $('cmd-levels').replaceChildren(...Object.keys(perm.commandLevels).map(cmd => {
+    const sel = el('select', { 'aria-label': `!${cmd}` }, ...CHAT_LEVELS.map(v => el('option', { value: v, text: t(lvlKey(v)) })));
+    sel.value = perm.commandLevels[cmd];
+    sel.addEventListener('change', () => { perm.commandLevels[cmd] = sel.value; });
+    return el('label', { class: 'cmd-row' }, el('code', { text: '!' + cmd }), el('span', { class: 'desc', text: t('cmd.' + cmd) }), sel);
+  }));
+}
+function permChip(list, groups, it) {
+  const label = it.id != null ? `👥 ${groupName(it.id)}` : `👤 ${it.p.name || it.p.uid}`;
+  const x = el('button', { class: 'x', type: 'button', title: t('remove'), 'aria-label': `${t('remove')}: ${label}` }, icon('x'));
+  x.addEventListener('click', () => {
+    if (it.id != null) perm[groups] = perm[groups].filter(g => g !== it.id);
+    else perm[list] = perm[list].filter(p => p.uid !== it.p.uid);
+    renderPerm();
+  });
+  return el('li', { title: it.id != null ? `#${it.id}` : it.p.uid }, el('span', { text: label }), x);
+}
+
+// The picker: people online and server groups of the bot's server, or a unique id typed in.
+let pickFor = null;
+document.querySelectorAll('.js-pick').forEach(b => b.addEventListener('click', async () => {
+  const box = b.closest('.people');
+  pickFor = { list: box.dataset.list, groups: box.dataset.groups || null };
+  $('picker-search').value = ''; $('picker-uid').value = '';
+  renderPicker();
+  $('picker').showModal();
+  await loadPeople();
+  if ($('picker').open) renderPicker();
+}));
+function addPicked(item) {
+  if (!pickFor || !perm) return;
+  if (item.id != null) { if (!perm[pickFor.groups].includes(item.id)) perm[pickFor.groups].push(item.id); }
+  else if (!perm[pickFor.list].some(p => p.uid === item.uid)) perm[pickFor.list].push({ uid: item.uid, name: item.name || '' });
+  renderPerm();
+  renderPicker();
+}
+function renderPicker() {
+  const q = $('picker-search').value.trim().toLowerCase();
+  const match = s => !q || s.toLowerCase().includes(q);
+  const out = [];
+  if (!tsPeople?.connected) out.push(el('p', { class: 'empty', text: t('pickOffline') }));
+  else {
+    if (pickFor?.groups) {
+      out.push(el('h4', { text: t('pickGroups') }));
+      const gs = (tsPeople.groups || []).filter(g => match(g.name) && !perm[pickFor.groups].includes(g.id));
+      if (!tsPeople.groups?.length) out.push(el('p', { class: 'empty', text: t('pickNoGroups') }));
+      for (const g of gs) {
+        const b = el('button', { type: 'button' }, el('span', { text: `👥 ${g.name}` }), el('small', { text: `#${g.id}` }));
+        b.addEventListener('click', () => addPicked({ id: g.id }));
+        out.push(b);
+      }
+    }
+    out.push(el('h4', { text: t('pickPeople') }));
+    const ps = (tsPeople.people || []).filter(p => (match(p.name) || match(p.uid)) && !perm[pickFor.list].some(x => x.uid === p.uid));
+    if (!ps.length) out.push(el('p', { class: 'empty', text: t('noOne') }));
+    for (const p of ps) {
+      const b = el('button', { type: 'button' }, el('span', { text: `👤 ${p.name}` }), el('small', { text: p.channel || p.uid }));
+      b.addEventListener('click', () => addPicked({ uid: p.uid, name: p.name }));
+      out.push(b);
+    }
+  }
+  $('picker-list').replaceChildren(...out);
+}
+$('picker-search').addEventListener('input', renderPicker);
+$('picker-uid-add').addEventListener('click', () => {
+  const uid = $('picker-uid').value.trim();
+  if (uid.length < 4 || uid.length > 100) return;
+  addPicked({ uid, name: tsPeople?.people?.find(p => p.uid === uid)?.name || '' });
+  $('picker-uid').value = '';
+});
+$('picker-uid').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); $('picker-uid-add').click(); } });
+$('cmd-recommended').addEventListener('click', () => {
+  if (!perm) return;
+  Object.assign(perm.commandLevels, RECOMMENDED);
+  F().othersSongs.value = 'dj'; F().voteSkip.checked = true;
+  renderPerm();
+  toast(t('sRecommendedHint'));
+});
+// A vote is for the people below "other people's songs"; with everyone allowed there'd be nobody to vote.
+F().voteSkip.addEventListener('change', e => { if (e.target.checked && F().othersSongs.value === 'everyone') F().othersSongs.value = 'dj'; });
+
+// What the bot may do on the server.
+async function loadChecks() {
+  const bot = settingsBot;
+  const list = await api('GET', SB('/ts/permissions')).catch(() => null);
+  if (bot !== settingsBot) return;
+  if (!list?.length) return $('perm-checks').replaceChildren(el('li', {}, el('span', { class: 'mark', text: '⚪' }), el('span', { class: 'what', text: t('pcOffline') })));
+  $('perm-checks').replaceChildren(...list.map(c => {
+    const [have, need] = (c.detail || '').split('/');
+    const why = c.ok === true ? (c.key === 'talk' && +need > 0 ? t('pcTalk', have, need) : t('pcOk'))
+      : c.ok === false ? (c.key === 'talk' ? `${t('pcTalk', have, need)} ${t('pcMissing', c.permission)}` : t('pcMissing', c.permission))
+      : t('pcUnknown');
+    return el('li', { class: c.ok === false ? 'bad' : '' },
+      el('span', { class: 'mark', text: c.ok === true ? '✅' : c.ok === false ? '⛔' : '⚪' }),
+      el('span', { class: 'what', text: t('pc.' + c.key) }), el('span', { class: 'why', text: why }));
+  }));
+}
+$('checks-refresh').addEventListener('click', e => busy(e.currentTarget, loadChecks));
 
 // Cookies
 $('cookie-file').addEventListener('change', async e => {

@@ -426,6 +426,44 @@ dialog::backdrop { background: rgba(22,22,30,.45); backdrop-filter: blur(2px); }
 
 /* panel users */
 .users { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+/* chat permissions: people and groups as chips, the command levels, the server picker */
+.people { display: grid; gap: 6px; }
+.people-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 13.5px; font-weight: 700; color: var(--muted); }
+.pchips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.pchips li { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; min-width: 0; padding: 4px 4px 4px 10px; border-radius: 999px; background: var(--surface-2); font-size: 13.5px; font-weight: 650; }
+.pchips li span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pchips li.none { padding: 4px 10px; color: var(--muted); font-weight: 600; background: transparent; box-shadow: inset 0 0 0 1.5px var(--border); }
+.pchips .x { display: grid; place-items: center; width: 24px; height: 24px; flex: none; border: 0; border-radius: 50%; background: transparent; color: var(--muted); cursor: pointer; }
+.pchips .x:hover { background: var(--border); color: var(--text); }
+.pchips .x .ic { width: 14px; height: 14px; }
+.cmd-levels summary { cursor: pointer; font-weight: 700; }
+.cmd-levels[open] summary { margin-bottom: 10px; }
+.cmd-grid { display: grid; gap: 6px; margin-bottom: 10px; }
+.cmd-row { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 2px 10px; padding: 6px 6px 6px 10px; border-radius: 12px; background: var(--surface-2); }
+.cmd-row code { font-weight: 800; }
+.cmd-row .desc { grid-column: 1; font-size: 12.5px; color: var(--muted); }
+.cmd-row select { grid-column: 2; grid-row: 1 / span 2; width: auto; min-height: 36px; padding: 4px 10px; font-size: 13.5px; }
+.checks { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.checks li { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; align-items: center; padding: 8px 10px; border-radius: 12px; background: var(--surface-2); }
+.checks .mark { grid-row: 1 / span 2; font-size: 16px; }
+.checks .what { font-weight: 700; }
+.checks .why { font-size: 12.5px; color: var(--muted); overflow-wrap: anywhere; }
+.checks li.bad .why { color: var(--danger); }
+.picker { width: min(440px, calc(100vw - 32px)); }
+.picker form { display: grid; gap: 10px; }
+.picker p { margin-bottom: 0; }
+.picker-list { display: grid; gap: 4px; max-height: min(50vh, 380px); overflow-y: auto; }
+.picker-list h4 { margin: 6px 0 2px; font-size: 12.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.picker-list button { display: grid; gap: 2px; width: 100%; padding: 8px 10px; border: 0; border-radius: 12px; background: var(--surface-2); color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+.picker-list button:hover, .picker-list button:focus-visible { background: var(--soft); color: var(--soft-text); }
+.picker-list button small { color: var(--muted); font-size: 12px; }
+.picker-list .empty { font-size: 13px; color: var(--muted); }
+.picker-uid { display: flex; gap: 8px; }
+.picker-uid input { flex: 1; min-width: 0; }
+.key-new { display: grid; gap: 8px; padding: 10px; border-radius: 12px; background: var(--soft); }
+.key-row { display: flex; gap: 8px; align-items: center; }
+.key-row code { flex: 1; min-width: 0; overflow-wrap: anywhere; font-size: 12.5px; }
+.users .when { font-size: 12px; color: var(--muted); font-weight: 600; white-space: nowrap; }
 .users li { display: flex; align-items: center; gap: 8px; min-width: 0; padding: 4px 4px 4px 10px; border-radius: 12px; background: var(--surface-2); }
 .users .nm { flex: 1; min-width: 0; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .users select { width: auto; min-height: 36px; padding: 4px 10px; font-size: 13.5px; }

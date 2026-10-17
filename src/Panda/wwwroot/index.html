@@ -276,8 +276,6 @@
         <label class="switch"><input type="checkbox" name="announce"><span class="track" aria-hidden="true"></span><span data-i18n="sAnnounce">Announce each song in chat</span></label>
         <label class="switch"><input type="checkbox" name="confirmCommands"><span class="track" aria-hidden="true"></span><span data-i18n="sConfirm">Confirm chat commands</span></label>
         <p class="hint" data-i18n="sChatHint">Announcing posts every song as it starts. Confirmations are the short replies to commands like !play and !skip. Questions (!np, !queue, !help) and errors are always answered.</p>
-        <label class="switch"><input type="checkbox" name="voteSkip"><span class="track" aria-hidden="true"></span><span data-i18n="sVoteSkip">Skip by vote</span></label>
-        <p class="hint" data-i18n="sVoteSkipHint">!skip from someone else is a vote; half of the people in the bot's channel skip the song. Whoever asked for it can always skip it, and the panel skips at once.</p>
         <label class="switch"><input type="checkbox" name="showSongInDescription"><span class="track" aria-hidden="true"></span><span data-i18n="sDesc">Show song in bot description</span></label>
         <div class="row2">
           <label class="field"><span data-i18n="sMaxQueue">Max queue length</span>
@@ -290,12 +288,43 @@
           <input name="maxSongsPerUser" type="number" min="0" max="1000" required></label>
         <p class="hint" data-i18n="sPerUserHint">How many songs one person can have waiting in the queue. 0 = no limit. Panel admins aren't limited.</p>
         <p class="hint js-many" hidden data-i18n="sMaxDurShared">Max song length is shared by all bots.</p>
-        <label class="field"><span data-i18n="sUsers">Allowed users</span>
-          <textarea name="allowedUsers" rows="3" spellcheck="false" placeholder="abc123XYZ+/=…"></textarea></label>
-        <p class="hint" data-i18n="sUsersHint">One TeamSpeak unique ID per line. Empty = everyone.</p>
-        <label class="field"><span data-i18n="sGroups">Allowed server groups</span>
-          <input name="allowedServerGroups" type="text" inputmode="numeric" pattern="[0-9,; ]*" placeholder="6, 7" autocomplete="off"></label>
-        <p class="hint" data-i18n="sGroupsHint">Comma-separated group ids. Empty = no group restriction.</p>
+      </fieldset>
+
+      <fieldset class="group">
+        <legend>🛡️ <span data-i18n="sPerm">Chat permissions</span></legend>
+        <label class="switch"><input type="checkbox" name="everyoneCanUse"><span class="track" aria-hidden="true"></span><span data-i18n="sEveryone">Everyone on the server can use the bot</span></label>
+        <p class="hint" data-i18n="sEveryoneHint">When off, only DJs and admins can.</p>
+        <div class="people" data-list="admins" data-groups="adminGroups">
+          <div class="people-head"><span data-i18n="sAdmins">Admins</span><button class="btn ghost sm js-pick" type="button"><svg class="ic"><use href="#i-plus"/></svg><span data-i18n="addPerson">Add</span></button></div>
+          <ul class="pchips"></ul>
+        </div>
+        <div class="people" data-list="djs" data-groups="djGroups">
+          <div class="people-head"><span data-i18n="sDjs">DJs</span><button class="btn ghost sm js-pick" type="button"><svg class="ic"><use href="#i-plus"/></svg><span data-i18n="addPerson">Add</span></button></div>
+          <ul class="pchips"></ul>
+        </div>
+        <div class="people" data-list="blocked">
+          <div class="people-head"><span data-i18n="sBlocked">Blocked</span><button class="btn ghost sm js-pick" type="button"><svg class="ic"><use href="#i-plus"/></svg><span data-i18n="addPerson">Add</span></button></div>
+          <ul class="pchips"></ul>
+        </div>
+        <p class="hint" data-i18n="sPeopleHint"></p>
+        <label class="field"><span data-i18n="sOthers">Who may skip, remove or move other people's songs</span>
+          <select name="othersSongs"><option value="everyone" data-i18n="lvlEveryone">Everyone</option><option value="dj" data-i18n="lvlDj">DJs and admins</option><option value="admin" data-i18n="lvlAdmin">Admins only</option></select></label>
+        <label class="switch"><input type="checkbox" name="voteSkip"><span class="track" aria-hidden="true"></span><span data-i18n="sVoteSkip">The others can vote to skip</span></label>
+        <p class="hint" data-i18n="sVoteSkipHint"></p>
+        <label class="switch"><input type="checkbox" name="onlyFromChannel"><span class="track" aria-hidden="true"></span><span data-i18n="sOnlyChannel">Only people in the bot's channel can give commands</span></label>
+        <p class="hint" data-i18n="sOnlyChannelHint"></p>
+        <details class="cmd-levels">
+          <summary data-i18n="sCmdLevels">Who may use each command</summary>
+          <div id="cmd-levels" class="cmd-grid"></div>
+          <div class="save-row"><button id="cmd-recommended" class="btn ghost sm" type="button"><span data-i18n="sRecommended">Use the recommended setup</span></button></div>
+        </details>
+      </fieldset>
+
+      <fieldset class="group">
+        <legend>🔍 <span data-i18n="sChecks">The bot's permissions on the server</span></legend>
+        <p class="hint" data-i18n="sChecksHint"></p>
+        <ul id="perm-checks" class="checks"></ul>
+        <div class="save-row"><button id="checks-refresh" class="btn ghost sm" type="button"><svg class="ic"><use href="#i-refresh"/></svg><span data-i18n="refresh">Refresh</span></button></div>
       </fieldset>
       <fieldset class="group">
         <legend>📚 <span data-i18n="sLib">Library</span></legend>
@@ -339,6 +368,25 @@
         <label class="field"><span data-i18n="role">Role</span>
           <select name="role"><option value="dj" data-i18n="roleDj">Can only add songs</option><option value="admin" data-i18n="roleAdmin">Admin</option></select></label>
         <div class="save-row"><button class="btn primary" type="submit"><svg class="ic"><use href="#i-plus"/></svg><span data-i18n="addUser">Add user</span></button></div>
+      </form>
+    </section>
+
+    <section class="group admin-only">
+      <h3 class="legend">🔌 <span data-i18n="sKeys">API keys</span></h3>
+      <p class="hint" data-i18n="sKeysHint"></p>
+      <ul id="key-list" class="users"></ul>
+      <div id="key-new" class="key-new" hidden>
+        <p class="hint" data-i18n="keyShown">Copy the key now; it won't be shown again.</p>
+        <div class="key-row"><code id="key-secret"></code><button id="key-copy" class="btn soft sm" type="button"><span data-i18n="copy">Copy</span></button></div>
+      </div>
+      <form id="key-form" class="user-add">
+        <div class="row2">
+          <label class="field"><span data-i18n="keyName">Name</span>
+            <input name="name" type="text" maxlength="40" autocomplete="off" required></label>
+          <label class="field"><span data-i18n="role">Role</span>
+            <select name="role"><option value="dj" data-i18n="roleDj">Can only add songs</option><option value="admin" data-i18n="roleAdmin">Admin</option></select></label>
+        </div>
+        <div class="save-row"><button class="btn primary" type="submit"><svg class="ic"><use href="#i-plus"/></svg><span data-i18n="addKey">Make a key</span></button></div>
       </form>
     </section>
 
@@ -401,6 +449,19 @@
 </dialog>
 
 <!-- ============ Confirm ============ -->
+<dialog id="picker" class="confirm picker" aria-labelledby="picker-title">
+  <form method="dialog">
+    <p id="picker-title" data-i18n="pickTitle">Add from the server</p>
+    <input id="picker-search" type="search" autocomplete="off" data-i18n-ph="pickSearch">
+    <div id="picker-list" class="picker-list"></div>
+    <div class="picker-uid">
+      <input id="picker-uid" type="text" autocomplete="off" spellcheck="false" data-i18n-ph="pickUid">
+      <button id="picker-uid-add" class="btn soft sm" type="button" data-i18n="addPerson">Add</button>
+    </div>
+    <div class="save-row end"><button class="btn ghost" value="close" data-i18n="close">Close</button></div>
+  </form>
+</dialog>
+
 <dialog id="confirm" class="confirm" aria-labelledby="confirm-msg">
   <form method="dialog">
     <p id="confirm-msg"></p>

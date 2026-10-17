@@ -109,7 +109,10 @@ builder.Services.AddHostedService(sp => sp.GetRequiredService<BotManager>());
 builder.Services.AddDataProtection()
 	.PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(dataDir, "keys")))
 	.SetApplicationName("panda");
-builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+builder.Services.AddAuthentication("panda")
+	.AddPolicyScheme("panda", "cookie or API key", o =>
+		o.ForwardDefaultSelector = ctx => ApiKeyAuth.KeyOf(ctx.Request) != null ? ApiKeyAuth.Name : CookieAuthenticationDefaults.AuthenticationScheme)
+	.AddScheme<Microsoft.AspNetCore.Authentication.AuthenticationSchemeOptions, ApiKeyAuth>(ApiKeyAuth.Name, null)
 	.AddCookie(o =>
 	{
 		o.Cookie.Name = "panda_session";

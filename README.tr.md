@@ -155,19 +155,33 @@ Botun kanalına ya da bota özel mesaj olarak yaz. İngilizce karşılıkları d
 | `!önceki` | `!back` | `!précédent` | `!zurück` | Önceki şarkıyı tekrar çalar |
 | `!git <#>` | `!skipto` | `!allerà` | `!springen` | Sıradaki bir şarkıya atlar |
 | `!taşı <#> <#>` | `!move` | `!déplacer` | `!verschieben` | Sırada şarkının yerini değiştirir |
-| `!oyla` | `!voteskip` | `!voter` | `!abstimmen` | Geçmek için oy verir (**Oylamayla geç** açıksa) |
+| `!oyla` | `!voteskip` | `!voter` | `!abstimmen` | Başkasının şarkısını geçmek için oy verir (oylama açıksa) |
 | `!yardım` | `!help` | `!aide` | `!hilfe` | Komut listesi |
 
-Varsayılan olarak herkes botu kullanabilir. Sınırlamak için **Ayarlar → Bot** kısmına TeamSpeak
-UID'leri ya da sunucu grubu ID'leri ekle.
+### Kim ne yapabilir
+
+Varsayılan olarak herkes her komutu kullanabilir. **Ayarlar → Sohbet yetkileri** bunu değiştirir:
+
+- **Yöneticiler** ve **DJ'ler**: sunucudaki kişileri ya da sunucu gruplarını seç (veya benzersiz kimlik yapıştır). Yöneticiler her şeyi yapabilir.
+- **Sunucudaki herkes botu kullanabilir**: kapatırsan sadece DJ'lere ve yöneticilere cevap verilir.
+- **Engellenenler**: botun hiç cevap vermediği kişiler.
+- **Hangi komutu kim kullanabilir**: her komut için herkes, DJ'ler ya da yöneticiler. **Önerilen ayarı kullan**
+  şarkı eklemeyi ve oylamayı herkese, duraklatma, ses, sıra ve geri kalanı DJ'lere bırakır.
+- **Başkalarının şarkıları**: başkasının istediği şarkıyı kim geçebilir, silebilir, taşıyabilir. Bu seviyenin
+  altındakiler için `!geç` bir oy olabilir (**Diğerleri geçmek için oy verebilir**): botun kanalındakilerin
+  yarısı oy verince şarkı geçilir. Şarkıyı isteyen kişi her zaman geçebilir.
+- **Komutları sadece botun kanalındakiler verebilir**: `!şimdi` gibi sorular yine cevaplanır, yöneticiler her yerden verebilir.
+
+Aynı penceredeki **Botun sunucudaki izinleri** bölümü, botun sunucu grubunun izinleriyle neler yapabildiğini
+gösterir: kanalda duyulmak, sohbete yazmak, şarkıyı açıklamasında göstermek, kanal değiştirmek, sunucu
+gruplarını görmek. Eksik olan varsa hangi iznin verilmesi gerektiği yazar.
 
 Kanal sessiz kalsın istersen **Ayarlar → Bot** kısmında **Her şarkıyı sohbette duyur** (her şarkı
 başlarken bir mesaj) ve **Sohbet komutlarını onayla** (“Sıraya eklendi …”, “Geçildi.” gibi kısa cevaplar)
 seçeneklerini kapat. `!şimdi` gibi sorular ve hatalar yine cevaplanır.
 
 Yine **Ayarlar → Bot** kısmında: **Kişi başı şarkı** bir kişinin sırada aynı anda kaç şarkısı
-bekleyebileceğini sınırlar (panel yöneticileri sınırlanmaz). **Oylamayla geç** açıksa başkasının yazdığı
-`!geç` bir oy sayılır; botun kanalındakilerin yarısı oy verince şarkı geçilir. Şarkıyı isteyen kişi her zaman geçebilir.
+bekleyebileceğini sınırlar (DJ'ler ve yöneticiler sınırlanmaz).
 
 YouTube bir şarkıyı anlık olarak reddederse (HTTP 403, bot kontrolü, yarıda kopan akış) Panda sessizce
 üç kereye kadar yeniden dener ve şarkı kaldığı yerden sürer.
@@ -201,6 +215,17 @@ Bir panel şifresini sıfırlamak (ya da bütün şifreler unutulduysa yeni bir 
 
 Panel düz HTTP konuşur. İnternetten erişilebiliyorsa önüne HTTPS'li bir ters vekil sunucu
 (Caddy, nginx) ya da güvenlik duvarı koy.
+
+## API
+
+Panelin API'si programlara da açık (bir betik, bir yönetim paneli). **Ayarlar → API anahtarları** kısmından
+bir anahtar oluştur (yönetici ya da "sadece şarkı ekler"); bir kez gösterilir. Her istekte gönder:
+
+```bash
+curl -H "Authorization: Bearer pk_..." http://sunucun:8080/api/bots
+```
+
+Anahtar panelden iptal edilince hemen çalışmaz olur, açık canlı akışlar dahil.
 
 ## Derleme
 

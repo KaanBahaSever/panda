@@ -9,6 +9,8 @@ bash "$HERE/env.sh" "$PANDA" || exit 1
 cp "$CHAT" /tmp/panda-chattest && chmod +x /tmp/panda-chattest
 FAKE_YTDLP_DIR="$HOME/panda-test-env/fake-yt-dlp" PANDA_TEST_QUERY="http://127.0.0.1:10080 testkey-local-only" /tmp/panda-chattest 127.0.0.1 http://127.0.0.1:8097 "$@"
 failed=$?
+echo; echo "=== the panel API with keys"
+bash "$HERE/api.sh" || failed=$((failed + $?))
 echo; echo "--- warnings and errors in Panda's log:"
 grep -E " (warn|fail|crit): " "$HOME/panda-test-env/log.txt" -A1 | cut -c1-220 || echo "(none)"
 [ "${KEEP:-0}" = 1 ] || bash "$HERE/env.sh" stop

@@ -153,19 +153,34 @@ Write them in the bot's channel or in a private message to the bot.
 | `!back` | `!önceki` | `!précédent` | `!zurück` | Play the previous song again |
 | `!skipto <#>` | `!git` | `!allerà` | `!springen` | Jump to a song in the queue |
 | `!move <#> <#>` | `!taşı` | `!déplacer` | `!verschieben` | Move a song in the queue |
-| `!voteskip` | `!oyla` | `!voter` | `!abstimmen` | Vote to skip (when **Skip by vote** is on) |
+| `!voteskip` | `!oyla` | `!voter` | `!abstimmen` | Vote to skip someone else's song (when voting is on) |
 | `!help` | `!yardım` | `!aide` | `!hilfe` | List commands |
 
-By default everyone can use the bot. To limit it, add TeamSpeak UIDs or server group IDs under
-**Settings → Bot**.
+### Who may do what
+
+By default everyone can use every command. **Settings → Chat permissions** changes that:
+
+- **Admins** and **DJs**: pick people or server groups from the server (or paste a unique ID). Admins can do everything.
+- **Everyone on the server can use the bot**: turn it off and only DJs and admins are answered.
+- **Blocked**: people the bot never answers.
+- **Who may use each command**: everyone, DJs or admins, per command. **Use the recommended setup** leaves
+  adding songs and voting to everyone and gives pausing, volume, the queue and the rest to DJs.
+- **Other people's songs**: who may skip, remove or move songs someone else asked for. Below that level,
+  `!skip` can be a vote (**The others can vote to skip**): the song is skipped when half of the people in
+  the bot's channel voted. Whoever asked for a song can always skip it.
+- **Only people in the bot's channel can give commands**: questions such as `!np` are still answered,
+  admins can from anywhere.
+
+**The bot's permissions on the server** (same sheet) shows what the bot may do with its server group's
+permissions: be heard in the channel, write in the chat, show the song in its description, change
+channels, see the server groups. Anything missing is named, with the permission to grant.
 
 For a quiet channel, turn off **Announce each song in chat** (a message whenever a song starts) and
 **Confirm chat commands** (short replies like "Added to the queue …" or "Skipped.") under **Settings → Bot**.
 Questions such as `!np` and errors are still answered.
 
 Also under **Settings → Bot**: **Songs per person** limits how many songs one person can have waiting
-(panel admins aren't limited), and with **Skip by vote** on, `!skip` from someone else is a vote: the
-song is skipped when half of the people in the bot's channel voted. Whoever asked for a song can always skip it.
+(DJs and admins aren't limited).
 
 When YouTube turns a song down for a moment (an HTTP 403, a bot check, a stream that breaks off), Panda
 quietly tries again, up to three times, and goes on from where the song stopped.
@@ -202,9 +217,14 @@ Everything is editable in the panel; the file is `/var/lib/panda/config.json` (o
         "volume": 50, "showSongInDescription": true, "radio": false,
         "announce": true,          // post every song in the channel as it starts
         "confirmCommands": true,   // short replies to !play, !skip…; questions and errors are always answered
-        "allowedUsers": [], "allowedServerGroups": [], "maxQueueLength": 100,
+        "maxQueueLength": 100,
         "maxSongsPerUser": 0,      // songs one person may have waiting; 0 = no limit
-        "voteSkip": false          // !skip from someone else is a vote; half of the channel skips
+        // Chat permissions (set them in the panel): unique ids or server group ids
+        "everyoneCanUse": true, "admins": [], "adminGroups": [], "djs": [], "djGroups": [], "blocked": [],
+        "commandLevels": { "vol": "dj" },   // "everyone", "dj" or "admin"; missing = everyone
+        "othersSongs": "everyone",          // who may skip/remove/move other people's songs
+        "voteSkip": false,                  // the others vote to skip
+        "onlyFromChannel": false
       }
     }
   ],
@@ -225,6 +245,17 @@ Reset a panel password (or create an admin when every password is lost):
 
 The panel speaks plain HTTP. If it is reachable from the internet, put it behind a reverse proxy with
 HTTPS (Caddy, nginx) or a firewall.
+
+## API
+
+The panel's API is open to programs too (a script, a management panel). Make a key under
+**Settings → API keys** (admin or "can only add songs"); it's shown once. Send it with every request:
+
+```bash
+curl -H "Authorization: Bearer pk_..." http://your-server:8080/api/bots
+```
+
+Revoking the key in the panel stops it at once, including open live streams.
 
 ## Building
 

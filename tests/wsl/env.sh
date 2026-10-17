@@ -24,6 +24,8 @@ fi
 Q "serveredit?virtualserver_antiflood_points_tick_reduce=1000&virtualserver_antiflood_points_needed_command_block=100000&virtualserver_antiflood_points_needed_ip_block=100000" >/dev/null
 GUEST=$(Q serverinfo | python3 -c "import sys,json; print(json.load(sys.stdin)['body'][0]['virtualserver_default_server_group'])")
 Q "servergroupaddperm?sgid=$GUEST&permsid=b_client_modify_own_description&permvalue=1&permskip=0&permnegated=0" >/dev/null
+# A second channel, for "only people in the bot's channel" (an error when it's already there).
+Q "channelcreate?channel_name=Lounge&channel_flag_permanent=1" >/dev/null
 [ "$1" = ts ] && exit 0
 
 pkill -f "$T/panda" || true

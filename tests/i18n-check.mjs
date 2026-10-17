@@ -1,7 +1,7 @@
 // Checks the panel's translations: every language has every key, every key the panel uses exists,
 // and the chat languages offered in the settings match the ones the bot knows.
 // usage: node tests/i18n-check.mjs        Exit code 1 when something is missing.
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -40,6 +40,14 @@ if (chat.join() !== langs.join()) problems.push(`chat languages ${chat.join('/')
 // Every chat string has a text for every language: the tuple has one field per language.
 const fields = strings.match(/Dictionary<string, \(([^)]*)\)> All/)?.[1].split(',').length ?? 0;
 if (fields !== chat.length) problems.push(`Strings.cs has ${fields} texts per string but ${chat.length} languages`);
+
+// Every chat text the code asks for exists (Strings.Get returns the key itself when it doesn't).
+const defined = new Set([...strings.matchAll(/\["([a-z0-9-]+)"\] = \(/g)].map(m => m[1]));
+for (const file of readdirSync(src).filter(f => f.endsWith('.cs'))) {
+  const code = readFileSync(join(src, file), 'utf8');
+  for (const m of code.matchAll(/Strings\.Get\([^,()]+,\s*"([a-z0-9-]+)"/g))
+    if (!defined.has(m[1])) problems.push(`chat: ${file} uses "${m[1]}", which Strings.cs doesn't have`);
+}
 
 if (problems.length) {
   console.log(problems.join('\n'));

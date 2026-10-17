@@ -1,0 +1,16 @@
+# Only people in the bot's channel may give commands; questions are still answered.
+s onlyFromChannel=true announce=false
+A
+p !play test tone
+e Come to my channel to use me.
+p !np
+e Nothing is playing.
+B
+c !play test tone
+e Now playing
+# Admins may from anywhere.
+s admins=[{"uid":"$ME"}]
+A
+p !vol 40
+e Volume set to 40%
+B

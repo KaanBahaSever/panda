@@ -24,8 +24,8 @@ e Skipped by vote
 c !play test tone
 c !skip
 e Skipped.
-# With the setting off, !skip skips at once.
-s voteSkip=false
+# With voting off and other people's songs open to everyone, !skip skips at once.
+s voteSkip=false othersSongs=everyone
 P test tone
 c !skip
 e Skipped.

@@ -1,0 +1,27 @@
+# Other people's songs: with the level at DJ, someone else's song can't be skipped, removed or cleared.
+s othersSongs=dj announce=false
+P test tone
+c !skip
+e Only DJs and admins can change other people's songs.
+c !play test tone
+e Added to the queue (#1)
+c !remove 1
+e Removed:
+P test tone
+c !remove 1
+e Only DJs and admins can change other people's songs.
+c !clear
+e Only DJs and admins can change other people's songs.
+c !stop
+e Only DJs and admins can change other people's songs.
+c !playnow test tone
+e Only DJs and admins can change other people's songs.
+# A DJ can.
+s djs=[{"uid":"$ME"}]
+c !skip
+e Skipped.
+# Below the level, with voting on, !skip is a vote (alone in the channel, one vote is half).
+s djs=[] voteSkip=true
+P test tone
+c !skip
+e Skipped by vote (1/1).

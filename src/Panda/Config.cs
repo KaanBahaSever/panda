@@ -57,6 +57,9 @@ public sealed class PandaConfig
 		foreach (var b in cfg.Bots)
 			if (!BotConfig.IsValidId(b.Id) || !seen.Add(b.Id))
 				seen.Add(b.Id = cfg.NextBotId(seen));
+		foreach (var b in cfg.Bots)
+			ChatPermissions.Upgrade(b.Bot);
+		cfg.Panel.ApiKeys.RemoveAll(k => k.Hash.Length == 0 || !Roles.IsValid(k.Role));
 		return cfg;
 	}
 
@@ -211,6 +214,57 @@ public sealed class PandaConfig
 		return true;
 	}
 
+	/// <summary>Makes an API key; returns it with the key itself, which is shown only this once.</summary>
+	public (ApiKey Key, string Secret) AddApiKey(string name, string role)
+	{
+		var secret = "pk_" + Convert.ToBase64String(System.Security.Cryptography.RandomNumberGenerator.GetBytes(32))
+			.TrimEnd('=').Replace('+', '-').Replace('/', '_');
+		var key = new ApiKey
+		{
+			Id = Convert.ToHexString(System.Security.Cryptography.RandomNumberGenerator.GetBytes(6)).ToLowerInvariant(),
+			Name = name, Role = role, Hash = ApiKey.HashOf(secret), Created = DateTimeOffset.UtcNow,
+		};
+		lock (saveLock) Panel.ApiKeys = [.. Panel.ApiKeys, key];
+		Save();
+		UsersChanged?.Invoke();
+		return (key, secret);
+	}
+
+	public bool RemoveApiKey(string id)
+	{
+		lock (saveLock)
+		{
+			if (Panel.ApiKeys.All(k => k.Id != id)) return false;
+			Panel.ApiKeys = Panel.ApiKeys.Where(k => k.Id != id).ToList();
+		}
+		Save();
+		UsersChanged?.Invoke();
+		return true;
+	}
+
+	/// <summary>The key with this secret, or null. Notes when it was last used (saved now and then, not on every call).</summary>
+	public ApiKey? FindApiKey(string secret)
+	{
+		var hash = ApiKey.HashOf(secret);
+		ApiKey? key;
+		bool save;
+		lock (saveLock)
+		{
+			key = Panel.ApiKeys.FirstOrDefault(k => System.Security.Cryptography.CryptographicOperations.FixedTimeEquals(
+				System.Text.Encoding.ASCII.GetBytes(k.Hash), System.Text.Encoding.ASCII.GetBytes(hash)));
+			if (key is null) return null;
+			save = key.LastUsed is not { } last || DateTimeOffset.UtcNow - last > TimeSpan.FromHours(1);
+			key.LastUsed = DateTimeOffset.UtcNow;
+		}
+		if (save) Save();
+		return key;
+	}
+
+	public ApiKey? FindApiKeyById(string id)
+	{
+		lock (saveLock) return Panel.ApiKeys.FirstOrDefault(k => k.Id == id);
+	}
+
 	bool IsLastAdminLocked(PanelUser user) =>
 		user.Role == Roles.Admin && Panel.Users.Count(u => u.Role == Roles.Admin) <= 1;
 
@@ -253,6 +307,21 @@ public sealed class PandaConfig
 		}
 		catch (Exception ex) when (ex is IOException or JsonException) { }
 	}
+}
+
+/// <summary>A key a program sends instead of logging in: "Authorization: Bearer pk_...". Only its hash is kept.</summary>
+public sealed class ApiKey
+{
+	public string Id { get; set; } = "";
+	public string Name { get; set; } = "";
+	public string Role { get; set; } = Roles.Dj;
+	/// <summary>SHA-256 of the key, hex. The key itself is shown once, when it is made.</summary>
+	public string Hash { get; set; } = "";
+	public DateTimeOffset Created { get; set; }
+	public DateTimeOffset? LastUsed { get; set; }
+
+	public static string HashOf(string key) =>
+		Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(key))).ToLowerInvariant();
 }
 
 /// <summary>Someone who can log in to the panel.</summary>
@@ -344,13 +413,32 @@ public sealed class BotSettings
 	public bool ConfirmCommands { get; set; } = true;
 	/// <summary>Show the current song in the bot's description.</summary>
 	public bool ShowSongInDescription { get; set; } = true;
-	/// <summary>Leave empty to let everyone use the bot. Otherwise only these client UIDs or server group IDs may.</summary>
-	public List<string> AllowedUsers { get; set; } = new();
-	public List<ulong> AllowedServerGroups { get; set; } = new();
+	/// <summary>Up to 0.4: only these unique ids / server groups could use the bot. Load turns them into DJs.</summary>
+	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+	public List<string>? AllowedUsers { get; set; }
+	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+	public List<ulong>? AllowedServerGroups { get; set; }
+
+	// ---- who may do what in the chat (see ChatPermissions) ----
+	/// <summary>Anyone on the server may use the bot; off: only DJs and admins.</summary>
+	public bool EveryoneCanUse { get; set; } = true;
+	public List<ChatPerson> Admins { get; set; } = [];
+	public List<ulong> AdminGroups { get; set; } = [];
+	public List<ChatPerson> Djs { get; set; } = [];
+	public List<ulong> DjGroups { get; set; } = [];
+	/// <summary>Never answered, whatever group they are in.</summary>
+	public List<ChatPerson> Blocked { get; set; } = [];
+	/// <summary>Command → "everyone", "dj" or "admin"; a command that isn't here is for everyone.</summary>
+	public Dictionary<string, string> CommandLevels { get; set; } = [];
+	/// <summary>Who may skip, remove or move other people's songs ("everyone", "dj", "admin"). Below it,
+	/// skipping is a vote when <see cref="VoteSkip"/> is on.</summary>
+	public string? OthersSongs { get; set; }
+	/// <summary>Only people in the bot's channel may give commands (admins anywhere).</summary>
+	public bool OnlyFromChannel { get; set; }
 	public int MaxQueueLength { get; set; } = 100;
-	/// <summary>Songs one person may have waiting in the queue; 0 = no limit. Panel admins aren't limited.</summary>
+	/// <summary>Songs one person may have waiting in the queue; 0 = no limit. DJs and admins aren't limited.</summary>
 	public int MaxSongsPerUser { get; set; }
-	/// <summary>!skip from someone other than the requester is a vote; half of the bot's channel skips the song.</summary>
+	/// <summary>People who may not change others' songs vote to skip them; half of the bot's channel skips the song.</summary>
 	public bool VoteSkip { get; set; }
 	/// <summary>When the queue runs out, keep playing songs like the last one.</summary>
 	public bool Radio { get; set; }
@@ -361,6 +449,8 @@ public sealed class PanelSettings
 	public string Listen { get; set; } = "0.0.0.0";
 	public int Port { get; set; } = 8080;
 	public List<PanelUser> Users { get; set; } = [];
+	/// <summary>Keys for programs (scripts, a management panel) that use the API without logging in.</summary>
+	public List<ApiKey> ApiKeys { get; set; } = [];
 	/// <summary>The single panel password up to 0.2; Load turns it into the "admin" user.</summary>
 	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
 	public string? PasswordHash { get; set; }

@@ -7,7 +7,9 @@
 //   e <text>          one of the replies to the last message contains <text>
 //   x                 the last message got no reply           n <text>   none of its replies contains <text>
 //   w <seconds>       wait (replies that come meanwhile count for the last message)
-//   s key=value ...   change bot 1's settings through the panel (values: true/false, numbers, text)
+//   s key=value ...   change bot 1's settings through the panel (values: true/false, numbers, text, or JSON
+//                     without spaces like [{"uid":"$ME"}]); $ME is the test client's unique id, $GROUP its server group
+//   A / B             the test client goes to another channel (Away) / Back to Panda's
 //   d                 print Panda's description        d <text>  it contains <text>        d !  it is empty
 //                     (read from the server's HTTP query when $PANDA_TEST_QUERY is "<url> <api key>", else from the client)
 //   L <name> <count>  replace playlist <name> with <count> filler songs
@@ -36,6 +38,8 @@ var defaults = new Dictionary<string, string>
 {
 	["announce"] = "true", ["confirmCommands"] = "true", ["showSongInDescription"] = "true", ["language"] = "en",
 	["maxQueueLength"] = "100", ["maxDurationMinutes"] = "60", ["maxSongsPerUser"] = "0", ["voteSkip"] = "false",
+	["everyoneCanUse"] = "true", ["admins"] = "[]", ["adminGroups"] = "[]", ["djs"] = "[]", ["djGroups"] = "[]", ["blocked"] = "[]",
+	["commandLevels"] = "{}", ["othersSongs"] = "everyone", ["onlyFromChannel"] = "false",
 };
 var panel = new Panel(args[1], Environment.GetEnvironmentVariable("PANDA_TEST_PASSWORD") ?? "testpass123");
 await panel.LoginAsync();
@@ -127,7 +131,9 @@ await scheduler.InvokeAsync(async () =>
 				case 'x': Check(Got().Length == 0, "no reply"); break;
 				case 'n': Check(!Got().Any(g => g.Contains(arg)), $"no reply has \"{arg}\""); break;
 				case 's':
-					await panel.SetAsync(arg.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+					var me = c.Book.Self()!;
+					var filled = arg.Replace("$ME", me.Uid?.Value ?? "").Replace("$GROUP", me.ServerGroups.First().Value.ToString());
+					await panel.SetAsync(filled.Split(' ', StringSplitOptions.RemoveEmptyEntries)
 						.Select(kv => kv.Split('=', 2)).ToDictionary(kv => kv[0], kv => kv[1]));
 					await Task.Delay(1000);
 					break;
@@ -143,6 +149,17 @@ await scheduler.InvokeAsync(async () =>
 					break;
 				case 'y': FakeYtDlp.Fail(arg); break;
 				case '+': await AddListener(arg); break;
+				case 'A':
+					var away = c.Book.Channels.Keys.First(ch => ch != panda.Channel);
+					Console.WriteLine("-> (goes to another channel)");
+					await c.ClientMove(c.ClientId, away);
+					await Task.Delay(1000);
+					break;
+				case 'B':
+					Console.WriteLine("-> (back to Panda's channel)");
+					await c.ClientMove(c.ClientId, panda.Channel);
+					await Task.Delay(1000);
+					break;
 				case 'o':
 					lock (replies) replies.Clear();
 					Console.WriteLine($"-> [channel, from {extras[0].Client.Book.Self()?.Name}] {arg}");
@@ -177,7 +194,8 @@ sealed class Panel(string url, string password)
 	{
 		var s = await http.GetFromJsonAsync<JsonObject>("/api/bots/1/settings") ?? throw new InvalidOperationException("no settings");
 		foreach (var (k, v) in values)
-			s[k] = bool.TryParse(v, out var b) ? JsonValue.Create(b)
+			s[k] = v.StartsWith('[') || v.StartsWith('{') ? JsonNode.Parse(v)
+				: bool.TryParse(v, out var b) ? JsonValue.Create(b)
 				: int.TryParse(v, out var i) ? JsonValue.Create(i)
 				: JsonValue.Create(v);
 		(await http.PutAsJsonAsync("/api/bots/1/settings", s)).EnsureSuccessStatusCode();

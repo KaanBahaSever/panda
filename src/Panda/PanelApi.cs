@@ -107,6 +107,8 @@ public static class PanelApi
 			return Results.Ok(SettingsDto.From(config, b.Config));
 		});
 		botAdmin.MapPost("/reconnect", (BotInstance b) => Done(Run(b.Ts.Reconnect)));
+		botAdmin.MapGet("/ts/people", async (BotInstance b) => await b.Ts.GetPeopleAsync());
+		botAdmin.MapGet("/ts/permissions", async (BotInstance b) => await b.Ts.GetPermissionsAsync());
 
 		// --- shared by all bots ---
 
@@ -222,6 +224,18 @@ public static class PanelApi
 		});
 
 		admin.MapGet("/users", (PandaConfig config) => config.Panel.Users.Select(u => new { u.Name, u.Role }));
+
+		admin.MapGet("/apikeys", (PandaConfig config) => config.Panel.ApiKeys.Select(k => new { k.Id, k.Name, k.Role, k.Created, k.LastUsed }));
+		admin.MapPost("/apikeys", (UserRequest req, PandaConfig config) =>
+		{
+			var name = (req.Name ?? "").Trim();
+			if (name.Length is < 1 or > 40) return Problem("bad-key-name");
+			if (!Roles.IsValid(req.Role ?? "")) return Problem("bad-role");
+			if (config.Panel.ApiKeys.Count >= 50) return Problem("too-many-keys");
+			var (key, secret) = config.AddApiKey(name, req.Role!);
+			return Results.Ok(new { key.Id, key.Name, key.Role, key.Created, Secret = secret });
+		});
+		admin.MapDelete("/apikeys/{id}", (string id, PandaConfig config) => config.RemoveApiKey(id) ? Results.NoContent() : Results.NotFound());
 		admin.MapPost("/users", (UserRequest req, PandaConfig config) =>
 		{
 			var name = (req.Name ?? "").Trim();
@@ -328,10 +342,15 @@ public static class PanelApi
 	/// Live streams were let in once, when they opened. This asks again while they run, so a removed
 	/// user, a changed password or an admin made "dj" doesn't keep receiving them.
 	/// </summary>
-	static bool StillAllowed(HttpContext ctx, PandaConfig config, bool admin)
+	static bool StillAllowed(HttpContext ctx, PandaConfig config, bool admin) =>
+		CurrentRole(ctx, config) is { } role && (!admin || role == Roles.Admin);
+
+	/// <summary>The role the request's user or API key has now; null when it was removed or logged out.</summary>
+	static string? CurrentRole(HttpContext ctx, PandaConfig config)
 	{
+		if (ctx.User.FindFirst("apikey")?.Value is { } id) return config.FindApiKeyById(id)?.Role;
 		var user = ctx.User.Identity?.Name is { } name ? config.FindUser(name) : null;
-		return user != null && user.Stamp == ctx.User.FindFirst("stamp")?.Value && (!admin || user.Role == Roles.Admin);
+		return user != null && user.Stamp == ctx.User.FindFirst("stamp")?.Value ? user.Role : null;
 	}
 
 	static async Task Events(HttpContext ctx, BotInstance b, BotManager bots, Library library, Playlists lists, PandaConfig config,
@@ -361,7 +380,7 @@ public static class PanelApi
 				if (bots.Get(b.Id) != b) break; // removed: the panel then picks another bot
 				if (!StillAllowed(ctx, config, admin: false)) break;
 				// Made admin or "dj" meanwhile: the panel reconnects and shows the controls that go with it.
-				if (config.FindUser(ctx.User.Identity?.Name ?? "")?.Role != role) break;
+				if (CurrentRole(ctx, config) != role) break;
 				var json = JsonSerializer.Serialize(await Snapshot(b, bots, library, lists), SseJson);
 				await ctx.Response.WriteAsync($"data: {json}\n\n", ct);
 				await ctx.Response.Body.FlushAsync(ct);
@@ -444,8 +463,15 @@ public sealed class SettingsDto
 	public bool Announce { get; set; }
 	public bool ConfirmCommands { get; set; } = true;
 	public bool ShowSongInDescription { get; set; }
-	public List<string> AllowedUsers { get; set; } = [];
-	public List<ulong> AllowedServerGroups { get; set; } = [];
+	public bool EveryoneCanUse { get; set; } = true;
+	public List<ChatPerson> Admins { get; set; } = [];
+	public List<ulong> AdminGroups { get; set; } = [];
+	public List<ChatPerson> Djs { get; set; } = [];
+	public List<ulong> DjGroups { get; set; } = [];
+	public List<ChatPerson> Blocked { get; set; } = [];
+	public Dictionary<string, string> CommandLevels { get; set; } = [];
+	public string OthersSongs { get; set; } = "everyone";
+	public bool OnlyFromChannel { get; set; }
 	public int MaxQueueLength { get; set; }
 	public int MaxSongsPerUser { get; set; }
 	public bool VoteSkip { get; set; }
@@ -468,8 +494,15 @@ public sealed class SettingsDto
 		Announce = b.Bot.Announce,
 		ConfirmCommands = b.Bot.ConfirmCommands,
 		ShowSongInDescription = b.Bot.ShowSongInDescription,
-		AllowedUsers = b.Bot.AllowedUsers,
-		AllowedServerGroups = b.Bot.AllowedServerGroups,
+		EveryoneCanUse = b.Bot.EveryoneCanUse,
+		Admins = b.Bot.Admins,
+		AdminGroups = b.Bot.AdminGroups,
+		Djs = b.Bot.Djs,
+		DjGroups = b.Bot.DjGroups,
+		Blocked = b.Bot.Blocked,
+		CommandLevels = ChatPermissions.Commands.ToDictionary(c => c, c => ChatPermissions.Name(ChatPermissions.Required(b.Bot, c))),
+		OthersSongs = b.Bot.OthersSongs ?? "everyone",
+		OnlyFromChannel = b.Bot.OnlyFromChannel,
 		MaxQueueLength = b.Bot.MaxQueueLength,
 		MaxSongsPerUser = b.Bot.MaxSongsPerUser,
 		VoteSkip = b.Bot.VoteSkip,
@@ -479,6 +512,12 @@ public sealed class SettingsDto
 		NormalizeVolume = c.Audio.Normalize,
 		HasCookies = c.YouTube.CookiesFile.Length > 0 && File.Exists(c.YouTube.CookiesFile),
 	};
+
+	// Unique ids as TeamSpeak shows them; names only for showing.
+	static List<ChatPerson> People(List<ChatPerson>? list) => (list ?? [])
+		.Select(p => new ChatPerson((p.Uid ?? "").Trim(), (p.Name ?? "").Trim() is var n && n.Length > 64 ? n[..64] : (p.Name ?? "").Trim()))
+		.Where(p => p.Uid.Length is > 0 and <= 100)
+		.DistinctBy(p => p.Uid).Take(500).ToList();
 
 	/// <summary>Copies the values into the config; returns true when the bot has to reconnect.</summary>
 	public bool Apply(PandaConfig c, BotConfig b)
@@ -500,8 +539,17 @@ public sealed class SettingsDto
 		b.Bot.Announce = Announce;
 		b.Bot.ConfirmCommands = ConfirmCommands;
 		b.Bot.ShowSongInDescription = ShowSongInDescription;
-		b.Bot.AllowedUsers = AllowedUsers.Select(u => u.Trim()).Where(u => u.Length > 0).Distinct().ToList();
-		b.Bot.AllowedServerGroups = AllowedServerGroups.Distinct().ToList();
+		b.Bot.EveryoneCanUse = EveryoneCanUse;
+		b.Bot.Admins = People(Admins);
+		b.Bot.Djs = People(Djs);
+		b.Bot.Blocked = People(Blocked);
+		b.Bot.AdminGroups = (AdminGroups ?? []).Distinct().Take(100).ToList();
+		b.Bot.DjGroups = (DjGroups ?? []).Distinct().Take(100).ToList();
+		b.Bot.CommandLevels = (CommandLevels ?? [])
+			.Where(kv => ChatPermissions.Commands.Contains(kv.Key) && ChatPermissions.IsLevel(kv.Value) && kv.Value != "everyone")
+			.ToDictionary(kv => kv.Key, kv => kv.Value);
+		b.Bot.OnlyFromChannel = OnlyFromChannel;
+		if (ChatPermissions.IsLevel(OthersSongs)) b.Bot.OthersSongs = OthersSongs;
 		if (MaxQueueLength is >= 1 and <= 1000) b.Bot.MaxQueueLength = MaxQueueLength;
 		if (MaxSongsPerUser is >= 0 and <= 1000) b.Bot.MaxSongsPerUser = MaxSongsPerUser;
 		b.Bot.VoteSkip = VoteSkip;
@@ -509,6 +557,8 @@ public sealed class SettingsDto
 		c.Library.Enabled = LibraryEnabled;
 		if (LibraryMaxSizeMb is 0 or (>= 100 and <= 1_000_000)) c.Library.MaxSizeMb = LibraryMaxSizeMb;
 		c.Audio.Normalize = NormalizeVolume;
+		// A vote is for the people who may not skip others' songs; with everyone allowed there'd be none.
+		if (b.Bot.VoteSkip && b.Bot.OthersSongs == "everyone") b.Bot.OthersSongs = "dj";
 		return reconnect;
 	}
 }

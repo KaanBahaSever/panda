@@ -10,6 +10,17 @@ using TSLib.Scheduler;
 
 namespace Panda;
 
+/// <summary>Someone on the TeamSpeak server, for picking DJs and admins in the panel.</summary>
+public sealed record TsPerson(string Uid, string Name, string Channel, IReadOnlyList<ulong> Groups);
+public sealed record TsGroup(ulong Id, string Name);
+public sealed record TsPeople(bool Connected, IReadOnlyList<TsPerson> People, IReadOnlyList<TsGroup> Groups);
+
+/// <summary>
+/// Whether the bot has what a feature needs on the server. Ok is null while it's unknown (not tried
+/// yet on this connection). Permission is what to grant when it's missing.
+/// </summary>
+public sealed record PermissionCheck(string Key, bool? Ok, string Permission, string? Detail);
+
 public sealed record BotStatus(
 	string State,
 	string? Error,
@@ -214,6 +225,8 @@ public sealed class TsBot : BackgroundService
 		}
 
 		log.LogInformation("Connected to {Server}", c.Book.Server?.Name);
+		lock (checks) checks.Clear();
+		await LoadServerGroups(c);
 		player.AttachOutput(c);
 		descriptionWarned = false;
 		description = null;
@@ -221,6 +234,99 @@ public sealed class TsBot : BackgroundService
 		var now = player.Current;
 		await SetDescription(now is null ? "" : "♪ " + now.Title);
 		return null;
+	}
+
+	// ---- the server's groups and people, and what the bot may do there (for the panel) ----
+
+	readonly Dictionary<ulong, string> serverGroups = [];
+	readonly Dictionary<string, PermissionCheck> checks = [];
+
+	async Task LoadServerGroups(TsFullClient c)
+	{
+		var r = await c.SendHybrid<TSLib.Messages.ServerGroupList>(new TSLib.Commands.TsCommand("servergrouplist"), TSLib.Messages.NotificationType.ServerGroupList);
+		lock (serverGroups)
+		{
+			serverGroups.Clear();
+			if (r.Ok)
+				foreach (var g in r.Value.Where(g => g.GroupType == GroupType.Regular))
+					serverGroups[g.ServerGroupId.Value] = g.Name;
+		}
+		Note("groups", r.Ok ? null : r.Error, "b_virtualserver_servergroup_list");
+	}
+
+	void Note<T>(string key, R<T, CommandError> result, string permission) where T : notnull =>
+		Note(key, result.Ok ? null : result.Error, permission);
+
+	/// <summary>Remembers whether the last try of a feature worked; only a missing permission counts as a no.</summary>
+	void Note(string key, CommandError? error, string permission)
+	{
+		bool? ok = error is null ? true : error.Id == TsErrorCode.permissions_client_insufficient ? false : null;
+		if (ok is null) return;
+		lock (checks) checks[key] = new PermissionCheck(key, ok, permission, error?.ErrorFormat());
+	}
+
+	void Note(string key, E<CommandError> result, string permission) =>
+		Note(key, result.Ok ? null : result.Error, permission);
+
+	void NoteMove(E<CommandError> r) => Note("move", r, "i_channel_join_power");
+
+	/// <summary>People online (not the bot) and the server's groups.</summary>
+	public async Task<TsPeople> GetPeopleAsync()
+	{
+		try
+		{
+			return await scheduler.Invoke(() =>
+			{
+				if (client is not { Connected: true } c) return new TsPeople(false, [], []);
+				var self = c.Book.Self();
+				var people = c.Book.Clients.Values
+					.Where(x => x.Id != self?.Id && x.ClientType == ClientType.Full && x.Uid is not null)
+					.Select(x => new TsPerson(x.Uid!.Value.Value, x.Name, c.Book.Channels.GetValueOrDefault(x.Channel)?.Name ?? "",
+						x.ServerGroups.Select(g => g.Value).ToList()))
+					.OrderBy(p => p.Name, StringComparer.OrdinalIgnoreCase).ToList();
+				List<TsGroup> groups;
+				lock (serverGroups) groups = serverGroups.Select(g => new TsGroup(g.Key, g.Value)).OrderBy(g => g.Name).ToList();
+				return new TsPeople(true, people, groups);
+			}).WaitAsync(TimeSpan.FromSeconds(5));
+		}
+		catch (Exception ex) when (ex is TimeoutException or InvalidOperationException or ObjectDisposedException)
+		{
+			return new TsPeople(false, [], []);
+		}
+	}
+
+	/// <summary>
+	/// What the bot can do on the server: be heard (talk power against the channel's), write in the chat,
+	/// show the song in its description, change channels (!join, !follow) and see the server groups.
+	/// </summary>
+	public async Task<IReadOnlyList<PermissionCheck>> GetPermissionsAsync()
+	{
+		try
+		{
+			return await scheduler.Invoke(() =>
+			{
+				var list = new List<PermissionCheck>();
+				if (client is not { Connected: true } c) return list;
+				var self = c.Book.Self();
+				var need = c.Book.CurrentChannel()?.NeededTalkPower ?? 0;
+				var have = self?.TalkPower ?? 0;
+				list.Add(new PermissionCheck("talk", need <= 0 || have >= need || self?.TalkPowerGranted == true, "i_client_talk_power", $"{have}/{need}"));
+				lock (checks)
+					foreach (var key in new[] { "chat", "description", "move", "groups" })
+						list.Add(checks.TryGetValue(key, out var ch) ? ch : new PermissionCheck(key, null, key switch
+						{
+							"chat" => "b_client_channel_textmessage_send",
+							"description" => "b_client_modify_own_description",
+							"move" => "i_channel_join_power",
+							_ => "b_virtualserver_servergroup_list",
+						}, null));
+				return list;
+			}).WaitAsync(TimeSpan.FromSeconds(5));
+		}
+		catch (Exception ex) when (ex is TimeoutException or InvalidOperationException or ObjectDisposedException)
+		{
+			return [];
+		}
 	}
 
 	async Task UploadAvatarIfNeeded(TsFullClient c)
@@ -257,6 +363,7 @@ public sealed class TsBot : BackgroundService
 		if (text.Length > 80) text = text[..79] + "…";
 		if (current == text) return;
 		var r = await c.ChangeDescription(text);
+		Note("description", r, "b_client_modify_own_description");
 		if (r.Ok) description = text;
 		// Said once per connection: the setting looks on in the panel, so the reason must be findable.
 		else if (!descriptionWarned)
@@ -294,6 +401,7 @@ public sealed class TsBot : BackgroundService
 	{
 		if (!c.Connected || c.Book.Self()?.Channel == target) return;
 		var r = await c.ClientMove(c.ClientId, target);
+		NoteMove(r);
 		if (r.Ok) StatusChanged?.Invoke();
 		else log.LogInformation("Could not follow {Name}: {Error}", followingName, r.Error.ErrorFormat());
 	}
@@ -331,10 +439,10 @@ public sealed class TsBot : BackgroundService
 			{
 				foreach (var part in SplitMessage(reply))
 				{
-					if (msg.Target == TextMessageTargetMode.Private)
-						await c.SendPrivateMessage(part, msg.InvokerId);
-					else
-						await c.SendChannelMessage(part);
+					var r = msg.Target == TextMessageTargetMode.Private
+						? await c.SendPrivateMessage(part, msg.InvokerId)
+						: await c.SendChannelMessage(part);
+					Note("chat", r, msg.Target == TextMessageTargetMode.Private ? "i_client_private_textmessage_power" : "b_client_channel_textmessage_send");
 				}
 			}
 
@@ -352,12 +460,27 @@ public sealed class TsBot : BackgroundService
 					await Reply(Strings.Get(Lang, "unknown-command", Prefix));
 				return;
 			}
-			if (!IsAllowed(c, msg))
+			var level = LevelOf(c, msg);
+			if (level == ChatLevel.None)
 			{
 				await Reply(Strings.Get(Lang, "no-permission"));
 				return;
 			}
-			var reply = await RunCommand(c, command, arg, msg);
+			// "!queue rock" plays a playlist and "!playlist" alone lists them: the level goes by what happens.
+			var acting = command switch { "queue" when arg.Length > 0 => "playlist", "playlist" when arg.Length == 0 => "playlists", _ => command };
+			var asking = acting is "np" or "queue" or "help" or "playlists";
+			if (Bot.OnlyFromChannel && level < ChatLevel.Admin && !asking && !InBotChannel(c, msg))
+			{
+				await Reply(Strings.Get(Lang, "only-in-channel"));
+				return;
+			}
+			var need = asking ? ChatLevel.Everyone : ChatPermissions.Required(Bot, acting);
+			if (level < need)
+			{
+				await Reply(Strings.Get(Lang, "need-level", Prefix + cmd, LevelName(need)));
+				return;
+			}
+			var reply = await RunCommand(c, command, arg, msg, level);
 			if (reply != null)
 				await Reply(reply);
 		}
@@ -403,28 +526,40 @@ public sealed class TsBot : BackgroundService
 		if (piece.Length > 0) yield return piece.ToString();
 	}
 
-	bool IsAllowed(TsFullClient c, TextMessage msg)
+	ChatLevel LevelOf(TsFullClient c, TextMessage msg)
 	{
-		var users = Bot.AllowedUsers;
-		var groups = Bot.AllowedServerGroups;
-		if (users.Count == 0 && groups.Count == 0) return true;
-		if (msg.InvokerUid is { } uid && users.Contains(uid.Value)) return true;
-		if (c.Book.Clients.TryGetValue(msg.InvokerId, out var who))
-			return who.ServerGroups.Any(g => groups.Contains(g.Value));
-		return false;
+		var groups = c.Book.Clients.TryGetValue(msg.InvokerId, out var who) ? who.ServerGroups.Select(g => g.Value) : [];
+		return ChatPermissions.LevelOf(Bot, msg.InvokerUid?.Value, groups);
 	}
+
+	static bool InBotChannel(TsFullClient c, TextMessage msg) =>
+		c.Book.Self() is { } self && c.Book.Clients.TryGetValue(msg.InvokerId, out var who) && who.Channel == self.Channel;
+
+	string LevelName(ChatLevel level) => Strings.Get(Lang, level == ChatLevel.Admin ? "level-admin" : "level-dj");
+
+	// ---- other people's songs ----
+
+	/// <summary>A song is someone's own when they asked for it; the radio's picks are nobody's.</summary>
+	static bool Own(Track t, TextMessage msg) => t.Radio || (msg.InvokerUid?.Value is { } uid && t.RequesterId == uid);
+
+	bool MayChangeOthers(ChatLevel level) => level >= ChatPermissions.Parse(Bot.OthersSongs);
+
+	/// <summary>The answer to touching someone else's song without the level: a vote, if that's on.</summary>
+	string OthersRefusal() => Bot.VoteSkip
+		? Strings.Get(Lang, "vote-needed", Prefix)
+		: Strings.Get(Lang, "others-song", LevelName(ChatPermissions.Parse(Bot.OthersSongs)));
 
 	// A song that starts now is announced in the bot's channel; that answers a command written there,
 	// not one sent privately (maybe from another channel).
-	string? Queue(Track track, bool now, TextMessage msg)
+	string? Queue(Track track, bool now, TextMessage msg, bool exempt)
 	{
 		var announced = Bot.Announce && msg.Target == TextMessageTargetMode.Channel;
 		if (now)
 		{
-			player.PlayNow(track);
+			player.PlayNow(track, exempt);
 			return announced ? null : Confirm(Strings.Get(Lang, "now-playing", Link(track), Strings.Duration(Lang, track)));
 		}
-		var pos = player.Enqueue(track);
+		var pos = player.Enqueue(track, exempt);
 		return pos == 0 && announced ? null
 			: Confirm(pos == 0 ? Strings.Get(Lang, "now-playing", Link(track), Strings.Duration(Lang, track))
 				: Strings.Get(Lang, "added", Link(track), pos, Strings.Duration(Lang, track)));
@@ -474,10 +609,6 @@ public sealed class TsBot : BackgroundService
 	Track? voteTrack;
 	readonly HashSet<string> votes = [];
 
-	/// <summary>With vote skip on, the song playing is someone else's: cutting it short takes a vote.</summary>
-	bool NeedsVote(TextMessage msg) =>
-		Bot.VoteSkip && player.Current is { } now && (msg.InvokerUid?.Value is not { } uid || now.RequesterId != uid);
-
 	/// <summary>A vote to skip: half of the people in the bot's channel (rounded up) skip the song.</summary>
 	string SkipVote(TsFullClient c, TextMessage msg, Track now)
 	{
@@ -508,11 +639,19 @@ public sealed class TsBot : BackgroundService
 	/// <summary>A reply that only confirms what the command did; left out when the bot is set not to.</summary>
 	string? Confirm(string text) => Bot.ConfirmCommands ? text : null;
 
-	async Task<string?> RunCommand(TsFullClient c, string command, string arg, TextMessage msg)
+	async Task<string?> RunCommand(TsFullClient c, string command, string arg, TextMessage msg, ChatLevel level)
 	{
 		var who = msg.InvokerName.ToString();
-		if (command is "playnow" or "skipto" or "back" or "stop" && NeedsVote(msg))
-			return Strings.Get(Lang, "vote-needed", Prefix);
+		var others = !MayChangeOthers(level);
+		// Commands that cut the song playing short, or throw away queued songs, of someone else.
+		if (others && command is "playnow" or "skipto" or "back" or "stop" && player.Current is { } playing && !Own(playing, msg))
+			return OthersRefusal();
+		if (others && command is "stop" or "clear" && player.GetState().Queue.Any(t => !Own(t, msg)))
+			return OthersRefusal();
+		if (others && command == "skipto" && int.TryParse(arg, out var upTo) && player.GetState().Queue.Take(upTo - 1).Any(t => !Own(t, msg)))
+			return OthersRefusal();
+		// DJs and admins aren't held to the songs-per-person limit.
+		var exempt = level >= ChatLevel.Dj;
 
 		switch (command)
 		{
@@ -522,7 +661,7 @@ public sealed class TsBot : BackgroundService
 			try
 			{
 				var track = await library.ResolveAsync(arg, who) with { RequesterId = msg.InvokerUid?.Value };
-				return Queue(track, command == "playnow", msg);
+				return Queue(track, command == "playnow", msg, exempt);
 			}
 			catch (YouTubeException ex) { return Strings.Error(Lang, ex.Message); }
 			catch (QueueFullException) { return Strings.Get(Lang, "queue-full"); }
@@ -552,7 +691,7 @@ public sealed class TsBot : BackgroundService
 			{
 				// The search only saw the list; this looks the song itself up (length, live, saved copy).
 				var track = await library.ResolveAsync(found[n - 1].Url, who) with { RequesterId = msg.InvokerUid?.Value };
-				return Queue(track, now: false, msg);
+				return Queue(track, now: false, msg, exempt);
 			}
 			catch (YouTubeException ex) { return Strings.Error(Lang, ex.Message); }
 			catch (QueueFullException) { return Strings.Get(Lang, "queue-full"); }
@@ -589,6 +728,7 @@ public sealed class TsBot : BackgroundService
 				return Strings.Get(Lang, "usage-move", Prefix);
 			var queue = player.GetState().Queue;
 			if (from < 1 || from > queue.Count) return Strings.Get(Lang, "bad-index", from);
+			if (others && !Own(queue[from - 1], msg)) return OthersRefusal();
 			to = Math.Clamp(to, 1, queue.Count);
 			return player.Move(from - 1, to - 1, queue[from - 1].Id)
 				? Confirm(Strings.Get(Lang, "moved", Escape(queue[from - 1].Title), to))
@@ -598,11 +738,10 @@ public sealed class TsBot : BackgroundService
 		case "skip":
 		{
 			if (player.Current is not { } now) return Strings.Get(Lang, "nothing-playing");
-			var uid = msg.InvokerUid?.Value;
 			// Whoever asked for the song may always skip it.
-			if (!NeedsVote(msg))
+			if (!others || Own(now, msg))
 				return player.Skip() ? Confirm(Strings.Get(Lang, "skipped")) : Strings.Get(Lang, "nothing-playing");
-			return SkipVote(c, msg, now);
+			return Bot.VoteSkip ? SkipVote(c, msg, now) : OthersRefusal();
 		}
 
 		case "stop":
@@ -654,7 +793,9 @@ public sealed class TsBot : BackgroundService
 		case "remove":
 		{
 			if (!int.TryParse(arg, out var n)) return Strings.Get(Lang, "bad-index", Escape(arg));
-			var removed = player.Remove(n - 1);
+			var queued = player.GetState().Queue;
+			if (others && n >= 1 && n <= queued.Count && !Own(queued[n - 1], msg)) return OthersRefusal();
+			var removed = player.Remove(n - 1, n >= 1 && n <= queued.Count ? queued[n - 1].Id : null);
 			return removed is null ? Strings.Get(Lang, "bad-index", n) : Confirm(Strings.Get(Lang, "removed", Escape(removed.Title)));
 		}
 
@@ -685,7 +826,7 @@ public sealed class TsBot : BackgroundService
 			if (playlists.Find(arg) is not { } list)
 				return Strings.Get(Lang, "playlist-not-found", Escape(arg), PlaylistNames());
 			var uid = msg.InvokerUid?.Value;
-			var added = player.EnqueueMany(list.Songs.Select(s => s.ToTrack(who) with { RequesterId = uid }), exempt: false, out var limited);
+			var added = player.EnqueueMany(list.Songs.Select(s => s.ToTrack(who) with { RequesterId = uid }), exempt, out var limited);
 			if (added == 0 && list.Songs.Count > 0)
 				return limited ? Strings.Get(Lang, "user-limit", Bot.MaxSongsPerUser) : Strings.Get(Lang, "queue-full");
 			if (limited) return Strings.Get(Lang, "playlist-added", added, Escape(list.Name)) + "\n" + Strings.Get(Lang, "user-limit", Bot.MaxSongsPerUser);
@@ -740,6 +881,7 @@ public sealed class TsBot : BackgroundService
 		{
 			if (!c.Book.Clients.TryGetValue(msg.InvokerId, out var invoker)) return Strings.Get(Lang, "join-failed");
 			var r = await c.ClientMove(c.ClientId, invoker.Channel);
+			NoteMove(r);
 			StatusChanged?.Invoke();
 			return r.Ok ? Confirm(Strings.Get(Lang, "joined")) : Strings.Get(Lang, "join-failed");
 		}
