@@ -6,15 +6,18 @@ e Added to the queue (#1)
 c !play test tone
 e Added to the queue (#2)
 c !play test tone
-e You already have 2 songs waiting
+e You already have as many songs waiting as allowed (2)
 # Someone else's songs don't count, and once one of mine plays there is room again.
 P test tone
 c !skip
 c !play test tone
 e Added to the queue (#3)
 c !play test tone
-e You already have 2 songs waiting
+e You already have as many songs waiting as allowed (2)
+# !playnow counts too.
+c !playnow test tone
+e You already have as many songs waiting as allowed (2)
 # A playlist stops at the limit too.
 L Limit test 5
 c !playlist Limit test
-e You already have 2 songs waiting
+e You already have as many songs waiting as allowed (2)

@@ -4,6 +4,7 @@
 # Runs from Git Bash on Windows (tests in WSL) or on Linux.
 # usage: tests/run.sh            translations, chat, stop time
 #        tests/run.sh all        and the panel update test
+#        tests/run.sh long       failure cases and a long run (SOAK_MIN minutes, default 30)
 #        tests/run.sh chat 12 13 only these chat scenarios (by number)
 set -u
 R=$(cd "$(dirname "$0")/.." && pwd)
@@ -38,6 +39,10 @@ dotnet publish "$R/tests/chat/ChatTest.csproj" -c Release -r linux-x64 --self-co
 
 run "chat" in_linux bash "$(lp "$R/tests/wsl/chat.sh")" "$(lp "$B/panda/panda")" "$(lp "$B/chat/chattest")" ${SCENARIOS[@]+"${SCENARIOS[@]}"}
 [ "$MODE" = chat ] || run "stop time" in_linux bash "$(lp "$R/tests/wsl/stoptime.sh")" "$(lp "$B/panda/panda")"
+
+if [ "$MODE" = long ]; then
+	run "failure cases and long run" in_linux env SOAK_MIN="${SOAK_MIN:-30}" bash "$(lp "$R/tests/wsl/resilience.sh")" "$(lp "$B/panda/panda")"
+fi
 
 if [ "$MODE" = all ]; then
 	# The release archive, as build-release.sh makes it.

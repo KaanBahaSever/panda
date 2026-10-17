@@ -9,6 +9,17 @@ c !voteskip
 e Vote to skip: 1/2.
 o !skip
 e Skipped by vote (2/2).
+# Cutting someone else's song short in other ways takes the vote too.
+P test tone
+c !playnow test tone
+e vote with [b]!voteskip[/b]
+c !stop
+e vote with [b]!voteskip[/b]
+c !np
+e Now playing
+c !skip
+o !skip
+e Skipped by vote
 # Whoever asked for the song skips it at once.
 c !play test tone
 c !skip

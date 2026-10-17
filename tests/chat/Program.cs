@@ -35,7 +35,7 @@ if (args.Length < 3)
 var defaults = new Dictionary<string, string>
 {
 	["announce"] = "true", ["confirmCommands"] = "true", ["showSongInDescription"] = "true", ["language"] = "en",
-	["maxQueueLength"] = "100", ["maxDurationMinutes"] = "60",
+	["maxQueueLength"] = "100", ["maxDurationMinutes"] = "60", ["maxSongsPerUser"] = "0", ["voteSkip"] = "false",
 };
 var panel = new Panel(args[1], Environment.GetEnvironmentVariable("PANDA_TEST_PASSWORD") ?? "testpass123");
 await panel.LoginAsync();

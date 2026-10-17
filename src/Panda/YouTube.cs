@@ -231,7 +231,7 @@ public sealed partial class YouTube(PandaConfig config, ILogger<YouTube> log)
 			UseShellExecute = false,
 		};
 		foreach (var a in BaseArgs()) yt.ArgumentList.Add(a);
-		if (attempt >= 2 && config.YouTube.RetryPlayerClients.Trim() is { Length: > 0 } clients)
+		if (attempt >= 2 && (config.YouTube.RetryPlayerClients ?? "").Trim() is { Length: > 0 } clients)
 			foreach (var a in new[] { "--extractor-args", $"youtube:player_client={clients}" })
 				yt.ArgumentList.Add(a);
 		foreach (var a in new[] { "--quiet", "--no-playlist", "-f", "bestaudio/best", "-o", "-", track.Url })

@@ -18,9 +18,9 @@ public static class Strings
 		["pick-first"] = ("Search first: [b]{0}search <song name>[/b]", "Önce ara: [b]{0}ara <şarkı adı>[/b]", "Cherche d'abord : [b]{0}chercher <nom du morceau>[/b]", "Such zuerst: [b]{0}suchen <Songname>[/b]"),
 		["pick-bad"] = ("There is no result #{0}.", "#{0} numaralı bir sonuç yok.", "Il n'y a pas de résultat n°{0}.", "Es gibt kein Ergebnis #{0}."),
 		["usage-seek"] = ("Usage: [b]{0}seek 1:30[/b] (or [b]+10[/b] / [b]-10[/b] seconds)", "Kullanım: [b]{0}sar 1:30[/b] (ya da [b]+10[/b] / [b]-10[/b] saniye)", "Utilisation : [b]{0}aller 1:30[/b] (ou [b]+10[/b] / [b]-10[/b] secondes)", "Verwendung: [b]{0}spulen 1:30[/b] (oder [b]+10[/b] / [b]-10[/b] Sekunden)"),
-		["seeked"] = ("⏩ Jumped to {0}.", "⏩ {0} noktasına gidildi.", "⏩ Aller à {0}.", "⏩ Zu {0} gesprungen."),
-		["cant-seek"] = ("A live stream can't be wound.", "Canlı yayında ileri geri sarılamaz.", "On ne peut pas se déplacer dans un direct.", "In einem Livestream kann man nicht spulen."),
-		["back"] = ("⏮ Playing the previous song again: [b]{0}[/b]", "⏮ Önceki şarkı tekrar çalıyor: [b]{0}[/b]", "⏮ Le morceau précédent rejoue : [b]{0}[/b]", "⏮ Der vorige Song läuft nochmal: [b]{0}[/b]"),
+		["seeked"] = ("⏩ Jumped to {0}.", "⏩ {0} noktasına gidildi.", "⏩ Reprise à {0}.", "⏩ Zu {0} gesprungen."),
+		["cant-seek"] = ("You can't seek in a live stream.", "Canlı yayında ileri geri sarılamaz.", "On ne peut pas se déplacer dans un direct.", "In einem Livestream kann man nicht spulen."),
+		["back"] = ("⏮ Playing the previous song again: [b]{0}[/b]", "⏮ Önceki şarkı tekrar çalıyor: [b]{0}[/b]", "⏮ Retour au morceau précédent : [b]{0}[/b]", "⏮ Der vorige Song läuft nochmal: [b]{0}[/b]"),
 		["back-none"] = ("Nothing was played before this.", "Bundan önce bir şey çalınmadı.", "Rien n'a été joué avant.", "Davor wurde nichts gespielt."),
 		["usage-move"] = ("Usage: [b]{0}move <from #> <to #>[/b]", "Kullanım: [b]{0}taşı <nereden #> <nereye #>[/b]", "Utilisation : [b]{0}déplacer <de #> <à #>[/b]", "Verwendung: [b]{0}verschieben <von #> <nach #>[/b]"),
 		["moved"] = ("Moved [b]{0}[/b] to #{1}.", "[b]{0}[/b] #{1} sırasına taşındı.", "[b]{0}[/b] déplacé en n°{1}.", "[b]{0}[/b] auf #{1} verschoben."),
@@ -49,16 +49,18 @@ public static class Strings
 		["no-permission"] = ("You are not allowed to control me.", "Beni kontrol etme iznin yok.", "Tu n'as pas le droit de me contrôler.", "Du darfst mich nicht steuern."),
 		["unknown-command"] = ("Unknown command. Try [b]{0}help[/b]", "Bilinmeyen komut. [b]{0}yardım[/b] yazabilirsin.", "Commande inconnue. Essaie [b]{0}aide[/b]", "Unbekannter Befehl. Versuch's mit [b]{0}hilfe[/b]"),
 		["usage-play"] = ("Usage: [b]{0}play <song name or YouTube link>[/b]", "Kullanım: [b]{0}çal <şarkı adı veya YouTube linki>[/b]", "Utilisation : [b]{0}jouer <nom du morceau ou lien YouTube>[/b]", "Verwendung: [b]{0}spielen <Songname oder YouTube-Link>[/b]"),
-		["user-limit"] = ("You already have {0} songs waiting in the queue. Add more when one of them has played.",
-			"Sırada zaten bekleyen {0} şarkın var. Biri çalınca yenisini ekleyebilirsin.",
-			"Tu as déjà {0} morceaux en attente dans la file. Ajoute-en d'autres quand l'un d'eux sera passé.",
-			"Du hast schon {0} Songs in der Warteschlange. Füg neue hinzu, wenn einer davon gespielt wurde."),
+		["user-limit"] = ("You already have as many songs waiting as allowed ({0}). Add more when one of them has played.",
+			"Sırada izin verilen sayıda ({0}) bekleyen şarkın var. Biri çalınca yenisini ekleyebilirsin.",
+			"Tu as déjà le nombre maximum de morceaux en attente ({0}). Ajoute-en d'autres quand l'un d'eux aura été joué.",
+			"Du hast schon die erlaubte Anzahl Songs ({0}) in der Warteschlange. Füg neue hinzu, wenn einer davon gespielt wurde."),
+		["vote-needed"] = ("This song is someone else's: vote with [b]{0}voteskip[/b].", "Bu şarkıyı başkası istedi: [b]{0}oyla[/b] ile oy ver.",
+			"Ce morceau est celui de quelqu'un d'autre : vote avec [b]{0}voter[/b].", "Diesen Song hat jemand anderes gewünscht: stimm mit [b]{0}abstimmen[/b] ab."),
 		["queue-full"] = ("The queue is full.", "Sıra dolu.", "La file est pleine.", "Die Warteschlange ist voll."),
 		["err-not-found"] = ("Nothing found on YouTube.", "YouTube'da bir şey bulamadım.", "Rien trouvé sur YouTube.", "Auf YouTube nichts gefunden."),
 		["err-playlist-empty"] = ("That playlist is empty.", "Bu çalma listesi boş.", "Cette playlist est vide.", "Diese Playlist ist leer."),
 		["err-not-youtube"] = ("I only play YouTube links.", "Sadece YouTube linklerini çalabiliyorum.", "Je ne lis que les liens YouTube.", "Ich spiele nur YouTube-Links."),
 		["err-too-long"] = ("That video is too long.", "Bu video çok uzun.", "Cette vidéo est trop longue.", "Das Video ist zu lang."),
-		["err-bot-check"] = ("YouTube wants to check I'm not a bot. Add fresh cookies in the panel.", "YouTube bot kontrolü istiyor. Panelden yeni cookies ekleyin.", "YouTube veut vérifier que je ne suis pas un robot. Ajoutez de nouveaux cookies dans le panneau.", "YouTube will prüfen, dass ich kein Bot bin. Füge im Panel neue Cookies hinzu."),
+		["err-bot-check"] = ("YouTube wants to check I'm not a bot. Add fresh cookies in the panel.", "YouTube bot kontrolü istiyor. Panelden yeni cookies ekleyin.", "YouTube veut vérifier que je ne suis pas un robot. Ajoutez de nouveaux cookies dans le panneau.", "YouTube will sichergehen, dass ich kein Bot bin. Füge im Panel neue Cookies hinzu."),
 		["err-unavailable"] = ("That video isn't available.", "Bu video kullanılamıyor.", "Cette vidéo n'est pas disponible.", "Dieses Video ist nicht verfügbar."),
 		["err-age"] = ("That video is age-restricted. Add cookies of an adult account in the panel.", "Bu video yaş sınırlı. Panelden yetişkin bir hesabın cookies'ini ekleyin.", "Cette vidéo est soumise à une limite d'âge. Ajoutez dans le panneau les cookies d'un compte adulte.", "Dieses Video hat eine Altersbeschränkung. Füge im Panel die Cookies eines volljährigen Kontos hinzu."),
 		["err-timeout"] = ("YouTube didn't answer in time. Try again.", "YouTube zamanında cevap vermedi. Tekrar dene.", "YouTube n'a pas répondu à temps. Réessaie.", "YouTube hat nicht rechtzeitig geantwortet. Versuch es nochmal."),
@@ -115,7 +117,7 @@ public static class Strings
 			"[b]{0}warteschlange[/b] – Warteschlange zeigen · [b]{0}läuft[/b] – was gerade läuft\n" +
 			"[b]{0}lautstärke[/b] <0-100> · [b]{0}wiederholen[/b] <aus|eins|alle> · [b]{0}mischen[/b]\n" +
 			"[b]{0}entfernen[/b] <#> · [b]{0}leeren[/b] · [b]{0}komm[/b] – komm in meinen Channel · [b]{0}folgen[/b] – folge mir durch die Channels\n" +
-			"[b]{0}suchen[/b] <Song> – aus 5 Ergebnissen wählen · [b]{0}spulen[/b] 1:30 · [b]{0}zurück[/b] · [b]{0}springen[/b] <#> · [b]{0}verschieben[/b] <#> <#> · [b]{0}abstimmen[/b] – fürs Überspringen stimmen\n" +
+			"[b]{0}suchen[/b] <Song> – aus 5 Ergebnissen wählen · [b]{0}spulen[/b] 1:30 · [b]{0}zurück[/b] · [b]{0}springen[/b] <#> · [b]{0}verschieben[/b] <#> <#> · [b]{0}abstimmen[/b] – für das Überspringen abstimmen\n" +
 			"[b]{0}radio[/b] <an|aus> – ähnliche Songs weiterspielen, wenn die Warteschlange leer ist\n" +
 			"[b]{0}playlist[/b] <Name> – gespeicherte Playlist einreihen · [b]{0}playlists[/b] · [b]{0}fav[/b] – diesen Song in den Favoriten speichern\n" +
 			"(englische Befehle wie [b]{0}play[/b] gehen auch)"),

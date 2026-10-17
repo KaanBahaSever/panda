@@ -88,7 +88,7 @@ const I18N = {
     sSongs: 'different songs', sPeople: 'people', topSongs: 'Most played', topPeople: 'Who asked the most', activity: 'Activity', byHour: 'By hour of day',
   },
   tr: {
-    loginHint: 'Sevimli TeamSpeak DJ\'in', password: 'Şifre', login: 'Giriş yap', language: 'Dil: Türkçe (Français\'ya geç)',
+    loginHint: 'Sevimli TeamSpeak DJ\'in', password: 'Şifre', login: 'Giriş yap', language: 'Dil: Türkçe (Français\'ye geç)',
     theme: 'Karanlık modu aç/kapat', settings: 'Ayarlar', logout: 'Çıkış yap', offline: 'Panda ile bağlantı koptu — yeniden bağlanılıyor…',
     nowPlaying: 'Şimdi çalıyor', live: 'CANLI', napping: 'Panda uyukluyor 💤 — bir şarkı ekle!', seek: 'Sar',
     shuffle: 'Sırayı karıştır', stop: 'Durdur', play: 'Oynat', pause: 'Duraklat', skip: 'Geç', mute: 'Sessize al', unmute: 'Sesi aç', volume: 'Ses',
@@ -111,7 +111,7 @@ const I18N = {
     sNick: 'Takma ad', removePw: 'Şifreyi kaldır', unchanged: 'değişmedi', sBot: 'Bot', sLang: 'Sohbet dili', sPrefix: 'Komut öneki',
     sAnnounce: 'Her şarkıyı sohbette duyur', sConfirm: 'Sohbet komutlarını onayla', sVoteSkip: 'Oylamayla geç', sVoteSkipHint: 'Başkasının yazdığı !geç bir oy sayılır; botun kanalındakilerin yarısı oy verince şarkı geçilir. Şarkıyı isteyen kişi her zaman geçebilir, panel de hemen geçer.',
     sChatHint: 'Duyuru, her şarkı başlarken kanala yazılır. Onay, !çal ve !geç gibi komutlara verilen kısa cevaptır. Sorular (!şimdi, !sıra, !yardım) ve hatalar her zaman cevaplanır.', sDesc: 'Şarkıyı bot açıklamasında göster', sMaxQueue: 'En fazla sıra uzunluğu', sMaxDur: 'En uzun şarkı (dk)',
-    sMaxDurHint: '0 = sınırsız.', sPerUser: 'Kişi başı şarkı', sPerUserHint: 'Bir kişinin sırada aynı anda bekleyebilecek şarkı sayısı. 0 = sınır yok. Panel yöneticileri sınırlanmaz.', 'err.user-limit': 'Sırada izin verilen kadar bekleyen şarkın var. Biri çalınca yenisini ekleyebilirsin.', sMaxDurShared: 'En uzun şarkı süresi tüm botlar için geçerli.', sUsers: 'İzinli kullanıcılar', sUsersHint: 'Her satıra bir TeamSpeak benzersiz kimliği. Boş = herkes.',
+    sMaxDurHint: '0 = sınırsız.', sPerUser: 'Kişi başı şarkı', sPerUserHint: 'Bir kişinin sırada aynı anda bekleyebilecek şarkı sayısı. 0 = sınır yok. Panel yöneticileri sınırlanmaz.', 'err.user-limit': 'Sırada izin verilen sayıda bekleyen şarkınız var. Biri çalınca yenisini ekleyebilirsiniz.', sMaxDurShared: 'En uzun şarkı süresi tüm botlar için geçerli.', sUsers: 'İzinli kullanıcılar', sUsersHint: 'Her satıra bir TeamSpeak benzersiz kimliği. Boş = herkes.',
     sGroups: 'İzinli sunucu grupları', sGroupsHint: 'Virgülle ayrılmış grup id\'leri. Boş = grup kısıtlaması yok.', save: 'Kaydet', reconnect: 'Botu yeniden bağla',
     sCookies: 'YouTube çerezleri', sCookiesHelp: 'YouTube "bot olmadığınızı doğrulayın" derse: gizli/özel bir pencere açın, YouTube\'a giriş yapın, bir "cookies.txt" tarayıcı eklentisiyle çerezleri dışa aktarın, buraya yapıştırın ve o pencereyi kapatın.',
     chooseFile: 'Dosya seç', saveCookies: 'Çerezleri kaydet', removeCookies: 'Çerezleri kaldır', cookiesOn: 'Çerezler var ✓', cookiesOff: 'Çerez yok',
@@ -195,7 +195,7 @@ const I18N = {
     sNick: 'Pseudo', removePw: 'Supprimer le mot de passe', unchanged: 'inchangé', sBot: 'Bot', sLang: 'Langue du chat', sPrefix: 'Préfixe des commandes',
     sAnnounce: 'Annoncer chaque morceau dans le chat', sConfirm: 'Confirmer les commandes du chat', sVoteSkip: 'Passer par vote', sVoteSkipHint: 'Un !passer d\'une autre personne compte comme un vote ; le morceau est passé quand la moitié du canal du bot a voté. Celui qui l\'a demandé peut toujours le passer, et le panneau le passe tout de suite.',
     sChatHint: 'L\'annonce publie chaque morceau quand il commence. Les confirmations sont les réponses courtes aux commandes comme !jouer et !passer. Les questions (!encours, !file, !aide) et les erreurs reçoivent toujours une réponse.', sDesc: 'Afficher le morceau dans la description du bot', sMaxQueue: 'Longueur max. de la file', sMaxDur: 'Durée max. d\'un morceau (min)',
-    sMaxDurHint: '0 = illimitée.', sPerUser: 'Morceaux par personne', sPerUserHint: 'Combien de morceaux une personne peut avoir en attente dans la file. 0 = pas de limite. Les admins du panneau ne sont pas limités.', 'err.user-limit': 'Vous avez déjà autant de morceaux en attente que permis. Ajoutez-en quand l\'un d\'eux sera passé.', sMaxDurShared: 'La durée max. d\'un morceau est commune à tous les bots.', sUsers: 'Utilisateurs autorisés', sUsersHint: 'Un identifiant unique TeamSpeak par ligne. Vide = tout le monde.',
+    sMaxDurHint: '0 = illimitée.', sPerUser: 'Morceaux par personne', sPerUserHint: 'Combien de morceaux une personne peut avoir en attente dans la file. 0 = pas de limite. Les admins du panneau ne sont pas limités.', 'err.user-limit': 'Vous avez déjà autant de morceaux en attente que permis. Ajoutez-en quand l\'un d\'eux aura été joué.', sMaxDurShared: 'La durée max. d\'un morceau est commune à tous les bots.', sUsers: 'Utilisateurs autorisés', sUsersHint: 'Un identifiant unique TeamSpeak par ligne. Vide = tout le monde.',
     sGroups: 'Groupes de serveur autorisés', sGroupsHint: 'Ids de groupes séparés par des virgules. Vide = aucune restriction de groupe.', save: 'Enregistrer', reconnect: 'Reconnecter le bot',
     sCookies: 'Cookies YouTube', sCookiesHelp: 'Si YouTube demande de « confirmer que vous n\'êtes pas un robot » : ouvrez une fenêtre de navigation privée, connectez-vous à YouTube, exportez les cookies avec une extension « cookies.txt », collez-les ici, puis fermez cette fenêtre.',
     chooseFile: 'Choisir un fichier', saveCookies: 'Enregistrer les cookies', removeCookies: 'Supprimer les cookies', cookiesOn: 'Cookies présents ✓', cookiesOff: 'Aucun cookie',
@@ -258,8 +258,8 @@ const I18N = {
   de: {
     loginHint: 'Dein gemütlicher TeamSpeak-DJ', password: 'Passwort', login: 'Anmelden', language: 'Sprache: Deutsch (zu English wechseln)',
     theme: 'Dunkelmodus an/aus', settings: 'Einstellungen', logout: 'Abmelden', offline: 'Verbindung zu Panda verloren — verbinde neu…',
-    nowPlaying: 'Läuft gerade', live: 'LIVE', napping: 'Panda macht ein Nickerchen 💤 — füg einen Song hinzu!', seek: 'Spulen',
-    shuffle: 'Warteschlange mischen', stop: 'Stopp', play: 'Abspielen', pause: 'Pause', skip: 'Überspringen', mute: 'Stumm', unmute: 'Ton an', volume: 'Lautstärke',
+    nowPlaying: 'Läuft gerade', live: 'LIVE', napping: 'Panda macht ein Nickerchen 💤 — füg einen Song hinzu!', seek: 'Position',
+    shuffle: 'Warteschlange mischen', stop: 'Stopp', play: 'Abspielen', pause: 'Pause', skip: 'Überspringen', mute: 'Stummschalten', unmute: 'Ton an', volume: 'Lautstärke',
     loopOff: 'Wiederholung: aus', loopAll: 'Wiederholung: ganze Warteschlange', loopOne: 'Wiederholung: dieser Song',
     radioOn: 'Radio: an — ähnliche Songs folgen, wenn die Warteschlange leer ist', radioOff: 'Radio: aus', radioToast: '📻 Radio an: ähnliche Songs folgen, wenn die Warteschlange leer ist',
     playlists: 'Playlists', plEmpty: 'Noch keine gespeicherten Playlists.', plSaveQueue: 'Warteschlange als Playlist speichern', plAdd: 'Zu Playlist hinzufügen', plNew: 'Neue Playlist…',
@@ -277,7 +277,7 @@ const I18N = {
     sConn: 'Verbindung', sConnHint: 'Änderungen hier verbinden den Bot neu.', sAddress: 'Serveradresse', sServerPw: 'Serverpasswort',
     sChannel: 'Channel', sChannelHint: 'Ein Pfad wie „Musik/Lounge“ oder eine ID wie „/5“. Leer = Standard-Channel.', sChannelPw: 'Channel-Passwort',
     sNick: 'Nickname', removePw: 'Passwort entfernen', unchanged: 'unverändert', sBot: 'Bot', sLang: 'Chat-Sprache', sPrefix: 'Befehlspräfix',
-    sAnnounce: 'Jeden Song im Chat ankündigen', sConfirm: 'Chat-Befehle bestätigen', sVoteSkip: 'Per Abstimmung überspringen', sVoteSkipHint: 'Ein !überspringen von jemand anderem zählt als Stimme; der Song wird übersprungen, wenn die Hälfte im Channel des Bots abgestimmt hat. Wer ihn gewünscht hat, kann ihn immer überspringen, und das Panel überspringt sofort.',
+    sAnnounce: 'Jeden Song im Chat ankündigen', sConfirm: 'Chat-Befehle bestätigen', sVoteSkip: 'Per Abstimmung überspringen', sVoteSkipHint: 'Ein !überspringen von jemand anderem zählt als Stimme; der Song wird übersprungen, wenn die Hälfte der Leute im Channel des Bots abgestimmt hat. Wer ihn gewünscht hat, kann ihn immer überspringen, und das Panel überspringt sofort.',
     sChatHint: 'Ankündigungen posten jeden Song, wenn er beginnt. Bestätigungen sind die kurzen Antworten auf Befehle wie !spielen und !überspringen. Fragen (!läuft, !warteschlange, !hilfe) und Fehler werden immer beantwortet.', sDesc: 'Song in der Bot-Beschreibung zeigen', sMaxQueue: 'Max. Länge der Warteschlange', sMaxDur: 'Max. Songlänge (Min.)',
     sMaxDurHint: '0 = unbegrenzt.', sPerUser: 'Songs pro Person', sPerUserHint: 'Wie viele Songs eine Person gleichzeitig in der Warteschlange haben darf. 0 = kein Limit. Panel-Admins sind nicht begrenzt.', 'err.user-limit': 'Du hast schon so viele Songs in der Warteschlange wie erlaubt. Füg neue hinzu, wenn einer gespielt wurde.', sMaxDurShared: 'Die max. Songlänge gilt für alle Bots.', sUsers: 'Erlaubte Nutzer', sUsersHint: 'Eine TeamSpeak-Unique-ID pro Zeile. Leer = alle.',
     sGroups: 'Erlaubte Servergruppen', sGroupsHint: 'Gruppen-IDs, durch Kommas getrennt. Leer = keine Gruppenbeschränkung.', save: 'Speichern', reconnect: 'Bot neu verbinden',
@@ -303,7 +303,7 @@ const I18N = {
     sLib: 'Bibliothek', sLibOn: 'Jeden gewünschten Song speichern', sLibOnHint: 'Wenn aus, werden nur die nächsten zwei Songs vorab heruntergeladen.',
     sLibMax: 'Größenlimit (GB)', sLibMaxHint: 'Wenn voll, werden die am wenigsten gespielten Songs zuerst gelöscht. 0 = kein Limit.', sLibMaxBad: 'Gib 0 (kein Limit) oder mindestens 0,1 GB ein.',
     sNorm: 'Songs gleich laut abspielen', sNormHint: 'Jeder gespeicherte Song wird einmal gemessen und gleich laut abgespielt. Das allererste Abspielen eines Songs, bevor er gespeichert ist, läuft unverändert.',
-    bots: 'Bots', addBot: 'Bot hinzufügen', botAdded: 'Bot hinzugefügt — leg jetzt seinen Channel fest', idle: 'Untätig',
+    bots: 'Bots', addBot: 'Bot hinzufügen', botAdded: 'Bot hinzugefügt — leg jetzt seinen Channel fest', idle: 'Bereit',
     sPrefixHint: 'Bots im selben Channel brauchen verschiedene Präfixe, sonst antworten alle.', sShared: 'Gilt für alle Bots.',
     sRemoveBot: 'Diesen Bot entfernen', sRemoveBotHint: 'Trennt ihn und löscht seine TeamSpeak-Identität und seinen Verlauf.', removeBot: 'Bot entfernen',
     confirmBotRemove: x => `„${x}“ entfernen? Seine Identität und sein Verlauf werden gelöscht.`, botRemoved: 'Bot entfernt',
@@ -316,7 +316,7 @@ const I18N = {
     'err.self': 'Du kannst dich nicht selbst entfernen.',
     system: 'System', health: 'Status', logs: 'Protokoll', logLevel: 'Stufe', lvlAll: 'Alle', lvlWarn: 'Warnungen und Fehler', lvlError: 'Nur Fehler',
     logSearch: 'Im Protokoll suchen', logFollow: 'Mitlaufen', download: 'Herunterladen', logNote: 'Die letzten 2000 Zeilen seit dem Start von Panda.', logEmpty: 'Keine passenden Zeilen.',
-    hPanda: 'Panda', hVersion: 'Version', hUptime: 'Läuft seit', hRuntime: 'Laufzeit', hOs: 'System', hTs: 'TeamSpeak', hCpu: 'CPU', hRam: 'Arbeitsspeicher',
+    hPanda: 'Panda', hVersion: 'Version', hUptime: 'Läuft seit', hRuntime: 'Laufzeitumgebung', hOs: 'System', hTs: 'TeamSpeak', hCpu: 'CPU', hRam: 'Arbeitsspeicher',
     hDisk: 'Festplatte', hThis: 'Panda', hMachine: 'Ganzer Server', hFree: 'frei', hLib: 'Bibliothek',
     hUsed: (a, b) => `${a} von ${b} belegt`, hLibUsed: a => `${a} auf der Festplatte`, hLibOff: 'Speichern ist aus', hLimit: 'Limit', hNoLimit: 'keins', missingTool: 'nicht gefunden',
     updates: 'Updates', updCheck: 'Prüfen', updChecked: x => `Zuletzt geprüft: ${x}`, updNotes: 'Was ist neu',
@@ -1241,7 +1241,7 @@ async function loadPlaylistSongs(name, li) {
 }
 
 function playPlaylist(btn, name, shuffle) {
-  busy(btn, () => act(() => api('POST', B('/playlist'), { name, shuffle }), r => t('plQueued', r.added, name)));
+  busy(btn, () => act(() => api('POST', B('/playlist'), { name, shuffle }), r => t('plQueued', r.added, name) + (r.limited ? ' — ' + t('err.user-limit') : '')));
 }
 async function renamePlaylist(name) {
   const v = await promptBox(t('plName'), { type: 'text', value: name });

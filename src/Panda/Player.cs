@@ -193,11 +193,14 @@ public sealed class Player : IDisposable
 		requesterId is null ? 0 : queue.Count(t => t.RequesterId == requesterId);
 
 	/// <summary>Puts a track at the front of the queue and skips to it.</summary>
-	public void PlayNow(Track track)
+	/// <param name="exempt">Not held to the songs-per-person limit (a panel admin).</param>
+	public void PlayNow(Track track, bool exempt = false)
 	{
 		lock (gate)
 		{
 			if (disposed) return;
+			if (current != null && !exempt && WaitingLocked(track.RequesterId) >= PerUser)
+				throw new UserLimitException(PerUser);
 			DropRadioPicksLocked();
 			queue.Insert(0, track);
 			AdvanceLocked(finished: false);
@@ -227,11 +230,16 @@ public sealed class Player : IDisposable
 		Track prev;
 		lock (gate)
 		{
-			if (disposed || history.Recent().FirstOrDefault() is not { } last) return null;
+			// The song playing may itself be the last one (played again by !back): look past it.
+			if (disposed || history.Recent().FirstOrDefault(p => p.Id != current?.Id) is not { } last) return null;
 			prev = last.ToTrack();
 			DropRadioPicksLocked();
 			// The interrupted song isn't a finished play: it comes again right after.
-			if (current != null) queue.Insert(0, current);
+			if (current != null)
+			{
+				queue.Insert(0, current);
+				if (queue.Count > settings.Bot.MaxQueueLength) queue.RemoveAt(queue.Count - 1);
+			}
 			current = null;
 			StartLocked(prev, 0);
 		}
@@ -250,8 +258,8 @@ public sealed class Player : IDisposable
 			to = queue[index];
 			var passed = queue.GetRange(0, index);
 			queue.RemoveRange(0, index);
-			if (Loop == LoopMode.All) queue.AddRange(passed);
 			AdvanceLocked(finished: false);
+			if (Loop == LoopMode.All) queue.AddRange(passed);
 		}
 		RaiseChanged();
 		return to;
@@ -609,7 +617,15 @@ public sealed class Player : IDisposable
 					cutOff ? $"broke off at {Strings.FormatTime(startOffset + played)}" : "did not start", ended.Errors.Trim());
 				// A saved file that can't be played is broken; drop it, the next try downloads it again.
 				if (ended.FromFile) library.Delete(current.Id);
-				RetryLocked(cutOff ? startOffset + (int)played : startOffset);
+				// A live stream goes on from "now": seeking a pipe decodes everything up to that point.
+				RetryLocked(current.IsLive ? 0 : cutOff ? startOffset + (int)played : startOffset);
+			}
+			else if (noAudio && heardBefore >= 1)
+			{
+				// It broke off earlier and the tries ran out: it was played, partly; no error message.
+				log.LogWarning("Gave up on {Title} ({Id}) after it broke off: {Reason}", current.Title, current.Id, ended.Errors.Trim());
+				AddHistoryLocked(current);
+				AdvanceAfterFailureLocked();
 			}
 			else if (noAudio)
 			{
@@ -642,8 +658,16 @@ public sealed class Player : IDisposable
 			await Task.Delay(TimeSpan.FromSeconds(1));
 			lock (gate)
 			{
-				if (disposed || gen != generation || current != track) return;
-				StartLocked(track, at, seeking: at > 0, retry: next);
+				if (disposed || sessionSaved || gen != generation || current != track) return;
+				var wasPaused = paused;
+				try { StartLocked(track, at, seeking: at > 0, retry: next); }
+				catch (Exception ex)
+				{
+					log.LogError(ex, "Could not try {Title} again", track.Title);
+					AdvanceAfterFailureLocked();
+				}
+				// Paused during the wait: the new try waits too.
+				if (wasPaused && current == track) { paused = true; timePipe.Paused = true; }
 			}
 			RaiseChanged();
 		});

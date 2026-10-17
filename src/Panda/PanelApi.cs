@@ -67,7 +67,7 @@ public static class PanelApi
 			{
 				var by = isAdmin && req.RequestedBy is { Length: > 0 } r ? r : "🌐 " + ctx.User.Identity?.Name;
 				var track = await library.ResolveAsync(req.Query ?? "", by) with { RequesterId = "panel:" + ctx.User.Identity?.Name };
-				if (req.Now) b.Player.PlayNow(track);
+				if (req.Now) b.Player.PlayNow(track, exempt: true);   // admins only
 				else b.Player.Enqueue(track, exempt: isAdmin);
 				return Results.Ok(track);
 			}
@@ -172,7 +172,7 @@ public static class PanelApi
 			var songs = p.Songs.Select(s => s.ToTrack("🌐 " + ctx.User.Identity?.Name) with { RequesterId = "panel:" + ctx.User.Identity?.Name });
 			if (req.Shuffle) songs = songs.OrderBy(_ => Random.Shared.Next());
 			var added = b.Player.EnqueueMany(songs.ToList(), exempt: ctx.User.IsInRole(Roles.Admin), out var limited);
-			return added == 0 && p.Songs.Count > 0 ? Problem(limited ? "user-limit" : "queue-full") : Results.Ok(new { added });
+			return added == 0 && p.Songs.Count > 0 ? Problem(limited ? "user-limit" : "queue-full") : Results.Ok(new { added, limited });
 		});
 
 		// --- health and logs ---

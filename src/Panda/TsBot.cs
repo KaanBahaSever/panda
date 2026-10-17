@@ -277,6 +277,7 @@ public sealed class TsBot : BackgroundService
 
 	async Task OnTrackStarted(Track t)
 	{
+		lock (votes) { voteTrack = null; votes.Clear(); }
 		if (client is not { Connected: true } c) return;
 		await SetDescription("♪ " + t.Title);
 		if (Bot.Announce)
@@ -338,7 +339,8 @@ public sealed class TsBot : BackgroundService
 			}
 
 			var command = Commands.Find(cmd);
-			if (command is null && cmd.Length is > 0 and <= 2 && cmd.All(char.IsAsciiDigit))
+			if (command is null && cmd.Length is > 0 and <= 2 && cmd.All(char.IsAsciiDigit)
+				&& (msg.Target == TextMessageTargetMode.Private || HasSearch(msg)))
 			{
 				command = "pick";
 				arg = cmd;
@@ -372,7 +374,7 @@ public sealed class TsBot : BackgroundService
 	internal static IEnumerable<string> SplitMessage(string text, int maxBytes = 1000)
 	{
 		var part = new StringBuilder();
-		foreach (var line in text.Split('\n'))
+		foreach (var line in text.Split('\n').SelectMany(l => CutLine(l, maxBytes)))
 		{
 			if (part.Length > 0 && Encoding.UTF8.GetByteCount(part.ToString()) + 1 + Encoding.UTF8.GetByteCount(line) > maxBytes)
 			{
@@ -383,6 +385,22 @@ public sealed class TsBot : BackgroundService
 			part.Append(line);
 		}
 		if (part.Length > 0) yield return part.ToString();
+	}
+
+	// A line too long for one message, in pieces of whole characters.
+	static IEnumerable<string> CutLine(string line, int maxBytes)
+	{
+		if (Encoding.UTF8.GetByteCount(line) <= maxBytes) { yield return line; yield break; }
+		var piece = new StringBuilder();
+		var bytes = 0;
+		foreach (var rune in line.EnumerateRunes())
+		{
+			var n = rune.Utf8SequenceLength;
+			if (bytes + n > maxBytes) { yield return piece.ToString(); piece.Clear(); bytes = 0; }
+			piece.Append(rune.ToString());
+			bytes += n;
+		}
+		if (piece.Length > 0) yield return piece.ToString();
 	}
 
 	bool IsAllowed(TsFullClient c, TextMessage msg)
@@ -418,6 +436,24 @@ public sealed class TsBot : BackgroundService
 	readonly Dictionary<string, (List<Track> Results, DateTime At)> searches = [];
 	static string SearchKey(TextMessage msg) => msg.InvokerUid?.Value ?? "client:" + msg.InvokerId;
 
+	List<Track>? FindSearch(TextMessage msg)
+	{
+		lock (searches)
+			return searches.TryGetValue(SearchKey(msg), out var s) && DateTime.UtcNow - s.At <= SearchKeep ? s.Results : null;
+	}
+
+	bool HasSearch(TextMessage msg) => FindSearch(msg) != null;
+
+	void KeepSearch(TextMessage msg, List<Track> results)
+	{
+		lock (searches)
+		{
+			foreach (var stale in searches.Where(s => DateTime.UtcNow - s.Value.At > SearchKeep).Select(s => s.Key).ToList())
+				searches.Remove(stale);
+			searches[SearchKey(msg)] = (results, DateTime.UtcNow);
+		}
+	}
+
 	/// <summary>"1:30", "90", "1:02:03", or "+10" / "-10" from <paramref name="position"/>; null if it isn't a time.</summary>
 	internal static int? ParseSeek(string arg, int position)
 	{
@@ -438,6 +474,10 @@ public sealed class TsBot : BackgroundService
 	Track? voteTrack;
 	readonly HashSet<string> votes = [];
 
+	/// <summary>With vote skip on, the song playing is someone else's: cutting it short takes a vote.</summary>
+	bool NeedsVote(TextMessage msg) =>
+		Bot.VoteSkip && player.Current is { } now && (msg.InvokerUid?.Value is not { } uid || now.RequesterId != uid);
+
 	/// <summary>A vote to skip: half of the people in the bot's channel (rounded up) skip the song.</summary>
 	string SkipVote(TsFullClient c, TextMessage msg, Track now)
 	{
@@ -449,14 +489,18 @@ public sealed class TsBot : BackgroundService
 			.Select(Key).ToHashSet();
 		if (!c.Book.Clients.TryGetValue(msg.InvokerId, out var voter) || !listeners.Contains(Key(voter)))
 			return Strings.Get(Lang, "vote-not-here");
-		if (!ReferenceEquals(voteTrack, now)) { voteTrack = now; votes.Clear(); }
-		votes.Add(Key(voter));
-		// Only the votes of people still in the channel count.
-		var have = votes.Count(listeners.Contains);
-		var need = Math.Max(1, (listeners.Count + 1) / 2);
-		if (have < need) return Strings.Get(Lang, "vote-progress", have, need);
-		voteTrack = null;
-		votes.Clear();
+		int have, need;
+		lock (votes)
+		{
+			if (!ReferenceEquals(voteTrack, now)) { voteTrack = now; votes.Clear(); }
+			votes.Add(Key(voter));
+			// Only the votes of people still in the channel count.
+			have = votes.Count(listeners.Contains);
+			need = Math.Max(1, (listeners.Count + 1) / 2);
+			if (have < need) return Strings.Get(Lang, "vote-progress", have, need);
+			voteTrack = null;
+			votes.Clear();
+		}
 		player.Skip();
 		return Strings.Get(Lang, "vote-skipped", have, need);
 	}
@@ -467,6 +511,9 @@ public sealed class TsBot : BackgroundService
 	async Task<string?> RunCommand(TsFullClient c, string command, string arg, TextMessage msg)
 	{
 		var who = msg.InvokerName.ToString();
+		if (command is "playnow" or "skipto" or "back" or "stop" && NeedsVote(msg))
+			return Strings.Get(Lang, "vote-needed", Prefix);
+
 		switch (command)
 		{
 		case "play":
@@ -488,7 +535,7 @@ public sealed class TsBot : BackgroundService
 			try { results = await youtube.SearchAsync(arg, SearchResults, who); }
 			catch (YouTubeException ex) { return Strings.Error(Lang, ex.Message); }
 			if (results.Count == 0) return Strings.Get(Lang, "err-not-found");
-			searches[SearchKey(msg)] = (results, DateTime.UtcNow);
+			KeepSearch(msg, results);
 			var sb = new System.Text.StringBuilder(Strings.Get(Lang, "search-results", Prefix, results.Count));
 			for (int i = 0; i < results.Count; i++)
 				sb.Append($"\n[b]{i + 1}.[/b] {Link(results[i])} ({Strings.Duration(Lang, results[i])})");
@@ -497,14 +544,14 @@ public sealed class TsBot : BackgroundService
 
 		case "pick":
 		{
-			if (!searches.TryGetValue(SearchKey(msg), out var found) || DateTime.UtcNow - found.At > SearchKeep)
+			if (FindSearch(msg) is not { } found)
 				return Strings.Get(Lang, "pick-first", Prefix);
-			if (!int.TryParse(arg, out var n) || n < 1 || n > found.Results.Count)
-				return Strings.Get(Lang, "pick-bad", arg);
+			if (!int.TryParse(arg, out var n) || n < 1 || n > found.Count)
+				return Strings.Get(Lang, "pick-bad", Escape(arg));
 			try
 			{
 				// The search only saw the list; this looks the song itself up (length, live, saved copy).
-				var track = await library.ResolveAsync(found.Results[n - 1].Url, who) with { RequesterId = msg.InvokerUid?.Value };
+				var track = await library.ResolveAsync(found[n - 1].Url, who) with { RequesterId = msg.InvokerUid?.Value };
 				return Queue(track, now: false, msg);
 			}
 			catch (YouTubeException ex) { return Strings.Error(Lang, ex.Message); }
@@ -530,7 +577,7 @@ public sealed class TsBot : BackgroundService
 
 		case "skipto":
 		{
-			if (!int.TryParse(arg, out var n) || player.SkipTo(n - 1) is not { } to) return Strings.Get(Lang, "bad-index", arg);
+			if (!int.TryParse(arg, out var n) || player.SkipTo(n - 1) is not { } to) return Strings.Get(Lang, "bad-index", Escape(arg));
 			var announced = Bot.Announce && msg.Target == TextMessageTargetMode.Channel;
 			return announced ? null : Confirm(Strings.Get(Lang, "now-playing", Link(to), Strings.Duration(Lang, to)));
 		}
@@ -553,7 +600,7 @@ public sealed class TsBot : BackgroundService
 			if (player.Current is not { } now) return Strings.Get(Lang, "nothing-playing");
 			var uid = msg.InvokerUid?.Value;
 			// Whoever asked for the song may always skip it.
-			if (!Bot.VoteSkip || (uid != null && now.RequesterId == uid))
+			if (!NeedsVote(msg))
 				return player.Skip() ? Confirm(Strings.Get(Lang, "skipped")) : Strings.Get(Lang, "nothing-playing");
 			return SkipVote(c, msg, now);
 		}
@@ -606,7 +653,7 @@ public sealed class TsBot : BackgroundService
 
 		case "remove":
 		{
-			if (!int.TryParse(arg, out var n)) return Strings.Get(Lang, "bad-index", arg);
+			if (!int.TryParse(arg, out var n)) return Strings.Get(Lang, "bad-index", Escape(arg));
 			var removed = player.Remove(n - 1);
 			return removed is null ? Strings.Get(Lang, "bad-index", n) : Confirm(Strings.Get(Lang, "removed", Escape(removed.Title)));
 		}
@@ -641,6 +688,7 @@ public sealed class TsBot : BackgroundService
 			var added = player.EnqueueMany(list.Songs.Select(s => s.ToTrack(who) with { RequesterId = uid }), exempt: false, out var limited);
 			if (added == 0 && list.Songs.Count > 0)
 				return limited ? Strings.Get(Lang, "user-limit", Bot.MaxSongsPerUser) : Strings.Get(Lang, "queue-full");
+			if (limited) return Strings.Get(Lang, "playlist-added", added, Escape(list.Name)) + "\n" + Strings.Get(Lang, "user-limit", Bot.MaxSongsPerUser);
 			return Confirm(Strings.Get(Lang, "playlist-added", added, Escape(list.Name)));
 		}
 

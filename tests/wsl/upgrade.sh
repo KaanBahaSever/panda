@@ -7,6 +7,10 @@
 set -u
 grep -qi microsoft /proc/version || { echo "Only for a WSL test machine."; exit 1; }
 [ "$(id -u)" = 0 ] || { echo "Run as root."; exit 1; }
+# A Panda this test didn't install is somebody's real one: leave it alone.
+if [ -d /var/lib/panda ] && [ ! -f /var/lib/panda/.panda-test-install ]; then
+	echo "There is a Panda here that this test didn't install (/var/lib/panda); not touching it."; exit 1
+fi
 NEW=$(realpath "$1"); OLD=${2:-latest}
 W=/root/panda-upgrade-test
 P=http://127.0.0.1:8098
@@ -28,9 +32,12 @@ URL=https://github.com/KaanBahaSever/panda/releases/latest/download/panda-linux-
 [ "$OLD" = latest ] || URL=https://github.com/KaanBahaSever/panda/releases/download/$OLD/panda-linux-x64.tar.gz
 curl -fsSL "$URL" -o $W/old.tar.gz && mkdir -p $W/old && tar -xzf $W/old.tar.gz -C $W/old || { echo "download failed"; exit 1; }
 bash $W/old/install.sh --file $W/old.tar.gz --server 127.0.0.1 --port 8098 < /dev/null > $W/install.log 2>&1 || { tail -20 $W/install.log; exit 1; }
+touch /var/lib/panda/.panda-test-install
 FROM=$(/opt/panda/panda --version)
-tar -xzf "$NEW" -C $W/new panda && TO=$($W/new/panda --version)
+tar -xzf "$NEW" -C $W/new panda && chmod +x $W/new/panda && TO=$($W/new/panda --version)
 echo "   $FROM -> $TO"
+# The panel sees an update finish when the version changes.
+[ "$FROM" != "$TO" ] || { echo "   FAIL the new build has the same version ($TO); raise it in src/Panda/Panda.csproj"; exit 1; }
 
 echo "== give it data"
 systemctl stop panda
@@ -45,12 +52,12 @@ sleep 5
 check "login" "$(login)" 204
 api -d '{"volume":37}' $P/api/bots/1/volume -o /dev/null
 api -d '{"name":"Upgrade test","songs":[{"id":"tstTone0001","title":"Test Tone Song","channel":"Tester","duration":90}]}' $P/api/playlists -o /dev/null
-api -d '{"query":"test tone"}' $P/api/bots/1/play -o /dev/null
-api -d '{"query":"test tone"}' $P/api/bots/1/play -o /dev/null
+check "play" "$(api -d '{"query":"test tone"}' $P/api/bots/1/play -o /dev/null -w '%{http_code}')" 200
+check "queue" "$(api -d '{"query":"test tone"}' $P/api/bots/1/play -o /dev/null -w '%{http_code}')" 200
 api -d '{"mode":"all"}' $P/api/bots/1/loop -o /dev/null
 sleep 3
 BEFORE=$(state)
-echo "   before: $BEFORE"
+check "before the update: song, queue, loop, volume" "$BEFORE" "Test Tone Song 1 All 37"
 
 echo "== update from the panel (the installer downloads the new build from a local server)"
 cp "$NEW" $W/serve/panda-linux-x64.tar.gz

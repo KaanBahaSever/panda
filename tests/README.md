@@ -6,6 +6,8 @@ from Git Bash on Windows with the tests running in WSL.
 ```bash
 tests/run.sh          # translations, chat commands, stop time
 tests/run.sh all      # plus the panel update test (installs Panda in WSL as root)
+tests/run.sh long     # failure cases and a long run (SOAK_MIN=30 minutes)
+tests/run.sh chat 12  # only chat scenario 12
 ```
 
 ## What runs
@@ -15,6 +17,7 @@ tests/run.sh all      # plus the panel update test (installs Panda in WSL as roo
 | Translations | `i18n-check.mjs` | every panel language has every key; the chat languages match the panel and the settings |
 | Chat | `wsl/chat.sh`, `chat/` | each scenario in `chat/scenarios/` against a fresh Panda with a generated test song (no YouTube) |
 | Stop time | `wsl/stoptime.sh` | Panda stops within 5 s while a panel tab is open |
+| Failure cases, long run | `wsl/resilience.sh` | the TS server going away, YouTube refusing everything, a read-only library; then memory, threads, open files and child processes stay steady while a looped playlist plays |
 | Panel update | `wsl/upgrade.sh` | the latest release, installed with its own installer, updates from the panel to this build and keeps its settings, songs, playlists and the song playing |
 
 ## Setup (once)

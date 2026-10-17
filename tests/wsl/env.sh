@@ -43,4 +43,7 @@ printf '{ "bots": [ { "id": "1", "server": { "address": "127.0.0.1" } } ], "pane
 "$T/panda" --data "$T/data" set-password testpass123 admin >/dev/null
 setsid nohup "$T/panda" --data "$T/data" > "$T/log.txt" 2>&1 < /dev/null &
 for _ in $(seq 40); do grep -q "Connected to" "$T/log.txt" 2>/dev/null && break; sleep 1; done
-grep -m1 -E "Connected to|Could not" "$T/log.txt" || { echo "Panda did not connect"; tail -5 "$T/log.txt"; exit 1; }
+grep -m1 "Connected to" "$T/log.txt" || { echo "Panda did not connect"; tail -5 "$T/log.txt"; exit 1; }
+# Another Panda on the test server (one left over from an interrupted test) would answer too.
+PANDAS=$(Q clientlist | python3 -c "import sys,json; print(sum('Panda' in c['client_nickname'] for c in json.load(sys.stdin)['body']))")
+[ "$PANDAS" = 1 ] || { echo "$PANDAS Pandas are on the test server; stop the others first (e.g. a test install: /opt/panda/install.sh --uninstall --purge)."; exit 1; }
