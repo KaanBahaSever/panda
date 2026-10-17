@@ -210,11 +210,12 @@ public sealed class Player : IDisposable
 		RaiseChanged();
 	}
 
-	public bool Skip()
+	/// <param name="expected">When given, only skips if this is still the song playing.</param>
+	public bool Skip(Track? expected = null)
 	{
 		lock (gate)
 		{
-			if (current is null) return false;
+			if (current is null || (expected != null && !ReferenceEquals(current, expected))) return false;
 			AdvanceLocked(finished: false);
 		}
 		RaiseChanged();
@@ -249,12 +250,13 @@ public sealed class Player : IDisposable
 
 	/// <summary>Jumps to the song at <paramref name="index"/> of the queue, leaving out the ones before it
 	/// (with loop "all" they go to the end). Returns the song, or null for a wrong index.</summary>
-	public Track? SkipTo(int index)
+	public Track? SkipTo(int index, string? expectedId = null)
 	{
 		Track to;
 		lock (gate)
 		{
 			if (disposed || index < 0 || index >= queue.Count) return null;
+			if (expectedId != null && queue[index].Id != expectedId) return null;
 			to = queue[index];
 			var passed = queue.GetRange(0, index);
 			queue.RemoveRange(0, index);

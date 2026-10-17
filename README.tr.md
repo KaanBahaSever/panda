@@ -163,8 +163,9 @@ Botun kanalına ya da bota özel mesaj olarak yaz. İngilizce karşılıkları d
 Varsayılan olarak herkes her komutu kullanabilir. **Ayarlar → Sohbet yetkileri** bunu değiştirir:
 
 - **Yöneticiler** ve **DJ'ler**: sunucudaki kişileri ya da sunucu gruplarını seç (veya benzersiz kimlik yapıştır). Yöneticiler her şeyi yapabilir.
-- **Sunucudaki herkes botu kullanabilir**: kapatırsan sadece DJ'lere ve yöneticilere cevap verilir.
-- **Engellenenler**: botun hiç cevap vermediği kişiler.
+- **Sunucudaki herkes botu kullanabilir**: kapatırsan sadece **Botu kullanabilenler** listesindeki kişilere
+  ve gruplara, DJ'lere ve yöneticilere cevap verilir.
+- **Engellenenler**: botun hiç cevap vermediği kişiler (hata mesajı bile yok).
 - **Hangi komutu kim kullanabilir**: her komut için herkes, DJ'ler ya da yöneticiler. **Önerilen ayarı kullan**
   şarkı eklemeyi ve oylamayı herkese, duraklatma, ses, sıra ve geri kalanı DJ'lere bırakır.
 - **Başkalarının şarkıları**: başkasının istediği şarkıyı kim geçebilir, silebilir, taşıyabilir. Bu seviyenin

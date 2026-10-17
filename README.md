@@ -161,8 +161,9 @@ Write them in the bot's channel or in a private message to the bot.
 By default everyone can use every command. **Settings → Chat permissions** changes that:
 
 - **Admins** and **DJs**: pick people or server groups from the server (or paste a unique ID). Admins can do everything.
-- **Everyone on the server can use the bot**: turn it off and only DJs and admins are answered.
-- **Blocked**: people the bot never answers.
+- **Everyone on the server can use the bot**: turn it off and only the people and groups under
+  **Who may use the bot**, DJs and admins are answered.
+- **Blocked**: people the bot never answers, not even with an error.
 - **Who may use each command**: everyone, DJs or admins, per command. **Use the recommended setup** leaves
   adding songs and voting to everyone and gives pausing, volume, the queue and the rest to DJs.
 - **Other people's songs**: who may skip, remove or move songs someone else asked for. Below that level,
@@ -220,7 +221,8 @@ Everything is editable in the panel; the file is `/var/lib/panda/config.json` (o
         "maxQueueLength": 100,
         "maxSongsPerUser": 0,      // songs one person may have waiting; 0 = no limit
         // Chat permissions (set them in the panel): unique ids or server group ids
-        "everyoneCanUse": true, "admins": [], "adminGroups": [], "djs": [], "djGroups": [], "blocked": [],
+        "everyoneCanUse": true, "members": [], "memberGroups": [],   // members: who may use it when not everyone
+        "admins": [], "adminGroups": [], "djs": [], "djGroups": [], "blocked": [],
         "commandLevels": { "vol": "dj" },   // "everyone", "dj" or "admin"; missing = everyone
         "othersSongs": "everyone",          // who may skip/remove/move other people's songs
         "voteSkip": false,                  // the others vote to skip

@@ -420,8 +420,11 @@ public sealed class BotSettings
 	public List<ulong>? AllowedServerGroups { get; set; }
 
 	// ---- who may do what in the chat (see ChatPermissions) ----
-	/// <summary>Anyone on the server may use the bot; off: only DJs and admins.</summary>
+	/// <summary>Anyone on the server may use the bot; off: only the members, DJs and admins.</summary>
 	public bool EveryoneCanUse { get; set; } = true;
+	/// <summary>With <see cref="EveryoneCanUse"/> off: who may use the bot (as "everyone" would).</summary>
+	public List<ChatPerson> Members { get; set; } = [];
+	public List<ulong> MemberGroups { get; set; } = [];
 	public List<ChatPerson> Admins { get; set; } = [];
 	public List<ulong> AdminGroups { get; set; } = [];
 	public List<ChatPerson> Djs { get; set; } = [];

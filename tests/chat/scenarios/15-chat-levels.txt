@@ -1,10 +1,15 @@
-# With "everyone can use" off, only DJs and admins are answered.
+# With "everyone can use" off, only the members, DJs and admins are answered.
 s everyoneCanUse=false
 c !play test tone
 e You are not allowed to control me.
-s djs=[{"uid":"$ME","name":"Tester"}]
+s members=[{"uid":"$ME","name":"Tester"}] commandLevels={"pause":"dj"}
 c !play test tone
 e Now playing
+c !pause
+e [b]!pause[/b] is only for DJs and admins.
+s members=[] djs=[{"uid":"$ME","name":"Tester"}]
+c !pause
+e Paused.
 # A server group works like a person.
 s djs=[] djGroups=[$GROUP]
 c !np
@@ -13,12 +18,12 @@ e Now playing
 s commandLevels={"vol":"admin"}
 c !vol 30
 e [b]!vol[/b] is only for admins.
-c !pause
-e Paused.
 s admins=[{"uid":"$ME"}]
 c !vol 30
 e Volume set to 30%
-# Blocked beats every group and list.
+# Blocked beats every group and list: no answer at all.
 s blocked=[{"uid":"$ME"}]
 c !np
-e You are not allowed to control me.
+x
+p !xyz
+x

@@ -38,7 +38,7 @@ var defaults = new Dictionary<string, string>
 {
 	["announce"] = "true", ["confirmCommands"] = "true", ["showSongInDescription"] = "true", ["language"] = "en",
 	["maxQueueLength"] = "100", ["maxDurationMinutes"] = "60", ["maxSongsPerUser"] = "0", ["voteSkip"] = "false",
-	["everyoneCanUse"] = "true", ["admins"] = "[]", ["adminGroups"] = "[]", ["djs"] = "[]", ["djGroups"] = "[]", ["blocked"] = "[]",
+	["everyoneCanUse"] = "true", ["members"] = "[]", ["memberGroups"] = "[]", ["admins"] = "[]", ["adminGroups"] = "[]", ["djs"] = "[]", ["djGroups"] = "[]", ["blocked"] = "[]",
 	["commandLevels"] = "{}", ["othersSongs"] = "everyone", ["onlyFromChannel"] = "false",
 };
 var panel = new Panel(args[1], Environment.GetEnvironmentVariable("PANDA_TEST_PASSWORD") ?? "testpass123");

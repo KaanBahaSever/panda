@@ -229,7 +229,8 @@ public static class PanelApi
 		admin.MapPost("/apikeys", (UserRequest req, PandaConfig config) =>
 		{
 			var name = (req.Name ?? "").Trim();
-			if (name.Length is < 1 or > 40) return Problem("bad-key-name");
+			if (name.Length is < 1 or > 40 || name.Any(ch => char.IsControl(ch) || ch is '[' or ']')) return Problem("bad-key-name");
+			if (config.Panel.ApiKeys.Any(k => k.Name.Equals(name, StringComparison.OrdinalIgnoreCase))) return Problem("key-exists");
 			if (!Roles.IsValid(req.Role ?? "")) return Problem("bad-role");
 			if (config.Panel.ApiKeys.Count >= 50) return Problem("too-many-keys");
 			var (key, secret) = config.AddApiKey(name, req.Role!);
@@ -464,12 +465,16 @@ public sealed class SettingsDto
 	public bool ConfirmCommands { get; set; } = true;
 	public bool ShowSongInDescription { get; set; }
 	public bool EveryoneCanUse { get; set; } = true;
+	public List<ChatPerson> Members { get; set; } = [];
+	public List<ulong> MemberGroups { get; set; } = [];
 	public List<ChatPerson> Admins { get; set; } = [];
 	public List<ulong> AdminGroups { get; set; } = [];
 	public List<ChatPerson> Djs { get; set; } = [];
 	public List<ulong> DjGroups { get; set; } = [];
 	public List<ChatPerson> Blocked { get; set; } = [];
 	public Dictionary<string, string> CommandLevels { get; set; } = [];
+	/// <summary>For the panel's "recommended setup" button; ignored when saving.</summary>
+	public IReadOnlyDictionary<string, string>? RecommendedLevels { get; set; }
 	public string OthersSongs { get; set; } = "everyone";
 	public bool OnlyFromChannel { get; set; }
 	public int MaxQueueLength { get; set; }
@@ -495,6 +500,9 @@ public sealed class SettingsDto
 		ConfirmCommands = b.Bot.ConfirmCommands,
 		ShowSongInDescription = b.Bot.ShowSongInDescription,
 		EveryoneCanUse = b.Bot.EveryoneCanUse,
+		Members = b.Bot.Members,
+		MemberGroups = b.Bot.MemberGroups,
+		RecommendedLevels = ChatPermissions.Recommended,
 		Admins = b.Bot.Admins,
 		AdminGroups = b.Bot.AdminGroups,
 		Djs = b.Bot.Djs,
@@ -515,6 +523,7 @@ public sealed class SettingsDto
 
 	// Unique ids as TeamSpeak shows them; names only for showing.
 	static List<ChatPerson> People(List<ChatPerson>? list) => (list ?? [])
+		.Where(p => p != null)
 		.Select(p => new ChatPerson((p.Uid ?? "").Trim(), (p.Name ?? "").Trim() is var n && n.Length > 64 ? n[..64] : (p.Name ?? "").Trim()))
 		.Where(p => p.Uid.Length is > 0 and <= 100)
 		.DistinctBy(p => p.Uid).Take(500).ToList();
@@ -540,6 +549,8 @@ public sealed class SettingsDto
 		b.Bot.ConfirmCommands = ConfirmCommands;
 		b.Bot.ShowSongInDescription = ShowSongInDescription;
 		b.Bot.EveryoneCanUse = EveryoneCanUse;
+		b.Bot.Members = People(Members);
+		b.Bot.MemberGroups = (MemberGroups ?? []).Distinct().Take(100).ToList();
 		b.Bot.Admins = People(Admins);
 		b.Bot.Djs = People(Djs);
 		b.Bot.Blocked = People(Blocked);

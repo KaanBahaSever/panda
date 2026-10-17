@@ -85,10 +85,10 @@ echo "== after the update"
 sleep 5
 check "login with the same password" "$(login)" 204
 check "song, queue, loop, volume" "$(state)" "$BEFORE"
-check "allowed users became DJs, everyone else shut out" "$(api $P/api/bots/1/settings | python3 -c "
+check "allowed users became the members, everyone else shut out" "$(api $P/api/bots/1/settings | python3 -c "
 import sys, json
 d = json.load(sys.stdin)
-print(d.get('everyoneCanUse'), [p['uid'] for p in d.get('djs', [])], d.get('djGroups'))")" "False ['oldTestUid0000000000000000='] [6]"
+print(d.get('everyoneCanUse'), [p['uid'] for p in d.get('members', [])], d.get('memberGroups'), d.get('djs'), d.get('djGroups'))")" "False ['oldTestUid0000000000000000='] [6] [] []"
 check "playlist" "$(api "$P/api/playlists/Upgrade%20test" | python3 -c "import sys,json; print(len(json.load(sys.stdin)['songs']))")" 1
 check "saved song" "$(api "$P/api/library" | grep -c tstTone0001)" 1
 check "panda.service" "$(systemctl is-active panda)" active

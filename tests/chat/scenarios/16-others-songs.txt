@@ -20,8 +20,21 @@ e Only DJs and admins can change other people's songs.
 s djs=[{"uid":"$ME"}]
 c !skip
 e Skipped.
-# Below the level, with voting on, !skip is a vote (alone in the channel, one vote is half).
-s djs=[] voteSkip=true
+# Winding or shuffling others' songs is changing them too.
+s djs=[]
+c !seek 1:20
+e Only DJs and admins can change other people's songs.
 P test tone
+c !shuffle
+e Only DJs and admins can change other people's songs.
+# A wrong number is a wrong number.
+c !skipto 99
+e There is no song #99 in the queue.
+# Below the level, with voting on, !skip is a vote (alone in the channel, one vote is half);
+# !remove of someone else's song can't be voted on.
+s voteSkip=true
+P test tone
+c !remove 1
+e Only DJs and admins can change other people's songs.
 c !skip
 e Skipped by vote (1/1).

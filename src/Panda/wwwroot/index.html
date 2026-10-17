@@ -293,7 +293,11 @@
       <fieldset class="group">
         <legend>🛡️ <span data-i18n="sPerm">Chat permissions</span></legend>
         <label class="switch"><input type="checkbox" name="everyoneCanUse"><span class="track" aria-hidden="true"></span><span data-i18n="sEveryone">Everyone on the server can use the bot</span></label>
-        <p class="hint" data-i18n="sEveryoneHint">When off, only DJs and admins can.</p>
+        <p class="hint" data-i18n="sEveryoneHint">When off, only the people below, DJs and admins can.</p>
+        <div class="people js-members" data-list="members" data-groups="memberGroups">
+          <div class="people-head"><span data-i18n="sMembers">Who may use the bot</span><button class="btn ghost sm js-pick" type="button"><svg class="ic"><use href="#i-plus"/></svg><span data-i18n="addPerson">Add</span></button></div>
+          <ul class="pchips"></ul>
+        </div>
         <div class="people" data-list="admins" data-groups="adminGroups">
           <div class="people-head"><span data-i18n="sAdmins">Admins</span><button class="btn ghost sm js-pick" type="button"><svg class="ic"><use href="#i-plus"/></svg><span data-i18n="addPerson">Add</span></button></div>
           <ul class="pchips"></ul>
@@ -452,7 +456,7 @@
 <dialog id="picker" class="confirm picker" aria-labelledby="picker-title">
   <form method="dialog">
     <p id="picker-title" data-i18n="pickTitle">Add from the server</p>
-    <input id="picker-search" type="search" autocomplete="off" data-i18n-ph="pickSearch">
+    <input id="picker-search" type="search" autocomplete="off" enterkeyhint="search" data-i18n-ph="pickSearch">
     <div id="picker-list" class="picker-list"></div>
     <div class="picker-uid">
       <input id="picker-uid" type="text" autocomplete="off" spellcheck="false" data-i18n-ph="pickUid">

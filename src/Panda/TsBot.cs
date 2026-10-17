@@ -226,7 +226,7 @@ public sealed class TsBot : BackgroundService
 
 		log.LogInformation("Connected to {Server}", c.Book.Server?.Name);
 		lock (checks) checks.Clear();
-		await LoadServerGroups(c);
+		_ = LoadServerGroups(c);
 		player.AttachOutput(c);
 		descriptionWarned = false;
 		description = null;
@@ -242,6 +242,12 @@ public sealed class TsBot : BackgroundService
 	readonly Dictionary<string, PermissionCheck> checks = [];
 
 	async Task LoadServerGroups(TsFullClient c)
+	{
+		try { await LoadServerGroupsCore(c); }
+		catch (Exception ex) { log.LogInformation("Could not read the server groups: {Error}", ex.Message); }
+	}
+
+	async Task LoadServerGroupsCore(TsFullClient c)
 	{
 		var r = await c.SendHybrid<TSLib.Messages.ServerGroupList>(new TSLib.Commands.TsCommand("servergrouplist"), TSLib.Messages.NotificationType.ServerGroupList);
 		lock (serverGroups)
@@ -388,13 +394,13 @@ public sealed class TsBot : BackgroundService
 		if (client is not { Connected: true } c) return;
 		await SetDescription("♪ " + t.Title);
 		if (Bot.Announce)
-			await c.SendChannelMessage(Strings.Get(Lang, "now-playing-by", Link(t), Strings.Duration(Lang, t), t.RequestedBy));
+			Note("chat", await c.SendChannelMessage(Strings.Get(Lang, "now-playing-by", Link(t), Strings.Duration(Lang, t), t.RequestedBy)), "b_client_channel_textmessage_send");
 	}
 
 	async Task OnTrackFailed(Track t, string reason)
 	{
 		if (client is not { Connected: true } c) return;
-		await c.SendChannelMessage(Strings.Get(Lang, "play-failed", t.Title, Strings.ShortError(Lang, reason)));
+		Note("chat", await c.SendChannelMessage(Strings.Get(Lang, "play-failed", t.Title, Strings.ShortError(Lang, reason))), "b_client_channel_textmessage_send");
 	}
 
 	async Task FollowAsync(TsFullClient c, ChannelId target)
@@ -442,10 +448,12 @@ public sealed class TsBot : BackgroundService
 					var r = msg.Target == TextMessageTargetMode.Private
 						? await c.SendPrivateMessage(part, msg.InvokerId)
 						: await c.SendChannelMessage(part);
-					Note("chat", r, msg.Target == TextMessageTargetMode.Private ? "i_client_private_textmessage_power" : "b_client_channel_textmessage_send");
+					if (msg.Target != TextMessageTargetMode.Private) Note("chat", r, "b_client_channel_textmessage_send");
 				}
 			}
 
+			var level = LevelOf(c, msg);
+			if (msg.InvokerUid?.Value is { } blockedUid && Bot.Blocked.Any(p => p.Uid == blockedUid)) return;
 			var command = Commands.Find(cmd);
 			if (command is null && cmd.Length is > 0 and <= 2 && cmd.All(char.IsAsciiDigit)
 				&& (msg.Target == TextMessageTargetMode.Private || HasSearch(msg)))
@@ -460,7 +468,6 @@ public sealed class TsBot : BackgroundService
 					await Reply(Strings.Get(Lang, "unknown-command", Prefix));
 				return;
 			}
-			var level = LevelOf(c, msg);
 			if (level == ChatLevel.None)
 			{
 				await Reply(Strings.Get(Lang, "no-permission"));
@@ -544,8 +551,9 @@ public sealed class TsBot : BackgroundService
 
 	bool MayChangeOthers(ChatLevel level) => level >= ChatPermissions.Parse(Bot.OthersSongs);
 
-	/// <summary>The answer to touching someone else's song without the level: a vote, if that's on.</summary>
-	string OthersRefusal() => Bot.VoteSkip
+	/// <summary>The answer to touching someone else's song without the level. Cutting the song playing
+	/// short can be voted on (when that's on); changes to the queue can't.</summary>
+	string OthersRefusal(bool cutsSong = true) => Bot.VoteSkip && cutsSong
 		? Strings.Get(Lang, "vote-needed", Prefix)
 		: Strings.Get(Lang, "others-song", LevelName(ChatPermissions.Parse(Bot.OthersSongs)));
 
@@ -632,7 +640,7 @@ public sealed class TsBot : BackgroundService
 			voteTrack = null;
 			votes.Clear();
 		}
-		player.Skip();
+		player.Skip(now);
 		return Strings.Get(Lang, "vote-skipped", have, need);
 	}
 
@@ -644,11 +652,16 @@ public sealed class TsBot : BackgroundService
 		var who = msg.InvokerName.ToString();
 		var others = !MayChangeOthers(level);
 		// Commands that cut the song playing short, or throw away queued songs, of someone else.
-		if (others && command is "playnow" or "skipto" or "back" or "stop" && player.Current is { } playing && !Own(playing, msg))
+		// (!skipto checks its number first: a wrong number is answered as one.)
+		if (others && command is "playnow" or "back" or "stop" && player.Current is { } playing && !Own(playing, msg))
 			return OthersRefusal();
-		if (others && command is "stop" or "clear" && player.GetState().Queue.Any(t => !Own(t, msg)))
-			return OthersRefusal();
-		if (others && command == "skipto" && int.TryParse(arg, out var upTo) && player.GetState().Queue.Take(upTo - 1).Any(t => !Own(t, msg)))
+		if (others && command is "stop" or "clear" or "shuffle" && player.GetState().Queue.Any(t => !Own(t, msg)))
+			return OthersRefusal(cutsSong: false);
+		if (others && command == "skipto" && int.TryParse(arg, out var upTo) && player.GetState().Queue is var q && upTo >= 1 && upTo <= q.Count
+			&& q.Take(upTo - 1).Any(t => !Own(t, msg)))
+			return OthersRefusal(cutsSong: false);
+		// Winding someone else's song (to its end, say) is cutting it short too.
+		if (others && command == "seek" && player.Current is { } wound && !Own(wound, msg))
 			return OthersRefusal();
 		// DJs and admins aren't held to the songs-per-person limit.
 		var exempt = level >= ChatLevel.Dj;
@@ -716,7 +729,10 @@ public sealed class TsBot : BackgroundService
 
 		case "skipto":
 		{
-			if (!int.TryParse(arg, out var n) || player.SkipTo(n - 1) is not { } to) return Strings.Get(Lang, "bad-index", Escape(arg));
+			var waiting = player.GetState().Queue;
+			if (!int.TryParse(arg, out var n) || n < 1 || n > waiting.Count) return Strings.Get(Lang, "bad-index", Escape(arg));
+			if (others && player.Current is { } cut && !Own(cut, msg)) return OthersRefusal();
+			if (player.SkipTo(n - 1, waiting[n - 1].Id) is not { } to) return Strings.Get(Lang, "bad-index", Escape(arg));
 			var announced = Bot.Announce && msg.Target == TextMessageTargetMode.Channel;
 			return announced ? null : Confirm(Strings.Get(Lang, "now-playing", Link(to), Strings.Duration(Lang, to)));
 		}
@@ -728,7 +744,7 @@ public sealed class TsBot : BackgroundService
 				return Strings.Get(Lang, "usage-move", Prefix);
 			var queue = player.GetState().Queue;
 			if (from < 1 || from > queue.Count) return Strings.Get(Lang, "bad-index", from);
-			if (others && !Own(queue[from - 1], msg)) return OthersRefusal();
+			if (others && !Own(queue[from - 1], msg)) return OthersRefusal(cutsSong: false);
 			to = Math.Clamp(to, 1, queue.Count);
 			return player.Move(from - 1, to - 1, queue[from - 1].Id)
 				? Confirm(Strings.Get(Lang, "moved", Escape(queue[from - 1].Title), to))
@@ -740,7 +756,7 @@ public sealed class TsBot : BackgroundService
 			if (player.Current is not { } now) return Strings.Get(Lang, "nothing-playing");
 			// Whoever asked for the song may always skip it.
 			if (!others || Own(now, msg))
-				return player.Skip() ? Confirm(Strings.Get(Lang, "skipped")) : Strings.Get(Lang, "nothing-playing");
+				return player.Skip(now) ? Confirm(Strings.Get(Lang, "skipped")) : Strings.Get(Lang, "nothing-playing");
 			return Bot.VoteSkip ? SkipVote(c, msg, now) : OthersRefusal();
 		}
 
@@ -794,7 +810,7 @@ public sealed class TsBot : BackgroundService
 		{
 			if (!int.TryParse(arg, out var n)) return Strings.Get(Lang, "bad-index", Escape(arg));
 			var queued = player.GetState().Queue;
-			if (others && n >= 1 && n <= queued.Count && !Own(queued[n - 1], msg)) return OthersRefusal();
+			if (others && n >= 1 && n <= queued.Count && !Own(queued[n - 1], msg)) return OthersRefusal(cutsSong: false);
 			var removed = player.Remove(n - 1, n >= 1 && n <= queued.Count ? queued[n - 1].Id : null);
 			return removed is null ? Strings.Get(Lang, "bad-index", n) : Confirm(Strings.Get(Lang, "removed", Escape(removed.Title)));
 		}

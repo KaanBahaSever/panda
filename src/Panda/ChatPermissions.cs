@@ -56,23 +56,33 @@ public static class ChatPermissions
 		var g = groups.ToHashSet();
 		if ((uid != null && bot.Admins.Any(p => p.Uid == uid)) || bot.AdminGroups.Any(g.Contains)) return ChatLevel.Admin;
 		if ((uid != null && bot.Djs.Any(p => p.Uid == uid)) || bot.DjGroups.Any(g.Contains)) return ChatLevel.Dj;
-		return bot.EveryoneCanUse ? ChatLevel.Everyone : ChatLevel.None;
+		if (bot.EveryoneCanUse || (uid != null && bot.Members.Any(p => p.Uid == uid)) || bot.MemberGroups.Any(g.Contains)) return ChatLevel.Everyone;
+		return ChatLevel.None;
 	}
 
 	/// <summary>
-	/// Settings from before 0.5: a list of allowed users and groups meant "only these may use the bot".
-	/// They become DJs and everyone else is shut out, so nothing changes for them. Vote skip on meant
-	/// that cutting someone else's song took a vote: changing other people's songs becomes a DJ thing.
+	/// Settings from before 0.5: a list of allowed users and groups meant "only these may use the bot";
+	/// they become the members and everyone else stays shut out. Vote skip on meant that cutting someone
+	/// else's song short took a vote: other people's songs become a DJ thing, the others vote.
 	/// </summary>
 	public static void Upgrade(BotSettings bot)
 	{
+		// A hand-edited config.json may say null.
+		bot.Admins = (bot.Admins ?? []).Where(p => p?.Uid is { Length: > 0 }).ToList();
+		bot.Djs = (bot.Djs ?? []).Where(p => p?.Uid is { Length: > 0 }).ToList();
+		bot.Blocked = (bot.Blocked ?? []).Where(p => p?.Uid is { Length: > 0 }).ToList();
+		bot.Members = (bot.Members ?? []).Where(p => p?.Uid is { Length: > 0 }).ToList();
+		bot.AdminGroups ??= [];
+		bot.DjGroups ??= [];
+		bot.MemberGroups ??= [];
+		bot.CommandLevels ??= [];
 		if (bot.AllowedUsers is { Count: > 0 } || bot.AllowedServerGroups is { Count: > 0 })
 		{
 			bot.EveryoneCanUse = false;
 			foreach (var uid in bot.AllowedUsers ?? [])
-				if (uid.Trim() is { Length: > 0 } u && bot.Djs.All(p => p.Uid != u)) bot.Djs.Add(new ChatPerson(u));
+				if (uid.Trim() is { Length: > 0 } u && bot.Members.All(p => p.Uid != u)) bot.Members.Add(new ChatPerson(u));
 			foreach (var g in bot.AllowedServerGroups ?? [])
-				if (!bot.DjGroups.Contains(g)) bot.DjGroups.Add(g);
+				if (!bot.MemberGroups.Contains(g)) bot.MemberGroups.Add(g);
 		}
 		bot.AllowedUsers = null;
 		bot.AllowedServerGroups = null;
