@@ -108,11 +108,11 @@ public sealed class TsBot : BackgroundService
 
 		player.TrackStarted += t => _ = scheduler.InvokeAsync(() => OnTrackStarted(t));
 		player.TrackFailed += (t, reason) => _ = scheduler.InvokeAsync(() => OnTrackFailed(t, reason));
-		player.StreamTitleChanged += (t, song) => _ = scheduler.InvokeAsync(() => SetDescription(Describe(t)));
+		player.StreamTitleChanged += (t, song) => _ = scheduler.InvokeAsync(async () => { await SetDescription(Describe(t)); await SetSongChannel(t); });
 		player.Changed += () =>
 		{
 			if (player.Current is null)
-				_ = scheduler.InvokeAsync(() => SetDescription(""));
+				_ = scheduler.InvokeAsync(async () => { await SetDescription(""); await SetSongChannel(null); });
 		};
 	}
 
@@ -257,6 +257,8 @@ public sealed class TsBot : BackgroundService
 		await UploadAvatarIfNeeded(c);
 		var now = player.Current;
 		await SetDescription(now is null ? "" : Describe(now));
+		songChannelName = null;
+		await SetSongChannel(now);
 		return null;
 	}
 
@@ -342,12 +344,13 @@ public sealed class TsBot : BackgroundService
 				var have = self?.TalkPower ?? 0;
 				list.Add(new PermissionCheck("talk", need <= 0 || have >= need || self?.TalkPowerGranted == true, "i_client_talk_power", $"{have}/{need}"));
 				lock (checks)
-					foreach (var key in new[] { "chat", "description", "move", "groups" })
+					foreach (var key in new[] { "chat", "description", "move", "groups", "channelname" })
 						list.Add(checks.TryGetValue(key, out var ch) ? ch : new PermissionCheck(key, null, key switch
 						{
 							"chat" => "b_client_channel_textmessage_send",
 							"description" => "b_client_modify_own_description",
 							"move" => "i_channel_join_power",
+							"channelname" => "b_channel_modify_name",
 							_ => "b_virtualserver_servergroup_list",
 						}, null));
 				return list;
@@ -377,6 +380,55 @@ public sealed class TsBot : BackgroundService
 		{
 			log.LogInformation("Avatar not set: {Error}", ex.Message);
 		}
+	}
+
+	// ---- a channel named after the song ----
+
+	string? songChannelName;   // what Panda last named it (scheduler thread)
+	string? songChannelSpec;
+	ChannelId? songChannelId;
+	bool songChannelWarned;
+
+	async Task SetSongChannel(Track? t)
+	{
+		if (client is not { Connected: true } c || Bot.SongChannel.Trim() is not { Length: > 0 } spec) return;
+		// Found by its name once, then by its id: Panda renames it, so the name stops matching.
+		var channel = songChannelSpec == spec && songChannelId is { } known && c.Book.Channels.ContainsKey(known) ? known : FindChannel(c, spec);
+		songChannelSpec = spec;
+		songChannelId = channel;
+		if (channel is null)
+		{
+			if (!songChannelWarned) log.LogWarning("The channel for the song's name ({Channel}) isn't on the server", spec);
+			songChannelWarned = true;
+			return;
+		}
+		var song = t is null ? null : Describe(t).TrimStart('♪', ' ');
+		var name = song is null ? Bot.SongChannelIdle : Bot.SongChannelFormat.Replace("{song}", song);
+		// TeamSpeak's limit is 40 characters, without control characters.
+		name = new string(name.Where(ch => !char.IsControl(ch)).ToArray()).Trim();
+		if (name.Length > 40) name = name[..39] + "…";
+		if (name.Length == 0 || name == songChannelName) return;
+		var r = await c.SendVoid(new TSLib.Commands.TsCommand("channeledit") { { "cid", channel.Value }, { "channel_name", name } });
+		Note("channelname", r, "b_channel_modify_name");
+		if (r.Ok) songChannelName = name;
+		else if (!songChannelWarned)
+		{
+			songChannelWarned = true;
+			log.LogWarning("Could not rename the channel to the song: {Error}. On the TeamSpeak server, give the bot's group b_channel_modify_name for that channel", r.Error.ErrorFormat());
+		}
+	}
+
+	/// <summary>"/12" by id, else "Music/Now playing" by the names on the way (or just the last name).</summary>
+	static ChannelId? FindChannel(TsFullClient c, string spec)
+	{
+		if (spec.StartsWith('/') && ulong.TryParse(spec[1..], out var id))
+			return c.Book.Channels.ContainsKey(new ChannelId(id)) ? new ChannelId(id) : null;
+		var names = spec.Split('/', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+		if (names.Length == 0) return null;
+		var found = c.Book.Channels.Values.Where(ch => ch.Name.Equals(names[^1], StringComparison.OrdinalIgnoreCase)).ToList();
+		if (names.Length > 1 && found.Count > 1)
+			found = found.Where(ch => c.Book.Channels.GetValueOrDefault(ch.Parent)?.Name.Equals(names[^2], StringComparison.OrdinalIgnoreCase) == true).ToList();
+		return found.FirstOrDefault()?.Id;
 	}
 
 	async Task SetDescription(string text)
@@ -410,7 +462,7 @@ public sealed class TsBot : BackgroundService
 
 	/// <summary>The panel saved this bot's settings: what can change without reconnecting does so now.</summary>
 	public void SettingsChanged() =>
-		_ = scheduler.InvokeAsync(() => SetDescription(player.Current is { } t ? Describe(t) : ""));
+		_ = scheduler.InvokeAsync(async () => { await SetDescription(player.Current is { } t ? Describe(t) : ""); await SetSongChannel(player.Current); });
 
 	// A radio station with the song it plays, when it says.
 	string Describe(Track t) =>
@@ -421,6 +473,7 @@ public sealed class TsBot : BackgroundService
 		lock (votes) { voteTrack = null; votes.Clear(); }
 		if (client is not { Connected: true } c) return;
 		await SetDescription(Describe(t));
+		await SetSongChannel(t);
 		if (Bot.Announce)
 			Note("chat", await c.SendChannelMessage(Strings.Get(Lang, "now-playing-by", Link(t), Strings.Duration(Lang, t), t.RequestedBy)), "b_client_channel_textmessage_send");
 	}

@@ -464,6 +464,13 @@ public sealed class BotSettings
 	public bool EightD { get; set; }
 	/// <summary>Seconds the end of a song and the start of the next overlap; 0 = off.</summary>
 	public int Crossfade { get; set; }
+	/// <summary>A channel whose name shows the song playing ("Music/Now playing" or "/12"); empty = off.
+	/// The bot needs b_channel_modify_name there.</summary>
+	public string SongChannel { get; set; } = "";
+	/// <summary>The channel's name while a song plays; {song} is the song.</summary>
+	public string SongChannelFormat { get; set; } = "🎵 {song}";
+	/// <summary>The channel's name when nothing plays.</summary>
+	public string SongChannelIdle { get; set; } = "🎵 Panda";
 	/// <summary>Minutes the bot may sit alone in its channel with nothing playing before it removes itself;
 	/// 0 = never. (Never the last bot.)</summary>
 	public int LeaveWhenEmpty { get; set; }

@@ -22,10 +22,12 @@ if ! pgrep -f "tsserver --accept-license" >/dev/null; then
 		> "$TS/../server.out" 2>&1 < /dev/null &)
 	for _ in $(seq 30); do Q serverinfo 2>/dev/null | grep -q '"body"' && break; sleep 1; done
 fi
-# The test client types faster than people do; guests may change their description (for the description test).
+# The test client types faster than people do; guests may change their description (for the description test)
 Q "serveredit?virtualserver_antiflood_points_tick_reduce=1000&virtualserver_antiflood_points_needed_command_block=100000&virtualserver_antiflood_points_needed_ip_block=100000" >/dev/null
 GUEST=$(Q serverinfo | python3 -c "import sys,json; print(json.load(sys.stdin)['body'][0]['virtualserver_default_server_group'])")
 Q "servergroupaddperm?sgid=$GUEST&permsid=b_client_modify_own_description&permvalue=1&permskip=0&permnegated=0" >/dev/null
+# ...and rename channels (the song channel test).
+Q "servergroupaddperm?sgid=$GUEST&permsid=b_channel_modify_name&permvalue=1&permskip=0&permnegated=0" >/dev/null
 # A second channel, for "only people in the bot's channel" (an error when it's already there).
 Q "channelcreate?channel_name=Lounge&channel_flag_permanent=1" >/dev/null
 [ "$1" = ts ] && exit 0

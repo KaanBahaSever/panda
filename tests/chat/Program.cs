@@ -24,6 +24,7 @@
 //   q <count>         the queue holds <count> songs
 //   g <min> <max>     the song playing is leveled by <min>…<max> dB (g - : not leveled)
 //   R                 remove every bot but bot 1 (made by !create bot)
+//   C <text>          a channel on the server is named <text> (from the server's HTTP query)
 //   S key=value ...   change bot 1's sound (equalizer, effect, speed, eightD, crossfade) through the panel
 // Exit code: the number of failed checks.
 using System.Globalization;
@@ -181,6 +182,12 @@ await scheduler.InvokeAsync(async () =>
 				case 'P': Console.WriteLine($"-> [panel] play {arg}"); await panel.PlayAsync(arg); await Task.Delay(1500); break;
 				case 'Y': Check(FakeYtDlp.Calls().Any(l => l.Contains(arg)), $"yt-dlp was called with \"{arg}\""); break;
 				case 'R': await panel.RemoveOtherBotsAsync(); break;
+				case 'C':
+				{
+					var names = await Query.ChannelNamesAsync();
+					Check(names.Contains(arg), $"a channel is named \"{arg}\" ({string.Join(", ", names)})");
+					break;
+				}
 				case 'S':
 					await panel.SoundAsync(arg.Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(kv => kv.Split('=', 2)).ToDictionary(kv => kv[0], kv => kv[1]));
 					await Task.Delay(500);
@@ -288,6 +295,16 @@ static class Query
 {
 	static readonly string[]? Conf = Environment.GetEnvironmentVariable("PANDA_TEST_QUERY")?.Split(' ', 2);
 	static readonly HttpClient Http = new();
+
+	public static async Task<List<string>> ChannelNamesAsync()
+	{
+		if (Conf is not [var url, var key]) return [];
+		using var req = new HttpRequestMessage(HttpMethod.Get, $"{url}/1/channellist");
+		req.Headers.Add("x-api-key", key);
+		using var res = await Http.SendAsync(req);
+		var body = (await res.Content.ReadFromJsonAsync<JsonObject>())?["body"]?.AsArray() ?? [];
+		return body.Select(n => (string?)n?["channel_name"] ?? "").ToList();
+	}
 
 	/// <summary>The description of the client with that nickname, as the server has it; null without a query setup.</summary>
 	public static async Task<string?> DescriptionAsync(string nickname)

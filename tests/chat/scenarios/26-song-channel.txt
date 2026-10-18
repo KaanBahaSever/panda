@@ -1,0 +1,9 @@
+# A channel named after the song: "Lounge" is renamed while a song plays, and when nothing does.
+s announce=false songChannel=Lounge
+c !play test tone
+w 2
+C 🎵 Test Tone Song
+c !stop
+w 2
+C 🎵 Panda
+s songChannel=

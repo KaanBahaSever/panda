@@ -609,6 +609,9 @@ public sealed class SettingsDto
 	public string OthersSongs { get; set; } = "everyone";
 	public bool OnlyFromChannel { get; set; }
 	public int LeaveWhenEmpty { get; set; }
+	public string SongChannel { get; set; } = "";
+	public string SongChannelFormat { get; set; } = "🎵 {song}";
+	public string SongChannelIdle { get; set; } = "🎵 Panda";
 	public List<ScheduleEntry>? Schedule { get; set; }
 	/// <summary>The server's time, for the schedule (it runs on it); ignored when saving.</summary>
 	public string? ServerTime { get; set; }
@@ -670,6 +673,9 @@ public sealed class SettingsDto
 		EveryoneCanUse = b.Bot.EveryoneCanUse,
 		Members = b.Bot.Members,
 		LeaveWhenEmpty = b.Bot.LeaveWhenEmpty,
+		SongChannel = b.Bot.SongChannel,
+		SongChannelFormat = b.Bot.SongChannelFormat,
+		SongChannelIdle = b.Bot.SongChannelIdle,
 		Schedule = b.Bot.Schedule,
 		ServerTime = DateTime.Now.ToString("HH:mm"),
 		MemberGroups = b.Bot.MemberGroups,
@@ -745,6 +751,9 @@ public sealed class SettingsDto
 			.ToDictionary(kv => kv.Key, kv => kv.Value);
 		b.Bot.OnlyFromChannel = OnlyFromChannel;
 		if (LeaveWhenEmpty is >= 0 and <= 24 * 60) b.Bot.LeaveWhenEmpty = LeaveWhenEmpty;
+		b.Bot.SongChannel = (SongChannel ?? "").Trim() is var sc && sc.Length <= 200 ? sc : b.Bot.SongChannel;
+		if ((SongChannelFormat ?? "").Trim() is { Length: > 0 and <= 60 } sf && sf.Contains("{song}")) b.Bot.SongChannelFormat = sf;
+		if ((SongChannelIdle ?? "").Trim() is { Length: > 0 and <= 40 } si) b.Bot.SongChannelIdle = si;
 		// Left out (a script, an older panel): the schedule stays.
 		if (Schedule != null) b.Bot.Schedule = Schedule.Where(e => e is { IsValid: true }).Take(50)
 			.Select(e => e with { Days = (e.Days ?? []).Distinct().Order().ToList(), Target = e.Action == "stop" ? "" : e.Target.Trim() }).ToList();

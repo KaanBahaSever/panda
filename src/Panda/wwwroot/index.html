@@ -283,6 +283,13 @@
         <label class="switch"><input type="checkbox" name="confirmCommands"><span class="track" aria-hidden="true"></span><span data-i18n="sConfirm">Confirm chat commands</span></label>
         <p class="hint" data-i18n="sChatHint">Announcing posts every song as it starts. Confirmations are the short replies to commands like !play and !skip. Questions (!np, !queue, !help) and errors are always answered.</p>
         <label class="switch"><input type="checkbox" name="showSongInDescription"><span class="track" aria-hidden="true"></span><span data-i18n="sDesc">Show song in bot description</span></label>
+        <label class="field"><span data-i18n="sSongChannel">Channel named after the song</span>
+          <input name="songChannel" type="text" maxlength="200" placeholder="Music/Now playing  ·  /12" autocomplete="off" spellcheck="false"></label>
+        <div class="row2">
+          <label class="field"><span data-i18n="sSongFormat">Its name while playing</span><input name="songChannelFormat" type="text" maxlength="60"></label>
+          <label class="field"><span data-i18n="sSongIdle">When nothing plays</span><input name="songChannelIdle" type="text" maxlength="40"></label>
+        </div>
+        <p class="hint" data-i18n="sSongChannelHint"></p>
         <div class="row2">
           <label class="field"><span data-i18n="sMaxQueue">Max queue length</span>
             <input name="maxQueueLength" type="number" min="1" max="1000" required></label>
