@@ -66,6 +66,22 @@ public sealed class TsBot : BackgroundService
 	volatile int raisingTo;
 
 	public event Action? StatusChanged;
+	/// <summary>"!create bot": makes a new bot in that channel (set by BotManager).</summary>
+	public Func<ulong, Task<(BotInstance? Bot, string? Error)>>? CreateBot { get; set; }
+
+	/// <summary>People (not bots) in the bot's channel; -1 when not connected.</summary>
+	public async Task<int> CountListenersAsync()
+	{
+		try
+		{
+			return await scheduler.Invoke(() =>
+			{
+				if (client is not { Connected: true } c || c.Book.Self() is not { } self) return -1;
+				return c.Book.Clients.Values.Count(x => x.Channel == self.Channel && x.Id != self.Id && x.ClientType == ClientType.Full);
+			}).WaitAsync(TimeSpan.FromSeconds(5));
+		}
+		catch (Exception ex) when (ex is TimeoutException or ObjectDisposedException or TaskCanceledException) { return -1; }
+	}
 
 	/// <summary>"connecting", "connected" or "disconnected".</summary>
 	public string State => state;
@@ -595,6 +611,8 @@ public sealed class TsBot : BackgroundService
 
 	static bool IsSwitch(string arg) => arg.Length == 0 || Switch(arg) != null;
 
+	int MaxBotsHint() => Math.Max(1, config.Panel.MaxBots);
+
 	string EqLabel(string eq) => Strings.Get(Lang, "eqn-" + eq);
 
 	string EffectsNow(Sound s)
@@ -964,6 +982,14 @@ public sealed class TsBot : BackgroundService
 			return Confirm(Strings.Get(Lang, "fav-added", Link(now), Escape(name)));
 		}
 
+		case "create":
+		{
+			if (CreateBot is null || !c.Book.Clients.TryGetValue(msg.InvokerId, out var asker)) return Strings.Get(Lang, "join-failed");
+			var (made, error) = await CreateBot(asker.Channel.Value);
+			if (made is null) return Strings.Get(Lang, "create-full", MaxBotsHint());
+			return Strings.Get(Lang, "create-done", Escape(made.Config.Bot.Nickname), made.Config.Bot.CommandPrefix);
+		}
+
 		case "sleep":
 		{
 			// "!sleep 30": in 30 minutes; "!sleep 02:00": at two; "!sleep off".
@@ -1246,6 +1272,7 @@ public static class Commands
 		["playlist"] = "playlist", ["pl"] = "playlist", ["çalmalistesi"] = "playlist", ["calmalistesi"] = "playlist",
 		["playlists"] = "playlists", ["lists"] = "playlists", ["listeler"] = "playlists",
 		["fav"] = "fav", ["favorite"] = "fav", ["favori"] = "fav",
+		["create"] = "create", ["newbot"] = "create", ["oluştur"] = "create", ["olustur"] = "create", ["yenibot"] = "create", ["créer"] = "create", ["creer"] = "create", ["erstellen"] = "create",
 		["sleep"] = "sleep", ["uyku"] = "sleep", ["dormir"] = "sleep", ["schlafen"] = "sleep",
 		["myfav"] = "myfav", ["myfavs"] = "myfav", ["mfav"] = "myfav", ["favorim"] = "myfav", ["favorilerim"] = "myfav", ["mesfavoris"] = "myfav", ["mesfavs"] = "myfav", ["meinefavs"] = "myfav", ["meinefavoriten"] = "myfav",
 		["search"] = "search", ["find"] = "search", ["ara"] = "search", ["bul"] = "search", ["chercher"] = "search", ["recherche"] = "search", ["suchen"] = "search",

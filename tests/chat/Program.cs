@@ -23,6 +23,7 @@
 //   t <min> <max>     the song playing is between <min> and <max> seconds in
 //   q <count>         the queue holds <count> songs
 //   g <min> <max>     the song playing is leveled by <min>…<max> dB (g - : not leveled)
+//   R                 remove every bot but bot 1 (made by !create bot)
 //   S key=value ...   change bot 1's sound (equalizer, effect, speed, eightD, crossfade) through the panel
 // Exit code: the number of failed checks.
 using System.Globalization;
@@ -179,6 +180,7 @@ await scheduler.InvokeAsync(async () =>
 					break;
 				case 'P': Console.WriteLine($"-> [panel] play {arg}"); await panel.PlayAsync(arg); await Task.Delay(1500); break;
 				case 'Y': Check(FakeYtDlp.Calls().Any(l => l.Contains(arg)), $"yt-dlp was called with \"{arg}\""); break;
+				case 'R': await panel.RemoveOtherBotsAsync(); break;
 				case 'S':
 					await panel.SoundAsync(arg.Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(kv => kv.Split('=', 2)).ToDictionary(kv => kv[0], kv => kv[1]));
 					await Task.Delay(500);
@@ -260,6 +262,12 @@ sealed class Panel(string url, string password)
 				: double.TryParse(v, NumberStyles.Float, CultureInfo.InvariantCulture, out var d) ? JsonValue.Create(d)
 				: JsonValue.Create(v);
 		(await http.PutAsJsonAsync("/api/bots/1/sound", body)).EnsureSuccessStatusCode();
+	}
+
+	public async Task RemoveOtherBotsAsync()
+	{
+		foreach (var b in (await http.GetFromJsonAsync<JsonArray>("/api/bots"))!)
+			if ((string?)b?["id"] is { } id && id != "1") await http.DeleteAsync($"/api/bots/{id}");
 	}
 
 	public async Task<JsonObject> StateAsync() =>

@@ -1,0 +1,10 @@
+# !create bot: a new bot in the channel of who asks; for admins unless set otherwise.
+s announce=false
+c !create bot
+e is only for admins
+s admins=[{"uid":"$ME"}]
+c !create bot
+e is on its way to your channel
+e Its commands start with [b].[/b]
+w 4
+R

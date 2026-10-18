@@ -44,6 +44,7 @@ public sealed class Scheduler(BotManager bots, Playlists playlists, RadioBrowser
 		if (date != today) { today = date; done.RemoveWhere(k => !k.StartsWith(date.ToString("yyyy-MM-dd"))); }
 		var from = now - lastTick > CatchUp || lastTick > now ? now.AddSeconds(-11) : lastTick;
 		lastTick = now;
+		await LeaveEmptyAsync(now);
 		foreach (var b in bots.All)
 		{
 			if (b.Player.TryFireSleep(now))
@@ -61,6 +62,27 @@ public sealed class Scheduler(BotManager bots, Playlists playlists, RadioBrowser
 					await RunAsync(b, e, ct);
 				}
 			}
+		}
+	}
+
+	// Bots set to leave when nobody listens: alone in their channel with nothing playing for that long.
+	readonly Dictionary<string, DateTime> emptySince = [];
+
+	async Task LeaveEmptyAsync(DateTime now)
+	{
+		foreach (var b in bots.All)
+		{
+			var minutes = b.Config.Bot.LeaveWhenEmpty;
+			if (minutes <= 0 || bots.All.Count <= 1 || b.Player.Current != null || await b.Ts.CountListenersAsync() != 0)
+			{
+				emptySince.Remove(b.Id);
+				continue;
+			}
+			if (!emptySince.TryGetValue(b.Id, out var since)) emptySince[b.Id] = since = now;
+			if (now - since < TimeSpan.FromMinutes(minutes)) continue;
+			emptySince.Remove(b.Id);
+			log.LogInformation("Bot {Bot} was alone for {Minutes} min: removing it", b.Id, minutes);
+			await bots.RemoveAsync(b.Id);
 		}
 	}
 

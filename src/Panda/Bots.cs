@@ -106,6 +106,8 @@ public sealed class BotManager(PandaConfig config, BotShared shared, DataPaths p
 	async Task<BotInstance> StartBotAsync(BotConfig c, CancellationToken ct)
 	{
 		var b = new BotInstance(c, config, shared, paths.BotDir(c.Id), logs);
+		var made = b;
+		b.Ts.CreateBot = channel => CreateFromChatAsync(made, channel);
 		b.Player.Changed += RaiseChanged;
 		b.Ts.StatusChanged += RaiseChanged;
 		lock (gate) bots.Add(b);
@@ -118,7 +120,7 @@ public sealed class BotManager(PandaConfig config, BotShared shared, DataPaths p
 	readonly SemaphoreSlim changing = new(1);
 
 	/// <summary>A new bot on the same server as <paramref name="like"/>; it connects right away.</summary>
-	public async Task<BotInstance> AddAsync(BotInstance? like)
+	public async Task<BotInstance> AddAsync(BotInstance? like, Action<BotConfig>? setUp = null)
 	{
 		await changing.WaitAsync();
 		try
@@ -128,12 +130,45 @@ public sealed class BotManager(PandaConfig config, BotShared shared, DataPaths p
 				? Directory.EnumerateDirectories(Path.Combine(paths.Data, "bots")).Select(d => Path.GetFileName(d)!)
 				: [];
 			var c = config.AddBot(like?.Config, leftovers.ToList());
+			if (setUp != null)
+			{
+				setUp(c);
+				config.Save();
+			}
 			var b = await StartBotAsync(c, CancellationToken.None);
 			log.LogInformation("Added bot {Id}", b.Id);
 			RaiseChanged();
 			return b;
 		}
 		finally { changing.Release(); }
+	}
+
+	/// <summary>
+	/// "!create bot": a new bot on the same server, in the channel of who asked, with the same chat
+	/// permissions and language, and a prefix no other bot uses. Null and a reason when it can't.
+	/// </summary>
+	public async Task<(BotInstance? Bot, string? Error)> CreateFromChatAsync(BotInstance from, ulong channel)
+	{
+		if (All.Count >= Math.Max(1, config.Panel.MaxBots)) return (null, "too-many-bots");
+		var used = All.Select(b => b.Config.Bot.CommandPrefix).ToHashSet();
+		var prefix = new[] { "!", ".", "?", "-", "+", "~", ">", "$", "%", "&" }.FirstOrDefault(p => !used.Contains(p));
+		if (prefix is null) return (null, "too-many-bots");
+		var b = await AddAsync(from, c =>
+		{
+			c.Server.Channel = "/" + channel;
+			var s = c.Bot;
+			var f = from.Config.Bot;
+			s.CommandPrefix = prefix;
+			s.EveryoneCanUse = f.EveryoneCanUse;
+			s.Members = [.. f.Members]; s.MemberGroups = [.. f.MemberGroups];
+			s.Admins = [.. f.Admins]; s.AdminGroups = [.. f.AdminGroups];
+			s.Djs = [.. f.Djs]; s.DjGroups = [.. f.DjGroups];
+			s.Blocked = [.. f.Blocked];
+			s.CommandLevels = new(f.CommandLevels);
+			s.OthersSongs = f.OthersSongs;
+			s.SettingsVersion = f.SettingsVersion;
+		});
+		return (b, null);
 	}
 
 	/// <summary>Disconnects the bot and deletes its identity and history. The last bot can't be removed.</summary>

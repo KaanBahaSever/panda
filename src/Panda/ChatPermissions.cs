@@ -13,7 +13,7 @@ public static class ChatPermissions
 	public static readonly string[] Commands =
 	[
 		"play", "search", "playnow", "skip", "remove", "move", "skipto", "back", "seek", "pause", "stop", "clear",
-		"shuffle", "loop", "vol", "eq", "fx", "speed", "autoplay", "fm", "playlist", "fav", "myfav", "sleep", "join", "follow",
+		"shuffle", "loop", "vol", "eq", "fx", "speed", "autoplay", "fm", "playlist", "fav", "myfav", "sleep", "join", "follow", "create",
 	];
 
 	/// <summary>A sensible setup for a busy channel: adding and asking is for everyone, steering is for DJs.</summary>
@@ -23,7 +23,7 @@ public static class ChatPermissions
 		["playlist"] = "everyone", ["fav"] = "everyone", ["myfav"] = "everyone", ["fm"] = "everyone",
 		["playnow"] = "dj", ["move"] = "dj", ["skipto"] = "dj", ["back"] = "dj", ["seek"] = "dj", ["pause"] = "dj",
 		["stop"] = "dj", ["clear"] = "dj", ["shuffle"] = "dj", ["loop"] = "dj", ["vol"] = "dj", ["eq"] = "dj", ["fx"] = "dj", ["speed"] = "dj", ["autoplay"] = "dj",
-		["join"] = "dj", ["follow"] = "dj", ["sleep"] = "dj",
+		["join"] = "dj", ["follow"] = "dj", ["sleep"] = "dj", ["create"] = "admin",
 	};
 
 	public static ChatLevel Parse(string? level) => level switch
@@ -46,8 +46,11 @@ public static class ChatPermissions
 	public static ChatLevel Required(BotSettings bot, string command)
 	{
 		var key = command switch { "resume" => "pause", "pick" => "search", _ => command };
-		return bot.CommandLevels.TryGetValue(key, out var level) ? Parse(level) : ChatLevel.Everyone;
+		return Parse(bot.CommandLevels.TryGetValue(key, out var level) ? level : Default(key));
 	}
+
+	/// <summary>A command's level when none was set: everyone, except making new bots (admins).</summary>
+	public static string Default(string command) => command == "create" ? "admin" : "everyone";
 
 	/// <summary>Someone's level from their unique id and server groups. Blocked people have none.</summary>
 	public static ChatLevel LevelOf(BotSettings bot, string? uid, IEnumerable<ulong> groups)

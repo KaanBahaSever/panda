@@ -608,6 +608,7 @@ public sealed class SettingsDto
 	public IReadOnlyDictionary<string, string>? RecommendedLevels { get; set; }
 	public string OthersSongs { get; set; } = "everyone";
 	public bool OnlyFromChannel { get; set; }
+	public int LeaveWhenEmpty { get; set; }
 	public List<ScheduleEntry>? Schedule { get; set; }
 	/// <summary>The server's time, for the schedule (it runs on it); ignored when saving.</summary>
 	public string? ServerTime { get; set; }
@@ -668,6 +669,7 @@ public sealed class SettingsDto
 		ShowSongInDescription = b.Bot.ShowSongInDescription,
 		EveryoneCanUse = b.Bot.EveryoneCanUse,
 		Members = b.Bot.Members,
+		LeaveWhenEmpty = b.Bot.LeaveWhenEmpty,
 		Schedule = b.Bot.Schedule,
 		ServerTime = DateTime.Now.ToString("HH:mm"),
 		MemberGroups = b.Bot.MemberGroups,
@@ -739,9 +741,10 @@ public sealed class SettingsDto
 		b.Bot.AdminGroups = (AdminGroups ?? []).Distinct().Take(100).ToList();
 		b.Bot.DjGroups = (DjGroups ?? []).Distinct().Take(100).ToList();
 		b.Bot.CommandLevels = (CommandLevels ?? [])
-			.Where(kv => ChatPermissions.Commands.Contains(kv.Key) && ChatPermissions.IsLevel(kv.Value) && kv.Value != "everyone")
+			.Where(kv => ChatPermissions.Commands.Contains(kv.Key) && ChatPermissions.IsLevel(kv.Value) && kv.Value != ChatPermissions.Default(kv.Key))
 			.ToDictionary(kv => kv.Key, kv => kv.Value);
 		b.Bot.OnlyFromChannel = OnlyFromChannel;
+		if (LeaveWhenEmpty is >= 0 and <= 24 * 60) b.Bot.LeaveWhenEmpty = LeaveWhenEmpty;
 		// Left out (a script, an older panel): the schedule stays.
 		if (Schedule != null) b.Bot.Schedule = Schedule.Where(e => e is { IsValid: true }).Take(50)
 			.Select(e => e with { Days = (e.Days ?? []).Distinct().Order().ToList(), Target = e.Action == "stop" ? "" : e.Target.Trim() }).ToList();

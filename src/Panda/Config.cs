@@ -464,6 +464,9 @@ public sealed class BotSettings
 	public bool EightD { get; set; }
 	/// <summary>Seconds the end of a song and the start of the next overlap; 0 = off.</summary>
 	public int Crossfade { get; set; }
+	/// <summary>Minutes the bot may sit alone in its channel with nothing playing before it removes itself;
+	/// 0 = never. (Never the last bot.)</summary>
+	public int LeaveWhenEmpty { get; set; }
 	/// <summary>Things the bot does at set times (see Scheduler).</summary>
 	public List<ScheduleEntry> Schedule { get; set; } = [];
 	/// <summary>The Panda version (minor) whose settings these are, for one-time changes on update.</summary>
@@ -476,6 +479,8 @@ public sealed class BotSettings
 public sealed class PanelSettings
 {
 	public string Listen { get; set; } = "0.0.0.0";
+	/// <summary>How many bots there may be (!create bot stops there).</summary>
+	public int MaxBots { get; set; } = 10;
 	public int Port { get; set; } = 8080;
 	public List<PanelUser> Users { get; set; } = [];
 	/// <summary>Keys for programs (scripts, a management panel) that use the API without logging in.</summary>
