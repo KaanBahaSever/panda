@@ -63,6 +63,10 @@ if [ $json = 1 ]; then
 			printf '{"id":"77%s","title":"%s","uploader":"Fake SC","duration":90,"extractor_key":"Soundcloud","webpage_url":"%s"}\n' \
 				"$(printf '%s' "$url" | md5sum | cut -c1-8 | tr -cd '0-9')" "$t" "$url" ;;
 		*list=RD*) echo '{"entries":[]}' ;;
+		*playlist\?list=*)
+			# A YouTube playlist: "Fake List" with three songs.
+			printf '{"title":"Fake List","entries":[{"id":"fkList00001","title":"List Song 1","channel":"Fake","duration":90},{"id":"fkList00002","title":"List Song 2","channel":"Fake","duration":90},{"id":"fkList00003","title":"List Song 3","channel":"Fake","duration":90}]}
+' ;;
 		*v=*)
 			id=${url##*v=}
 			t=$(grep -m1 "^$id	" "$FAKE/titles" 2>/dev/null | cut -f2-); [ -n "$t" ] || t="Fake $id"

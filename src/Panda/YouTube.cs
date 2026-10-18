@@ -216,6 +216,20 @@ public sealed partial class YouTube(PandaConfig config, ILogger<YouTube> log)
 
 	/// <summary>A link to another site yt-dlp knows (SoundCloud, Bandcamp, Mixcloud, Vimeo, Twitch...):
 	/// the song, or the first one of an album or set.</summary>
+	/// <summary>All the songs of a playlist (YouTube, or a set on another site), up to <paramref name="max"/>,
+	/// as the list names them, and the list's title.</summary>
+	public async Task<(string? Title, List<Track> Songs)> ReadListAsync(string url, int max, bool youtube, CancellationToken ct = default)
+	{
+		var json = await RunJsonAsync(["--flat-playlist", "--playlist-end", Math.Clamp(max, 1, 500).ToString(), url], ct, youtube);
+		var songs = new List<Track>();
+		if (json.TryGetProperty("entries", out var entries))
+			foreach (var e in entries.EnumerateArray())
+				if ((youtube ? (e.TryGetProperty("id", out var id) && id.GetString() is { Length: 11 } ? FromJson(e, "") : null) : FromSiteJson(e, "", null)) is { Title.Length: > 0 } t)
+					songs.Add(t);
+		var title = json.TryGetProperty("title", out var tt) && tt.ValueKind == JsonValueKind.String ? tt.GetString() : null;
+		return (title, songs);
+	}
+
 	public async Task<Track> ResolveSiteAsync(string url, string requestedBy, CancellationToken ct = default)
 	{
 		var json = await RunJsonAsync(["--no-playlist", "--playlist-items", "1", "--skip-download", url], ct, youtube: false);

@@ -99,6 +99,13 @@ check "the state shows the sound" "$(curl -s -b $J $P/api/bots/1/state | json "d
 check "a field left out stays" "$(sound '{"eightD":true}' | json "(d['equalizer'], d['eightD'])")" "('custom', True)"
 sound '{"equalizer":"off","eightD":false}' >/dev/null
 
+echo "== importing playlists"
+check "a YouTube playlist comes in at once" "$(post /api/playlists/import '{"url":"https://www.youtube.com/playlist?list=PLfake"}' | json "(d['name'], d['added'], d['coming'])")" "('Fake List', 3, 0)"
+check "a Spotify playlist comes song by song" "$(post /api/playlists/import '{"url":"https://open.spotify.com/playlist/abcdefghij1234567890","name":"From Spotify"}' | json "(d['name'], d['coming'])")" "('From Spotify', 3)"
+sleep 8
+check "...and is all there after a while" "$(curl -s -b $J "$P/api/playlists/From%20Spotify" | json "len(d['songs'])")" 3
+check "a link that isn't a playlist" "$(code -b $J -H 'Content-Type: application/json' -d '{"url":"not a link at all"}' $P/api/playlists/import)" 400
+
 echo "== playlists and the library"
 check "playlists take songs from other sites" "$(post /api/playlists '{"name":"Sites","songs":[{"id":"soundcloud:123","title":"SC Song","channel":"x","duration":90,"source":"link","link":"https://soundcloud.com/a/b"}]}' | json "len(d['songs'])")" 1
 check "but not with a link that isn't a web page" "$(post /api/playlists '{"name":"Sites","songs":[{"id":"x:1","title":"Bad","channel":"x","duration":9,"source":"link","link":"javascript:alert(1)"}]}' | json "len(d['songs'])")" 1

@@ -262,6 +262,58 @@ public sealed partial class Sources(PandaConfig config, YouTube youtube, Library
 	}
 
 	/// <summary>
+	/// A playlist from the web into a saved list: a YouTube list (or another site's set) at once, a Spotify
+	/// or Deezer list song by song in the background (each looked up on YouTube). Returns the list's name,
+	/// how many songs went in now and how many are still being looked up.
+	/// </summary>
+	public async Task<(string Name, int Added, int Coming)> ImportAsync(string input, string? name, Playlists lists, CancellationToken ct = default)
+	{
+		var url = YouTube.CleanInput(input);
+		if (!url.StartsWith("http", StringComparison.OrdinalIgnoreCase)) url = "https://" + url;
+		if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || uri.Scheme is not ("http" or "https")) throw new YouTubeException("not-found");
+		string Named(string? title) =>
+			name is { } n && Playlists.IsValidName(n) ? n.Trim()
+			: title is { } t && Playlists.IsValidName(t.Replace('/', '-')) ? (t.Length > 40 ? t[..40] : t).Replace('/', '-').Trim()
+			: "Import " + DateTime.Now.ToString("yyyy-MM-dd HH:mm");
+		try
+		{
+			if (MusicLinks.IsService(uri))
+			{
+				if (!S.Services) throw new YouTubeException("source-off");
+				if (MusicLinks.IsShortLink(uri))
+				{
+					await Web.CheckAsync(uri, ct);
+					uri = (await Web.GetPageAsync(uri.AbsoluteUri, ct)).Url;
+					if (!MusicLinks.IsService(uri) || MusicLinks.IsShortLink(uri)) throw new YouTubeException("not-found");
+				}
+				var (title, queries) = await MusicLinks.ReadAsync(uri, ct);
+				if (queries.Count == 0) throw new YouTubeException("not-found");
+				var listName = Named(title);
+				lists.Save(listName, []);
+				_ = Task.Run(() => AddAllAsync(queries.Take(Playlists.MaxSongs).ToList(), "", t =>
+				{
+					lists.Save(listName, [PlaylistSong.From(t)], out var left);
+					return left == 0;
+				}));
+				return (listName, 0, Math.Min(queries.Count, Playlists.MaxSongs));
+			}
+			var isYouTube = YouTube.IsYouTubeLink(url);
+			if (!isYouTube)
+			{
+				if (!S.Sites) throw new YouTubeException("source-off");
+				await Web.CheckAsync(uri, ct);
+			}
+			var (listTitle, songs) = await youtube.ReadListAsync(uri.AbsoluteUri, Playlists.MaxSongs, isYouTube, ct);
+			if (songs.Count == 0) throw new YouTubeException("playlist-empty");
+			var saved = lists.Save(Named(listTitle), songs.Where(s => !s.IsLive).Select(PlaylistSong.From), out _);
+			return (saved.Name, saved.Songs.Count, 0);
+		}
+		catch (PrivateLinkException) { throw new YouTubeException("link-private"); }
+		catch (HttpRequestException) { throw new YouTubeException("link-unreachable"); }
+		catch (System.Text.Json.JsonException) { throw new YouTubeException("not-found"); }
+	}
+
+	/// <summary>
 	/// Looks the rest of a list up and hands each song to <paramref name="add"/> (false: stop, the queue is
 	/// full, or it was cleared). Returns how many were added and how many weren't found.
 	/// </summary>

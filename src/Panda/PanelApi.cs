@@ -243,6 +243,16 @@ public static class PanelApi
 			!Playlists.IsValidName(req.Name ?? "") ? Problem("bad-playlist-name")
 			: lists.Rename(name, req.Name!) ? Results.NoContent() : Problem("playlist-exists"));
 		admin.MapDelete("/playlists/{name}", (string name, Playlists lists) => Done(lists.Delete(name)));
+		// A YouTube, Spotify or Deezer playlist (or a set on another site) into a saved list.
+		admin.MapPost("/playlists/import", async (ImportRequest req, Sources sources, Playlists lists, HttpContext ctx) =>
+		{
+			try
+			{
+				var (name, added, coming) = await sources.ImportAsync(req.Url ?? "", req.Name, lists, ctx.RequestAborted);
+				return Results.Ok(new { name, added, coming });
+			}
+			catch (YouTubeException ex) { return Problem(ex.Message); }
+		});
 		admin.MapDelete("/playlists/{name}/songs/{index:int}", (string name, int index, string id, Playlists lists) => Done(lists.RemoveSong(name, index, id)));
 
 		bot.MapPost("/playlist", (PlayPlaylistRequest req, BotInstance b, Playlists lists, HttpContext ctx) =>
@@ -552,6 +562,7 @@ public static class PanelApi
 	public sealed record VolumeRequest(int Volume);
 	public sealed record LoopRequest(LoopMode Mode);
 	public sealed record AutoplayRequest(bool On);
+	public sealed record ImportRequest(string? Url, string? Name = null);
 	public sealed record SoundRequest(string? Equalizer = null, double[]? Bands = null, string? Effect = null, double? Speed = null, bool? EightD = null, int? Crossfade = null);
 	public sealed record FmRequest(string? Uuid, bool Now = false);
 	public sealed record FavoriteRequest(string? Uuid = null, string? FromBot = null);

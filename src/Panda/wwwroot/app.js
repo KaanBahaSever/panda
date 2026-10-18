@@ -10,6 +10,7 @@ const I18N = {
     shuffle: 'Shuffle queue', stop: 'Stop', play: 'Play', pause: 'Pause', skip: 'Skip', mute: 'Mute', unmute: 'Unmute', volume: 'Volume',
     loopOff: 'Loop: off', loopAll: 'Loop: whole queue', loopOne: 'Loop: this song',
     sTarget: 'How loud', tNatural: 'Natural (-18 LUFS)', tStandard: 'Standard (-14 LUFS, like YouTube)', tLoud: 'Loud (-11 LUFS)', sTargetHint: "Natural keeps the music's dynamics fully; loud stands out in a busy channel but squeezes the peaks a little. The bot's volume works on top of this.", gainTip: 'Loudness leveling for this song',
+    plImport: 'Import a playlist', plImportUrl: 'Link of a YouTube, Spotify or Deezer playlist:', plImportName: 'Name of the saved list (empty: its own name):', plImported: (x, n) => `${n} songs saved in "${x}"`, plImportComing: (x, n) => `"${x}": ${n} songs are looked up and added one by one`,
     soundTitle: 'Sound', sEq: 'Equalizer', sEqPreset: 'Setting', sEqHint: 'Moving a band makes it your own setting. Everything is heard at once and kept for this bot.', 'eqn.off': 'Off', 'eqn.bass': 'Bass', 'eqn.treble': 'Treble', 'eqn.vocal': 'Vocal', 'eqn.pop': 'Pop', 'eqn.rock': 'Rock', 'eqn.classical': 'Classical', 'eqn.electronic': 'Electronic', 'eqn.jazz': 'Jazz', 'eqn.custom': 'My own',
     sFx: 'Effects', 'fx.off': 'None', 'fx.nightcore': 'Nightcore', 'fx.slowed': 'Slowed', fx8d: '8D: the sound circles around your head', sSpeed: 'Speed', sFxHint: 'Nightcore plays faster and higher, slowed slower and lower; the speed changes the tempo, not the pitch. The song goes on where it was.', sCrossfade: 'Crossfade', sCrossfadeHint: 'The end of a song plays under the start of the next one. Only into songs that are in the library (they start at once). 0 = off.', secs: n => n ? `${n} s` : 'off',
     'err.bad-sound': 'That sound setting is out of range.', 'err.bad-equalizer': 'Unknown equalizer setting.', 'err.bad-effect': 'Unknown effect.', 'cmd.eq': 'Equalizer', 'cmd.fx': 'Effects (nightcore, slowed, 8D)', 'cmd.speed': 'Speed',
@@ -106,6 +107,7 @@ const I18N = {
     shuffle: 'Sırayı karıştır', stop: 'Durdur', play: 'Oynat', pause: 'Duraklat', skip: 'Geç', mute: 'Sessize al', unmute: 'Sesi aç', volume: 'Ses',
     loopOff: 'Tekrar: kapalı', loopAll: 'Tekrar: tüm sıra', loopOne: 'Tekrar: bu şarkı',
     sTarget: 'Ne kadar yüksek', tNatural: 'Doğal (-18 LUFS)', tStandard: 'Standart (-14 LUFS, YouTube gibi)', tLoud: 'Yüksek (-11 LUFS)', sTargetHint: 'Doğal, müziğin dinamiğini tamamen korur; yüksek, kalabalık kanalda öne çıkar ama tepeleri biraz sıkıştırır. Botun ses düzeyi bunun üstüne çalışır.', gainTip: 'Bu şarkıya uygulanan ses eşitleme',
+    plImport: 'Liste aktar', plImportUrl: 'YouTube, Spotify ya da Deezer listesinin linki:', plImportName: 'Kayıtlı listenin adı (boş: kendi adı):', plImported: (x, n) => `"${x}" listesine ${n} şarkı kaydedildi`, plImportComing: (x, n) => `"${x}": ${n} şarkı aranıp tek tek ekleniyor`,
     soundTitle: 'Ses', sEq: 'Ekolayzer', sEqPreset: 'Ayar', sEqHint: 'Bir bandı oynatınca kendi ayarın olur. Her değişiklik anında duyulur ve bu bot için saklanır.', 'eqn.off': 'Kapalı', 'eqn.bass': 'Bas', 'eqn.treble': 'Tiz', 'eqn.vocal': 'Vokal', 'eqn.pop': 'Pop', 'eqn.rock': 'Rock', 'eqn.classical': 'Klasik', 'eqn.electronic': 'Elektronik', 'eqn.jazz': 'Caz', 'eqn.custom': 'Kendi ayarım',
     sFx: 'Efektler', 'fx.off': 'Yok', 'fx.nightcore': 'Nightcore', 'fx.slowed': 'Yavaşlatılmış', fx8d: '8D: ses başının etrafında döner', sSpeed: 'Hız', sFxHint: 'Nightcore daha hızlı ve ince, yavaşlatılmış daha yavaş ve kalın çalar; hız ise sesin inceliğini değil temposunu değiştirir. Şarkı kaldığı yerden sürer.', sCrossfade: 'Geçişte yumuşak ses (crossfade)', sCrossfadeHint: 'Şarkının sonu bir sonrakinin başıyla üst üste çalar. Sadece kütüphanedeki şarkılara geçerken (hemen başladıkları için). 0 = kapalı.', secs: n => n ? `${n} sn` : 'kapalı',
     'err.bad-sound': 'Bu ses ayarı izin verilen aralığın dışında.', 'err.bad-equalizer': 'Bilinmeyen ekolayzer ayarı.', 'err.bad-effect': 'Bilinmeyen efekt.', 'cmd.eq': 'Ekolayzer', 'cmd.fx': 'Efektler (nightcore, yavaş, 8D)', 'cmd.speed': 'Hız',
@@ -202,6 +204,7 @@ const I18N = {
     shuffle: 'Mélanger la file', stop: 'Arrêter', play: 'Lecture', pause: 'Pause', skip: 'Passer', mute: 'Couper le son', unmute: 'Rétablir le son', volume: 'Volume',
     loopOff: 'Répétition : désactivée', loopAll: 'Répétition : toute la file', loopOne: 'Répétition : ce morceau',
     sTarget: 'Quel volume', tNatural: 'Naturel (-18 LUFS)', tStandard: 'Standard (-14 LUFS, comme YouTube)', tLoud: 'Fort (-11 LUFS)', sTargetHint: "Naturel garde toute la dynamique de la musique ; fort ressort dans un canal animé mais compresse un peu les crêtes. Le volume du bot s'applique en plus.", gainTip: 'Égalisation du volume pour ce morceau',
+    plImport: 'Importer une playlist', plImportUrl: "Lien d'une playlist YouTube, Spotify ou Deezer :", plImportName: 'Nom de la liste enregistrée (vide : son propre nom) :', plImported: (x, n) => `${n} morceaux enregistrés dans « ${x} »`, plImportComing: (x, n) => `« ${x} » : ${n} morceaux sont cherchés et ajoutés un par un`,
     soundTitle: 'Son', sEq: 'Égaliseur', sEqPreset: 'Réglage', sEqHint: "Bouger une bande en fait votre propre réglage. Tout s'entend tout de suite et reste pour ce bot.", 'eqn.off': 'Désactivé', 'eqn.bass': 'Basses', 'eqn.treble': 'Aigus', 'eqn.vocal': 'Voix', 'eqn.pop': 'Pop', 'eqn.rock': 'Rock', 'eqn.classical': 'Classique', 'eqn.electronic': 'Électro', 'eqn.jazz': 'Jazz', 'eqn.custom': 'Le mien',
     sFx: 'Effets', 'fx.off': 'Aucun', 'fx.nightcore': 'Nightcore', 'fx.slowed': 'Ralenti', fx8d: '8D : le son tourne autour de votre tête', sSpeed: 'Vitesse', sFxHint: "Nightcore joue plus vite et plus aigu, ralenti plus lent et plus grave ; la vitesse change le tempo, pas la hauteur. Le morceau reprend là où il était.", sCrossfade: 'Fondu enchaîné', sCrossfadeHint: "La fin d'un morceau joue sous le début du suivant. Seulement vers des morceaux de la bibliothèque (ils démarrent tout de suite). 0 = désactivé.", secs: n => n ? `${n} s` : 'désactivé',
     'err.bad-sound': 'Ce réglage du son est hors limites.', 'err.bad-equalizer': "Réglage d'égaliseur inconnu.", 'err.bad-effect': 'Effet inconnu.', 'cmd.eq': 'Égaliseur', 'cmd.fx': 'Effets (nightcore, ralenti, 8D)', 'cmd.speed': 'Vitesse',
@@ -298,6 +301,7 @@ const I18N = {
     shuffle: 'Warteschlange mischen', stop: 'Stopp', play: 'Abspielen', pause: 'Pause', skip: 'Überspringen', mute: 'Stummschalten', unmute: 'Ton an', volume: 'Lautstärke',
     loopOff: 'Wiederholung: aus', loopAll: 'Wiederholung: ganze Warteschlange', loopOne: 'Wiederholung: dieser Song',
     sTarget: 'Wie laut', tNatural: 'Natürlich (-18 LUFS)', tStandard: 'Standard (-14 LUFS, wie YouTube)', tLoud: 'Laut (-11 LUFS)', sTargetHint: 'Natürlich behält die Dynamik der Musik ganz; laut sticht in einem vollen Channel hervor, drückt aber die Spitzen etwas. Die Lautstärke des Bots wirkt zusätzlich.', gainTip: 'Lautheitsausgleich für diesen Song',
+    plImport: 'Playlist importieren', plImportUrl: 'Link einer YouTube-, Spotify- oder Deezer-Playlist:', plImportName: 'Name der gespeicherten Liste (leer: ihr eigener Name):', plImported: (x, n) => `${n} Songs in „${x}“ gespeichert`, plImportComing: (x, n) => `„${x}“: ${n} Songs werden gesucht und nach und nach hinzugefügt`,
     soundTitle: 'Klang', sEq: 'Equalizer', sEqPreset: 'Einstellung', sEqHint: 'Ein bewegtes Band macht daraus deine eigene Einstellung. Alles ist sofort zu hören und bleibt für diesen Bot.', 'eqn.off': 'Aus', 'eqn.bass': 'Bass', 'eqn.treble': 'Höhen', 'eqn.vocal': 'Gesang', 'eqn.pop': 'Pop', 'eqn.rock': 'Rock', 'eqn.classical': 'Klassik', 'eqn.electronic': 'Elektro', 'eqn.jazz': 'Jazz', 'eqn.custom': 'Eigene',
     sFx: 'Effekte', 'fx.off': 'Keine', 'fx.nightcore': 'Nightcore', 'fx.slowed': 'Verlangsamt', fx8d: '8D: der Klang kreist um deinen Kopf', sSpeed: 'Tempo', sFxHint: 'Nightcore spielt schneller und höher, verlangsamt langsamer und tiefer; das Tempo ändert die Geschwindigkeit, nicht die Tonhöhe. Der Song geht dort weiter, wo er war.', sCrossfade: 'Überblenden', sCrossfadeHint: 'Das Ende eines Songs läuft unter dem Anfang des nächsten. Nur zu Songs aus der Bibliothek (sie starten sofort). 0 = aus.', secs: n => n ? `${n} s` : 'aus',
     'err.bad-sound': 'Diese Klangeinstellung liegt außerhalb des Bereichs.', 'err.bad-equalizer': 'Unbekannte Equalizer-Einstellung.', 'err.bad-effect': 'Unbekannter Effekt.', 'cmd.eq': 'Equalizer', 'cmd.fx': 'Effekte (Nightcore, langsam, 8D)', 'cmd.speed': 'Tempo',
@@ -1545,6 +1549,16 @@ async function deletePlaylist(name) {
 /** Adds songs to a playlist (made when it doesn't exist yet). */
 const saveToPlaylist = (name, body) => act(() => api('POST', '/api/playlists', { name, ...body }), r => r.left ? t('plFull', r.name, r.left) : t('plSaved', r.name));
 
+// A playlist from YouTube, Spotify or Deezer into a saved list (its own name, unless one is given).
+$('pl-import').addEventListener('click', async e => {
+  const btn = e.currentTarget;
+  const url = await promptBox(t('plImportUrl'), { type: 'url' });
+  if (!url?.trim()) return;
+  const name = await promptBox(t('plImportName'), { type: 'text' });
+  if (name == null) return;
+  await busy(btn, () => act(() => api('POST', '/api/playlists/import', { url: url.trim(), name: name.trim() || null }),
+    r => r.coming ? t('plImportComing', r.name, r.coming) : t('plImported', r.name, r.added)));
+});
 $('pl-save-queue').addEventListener('click', async () => {
   const name = await promptBox(t('plName'), { type: 'text' });
   if (name?.trim()) saveToPlaylist(name.trim(), { fromBot: botId });
