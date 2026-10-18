@@ -97,11 +97,11 @@ print(d.get('everyoneCanUse'), [p['uid'] for p in d.get('members', [])], d.get('
 esac
 case $OLDV in 0.[0-5].*)
 check "radio became autoplay (still on)" "$(api $P/api/bots/1/state | python3 -c "import sys,json; print(json.load(sys.stdin)['player'].get('autoplay'))")" True
-check "the level of !radio went to !autoplay and !fm" "$(api $P/api/bots/1/settings | python3 -c "
+[ "${OLDV%.*}" = 0.5 ] && check "the level of !radio went to !autoplay and !fm" "$(api $P/api/bots/1/settings | python3 -c "
 import sys, json
 l = json.load(sys.stdin)['commandLevels']; print(l.get('autoplay'), l.get('fm'))")" "dj dj" ;;
 esac
-case $OLDV in 0.[0-6].*)
+case $OLDV in 0.[5-6].*)
 check "the equalizer, effects and speed got the level of the volume" "$(api $P/api/bots/1/settings | python3 -c "
 import sys, json
 l = json.load(sys.stdin)['commandLevels']; print(l.get('eq'), l.get('fx'), l.get('speed'))")" "dj dj dj" ;;

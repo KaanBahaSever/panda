@@ -50,9 +50,9 @@ if [ "$MODE" = all ]; then
 	tar -czf "$B/panda-linux-x64.tar.gz" -C "$B/tar" panda panda.service install.sh LICENSE
 	in_linux bash "$(lp "$R/tests/wsl/env.sh")" ts
 	if command -v wsl.exe >/dev/null; then
-		run "panel update" in_linux -u root bash "$(lp "$R/tests/wsl/upgrade.sh")" "$(lp "$B/panda-linux-x64.tar.gz")"
+		run "panel update" in_linux -u root bash "$(lp "$R/tests/wsl/upgrade.sh")" "$(lp "$B/panda-linux-x64.tar.gz")" "${UPGRADE_FROM:-latest}"
 	else
-		run "panel update" sudo bash "$R/tests/wsl/upgrade.sh" "$B/panda-linux-x64.tar.gz"
+		run "panel update" sudo bash "$R/tests/wsl/upgrade.sh" "$B/panda-linux-x64.tar.gz" "${UPGRADE_FROM:-latest}"
 	fi
 	in_linux bash "$(lp "$R/tests/wsl/env.sh")" stop
 fi
