@@ -222,6 +222,35 @@ public static class PanelApi
 		authed.MapGet("/stats", (string? bot, int? days, int? tz, Stats stats) => stats.Get(bot, days ?? 30, tz ?? 0));
 		admin.MapDelete("/library/{id}", (string id, Library library) => Done(library.Delete(id)));
 
+		// A backup of the settings, identities, histories and lists; restoring one restarts Panda.
+		admin.MapGet("/backup", (DataPaths paths) =>
+			Results.File(Backup.Make(paths), "application/zip", $"panda-backup-{DateTime.Now:yyyyMMdd-HHmm}.zip"));
+		admin.MapPost("/restore", async (HttpContext ctx, DataPaths paths, PandaConfig config, BotManager bots, IHostApplicationLifetime life, ILoggerFactory logs) =>
+		{
+			if (ctx.Request.ContentLength > Backup.MaxZip) return Problem("too-large");
+			var body = new MemoryStream();
+			await ctx.Request.Body.CopyToAsync(body, ctx.RequestAborted);
+			if (body.Length > Backup.MaxZip) return Problem("too-large");
+			body.Position = 0;
+			// The bots' queues aren't kept for after the restart: the restored settings may be a different setup.
+			config.Frozen = true;
+			if (Backup.Restore(body, paths) is { } error)
+			{
+				config.Frozen = false;
+				return Problem(error);
+			}
+			foreach (var f in Directory.EnumerateFiles(Path.Combine(paths.Data, "bots"), "session.json", SearchOption.AllDirectories)) File.Delete(f);
+			logs.CreateLogger("Panda.Backup").LogWarning("A backup was restored from the panel; Panda restarts");
+			_ = Task.Run(async () =>
+			{
+				await Task.Delay(1000);
+				// Not 0: the service manager starts Panda again (systemd Restart=on-failure, Docker's restart policy).
+				Environment.ExitCode = 3;
+				life.StopApplication();
+			});
+			return Results.Accepted();
+		}).DisableAntiforgery();
+
 		admin.MapPost("/cookies", async (HttpContext ctx, PandaConfig config, DataPaths paths) =>
 		{
 			if (ctx.Request.ContentLength > 2_000_000) return Problem("too-large");

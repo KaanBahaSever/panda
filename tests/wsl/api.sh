@@ -133,5 +133,19 @@ check "but not with a link that isn't a web page" "$(post /api/playlists '{"name
 check "nor a station" "$(post /api/playlists '{"name":"Sites","songs":[{"id":"radio:x","title":"FM","channel":"x","duration":0,"source":"radio","link":"http://x.y/"}]}' | json "len(d['songs'])")" 1
 check "the library deletes songs only by their id" "$(code -b $J -X DELETE "$P/api/library/..%2F..%2Fconfig")" 409
 
+echo "== backup (last: restoring one stops Panda)"
+curl -s -b $J $P/api/backup -o /tmp/panda-backup.zip
+check "a backup holds the settings and the identity" "$(python3 -c "import zipfile; n=zipfile.ZipFile('/tmp/panda-backup.zip').namelist(); print('config.json' in n, 'bots/1/identity.json' in n)")" "True True"
+python3 -c "
+import zipfile
+with zipfile.ZipFile('/tmp/panda-evil.zip', 'w') as z:
+    z.writestr('config.json', '{}'); z.writestr('../../evil.txt', 'x')"
+check "a backup with other files is refused" "$(code -b $J -H 'Content-Type: application/zip' --data-binary @/tmp/panda-evil.zip $P/api/restore)" 400
+check "not a zip" "$(code -b $J -H 'Content-Type: application/zip' --data-binary 'hello' $P/api/restore)" 400
+check "a dj key can't restore" "$(code -H "Authorization: Bearer $DJ" -H 'Content-Type: application/zip' --data-binary @/tmp/panda-backup.zip $P/api/restore)" 401
+check "restoring a backup" "$(code -b $J -H 'Content-Type: application/zip' --data-binary @/tmp/panda-backup.zip $P/api/restore)" 202
+sleep 4
+check "...and Panda restarts (here: stops; the service manager starts it again)" "$(code -m 2 $P/api/version)" 000
+
 echo; echo "api: $failed failed"
 exit $failed

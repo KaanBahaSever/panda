@@ -283,8 +283,12 @@ public sealed class PandaConfig
 
 	string UsersJson() => JsonSerializer.Serialize(Panel.Users, JsonOptions);
 
+	/// <summary>A backup was restored: nothing in memory may overwrite it before Panda restarts.</summary>
+	public bool Frozen { get; set; }
+
 	public void Save()
 	{
+		if (Frozen) return;
 		lock (saveLock)
 		{
 			AdoptUsersFromFileLocked();

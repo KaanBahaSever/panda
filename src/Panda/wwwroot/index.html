@@ -478,6 +478,15 @@
       </form>
     </section>
 
+    <section class="group admin-only">
+      <h3 class="legend">💾 <span data-i18n="sBackup">Backup</span></h3>
+      <p class="hint" data-i18n="sBackupHint"></p>
+      <div class="save-row">
+        <a class="btn ghost" href="api/backup" download><svg class="ic"><use href="#i-download"/></svg><span data-i18n="backupDl">Download a backup</span></a>
+        <label class="btn ghost file-btn"><svg class="ic"><use href="#i-upload"/></svg><span data-i18n="backupRestore">Restore a backup</span><input id="restore-file" type="file" accept=".zip,application/zip"></label>
+      </div>
+    </section>
+
     <form id="pw-form" class="group">
       <h3 class="legend">🔑 <span data-i18n="sPanelPw">Panel password</span> <span id="pw-user" class="chip"></span></h3>
       <input type="text" name="username" autocomplete="username" hidden>
