@@ -42,6 +42,28 @@ public static class PanelApi
 			return Results.NoContent();
 		});
 		api.MapGet("/version", () => new { version = Version });
+		// The public "now playing" page (when turned on): titles only, nobody's name.
+		api.MapGet("/public/now", (PandaConfig config, BotManager bots) =>
+		{
+			if (!config.Panel.PublicPage) return Results.NotFound();
+			return Results.Ok(bots.All.Select(b =>
+			{
+				var s = b.Player.GetState();
+				var t = s.Current?.Track;
+				return new
+				{
+					nickname = b.Config.Bot.Nickname,
+					title = t?.Title,
+					channel = t?.Channel,
+					thumbnail = t?.Thumbnail,
+					streamTitle = s.Current?.StreamTitle,
+					live = t?.IsLive ?? false,
+					position = s.Current?.Position ?? 0,
+					duration = t?.Duration ?? 0,
+					next = s.Queue.Take(10).Select(q => q.Title).ToList(),
+				};
+			}));
+		});
 		authed.MapGet("/me", (HttpContext ctx) => new { name = ctx.User.Identity?.Name, role = ctx.User.FindFirst(ClaimTypes.Role)?.Value });
 
 		// --- bots ---
@@ -609,6 +631,7 @@ public sealed class SettingsDto
 	public string OthersSongs { get; set; } = "everyone";
 	public bool OnlyFromChannel { get; set; }
 	public int LeaveWhenEmpty { get; set; }
+	public bool? PublicPage { get; set; }
 	public string SongChannel { get; set; } = "";
 	public string SongChannelFormat { get; set; } = "🎵 {song}";
 	public string SongChannelIdle { get; set; } = "🎵 Panda";
@@ -673,6 +696,7 @@ public sealed class SettingsDto
 		EveryoneCanUse = b.Bot.EveryoneCanUse,
 		Members = b.Bot.Members,
 		LeaveWhenEmpty = b.Bot.LeaveWhenEmpty,
+		PublicPage = c.Panel.PublicPage,
 		SongChannel = b.Bot.SongChannel,
 		SongChannelFormat = b.Bot.SongChannelFormat,
 		SongChannelIdle = b.Bot.SongChannelIdle,
@@ -751,6 +775,7 @@ public sealed class SettingsDto
 			.ToDictionary(kv => kv.Key, kv => kv.Value);
 		b.Bot.OnlyFromChannel = OnlyFromChannel;
 		if (LeaveWhenEmpty is >= 0 and <= 24 * 60) b.Bot.LeaveWhenEmpty = LeaveWhenEmpty;
+		if (PublicPage is { } pub) c.Panel.PublicPage = pub;
 		b.Bot.SongChannel = (SongChannel ?? "").Trim() is var sc && sc.Length <= 200 ? sc : b.Bot.SongChannel;
 		if ((SongChannelFormat ?? "").Trim() is { Length: > 0 and <= 60 } sf && sf.Contains("{song}")) b.Bot.SongChannelFormat = sf;
 		if ((SongChannelIdle ?? "").Trim() is { Length: > 0 and <= 40 } si) b.Bot.SongChannelIdle = si;

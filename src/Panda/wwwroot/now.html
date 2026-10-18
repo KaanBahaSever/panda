@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#2bbf6f">
+<title>Panda 🐼 — now playing</title>
+<link rel="icon" type="image/png" href="img/favicon.png">
+<style>
+  :root { --bg: #f4f7f5; --card: #fff; --ink: #26262e; --muted: #6b6b78; --green: #2bbf6f; --border: #e3e8e5; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #17171c; --card: #22222a; --ink: #f1f1f4; --muted: #a0a0ad; --border: #33333d; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; background: var(--bg); color: var(--ink); }
+  main { max-width: 640px; margin: 0 auto; padding: 24px 16px; display: grid; gap: 16px; }
+  h1 { font-size: 22px; margin: 0; display: flex; align-items: center; gap: 10px; }
+  h1 img { width: 36px; height: 36px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 18px; padding: 16px; }
+  .bot { font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .now { display: grid; grid-template-columns: 96px 1fr; gap: 14px; align-items: center; margin-top: 8px; }
+  .now img { width: 96px; height: 96px; object-fit: cover; border-radius: 12px; background: var(--border); }
+  .title { font-size: 18px; font-weight: 800; overflow-wrap: anywhere; }
+  .meta { color: var(--muted); font-size: 13.5px; overflow-wrap: anywhere; }
+  .live { color: #fff; background: #d6455d; border-radius: 999px; padding: 0 8px; font-size: 11px; font-weight: 800; }
+  .bar { height: 6px; border-radius: 3px; background: var(--border); margin-top: 8px; overflow: hidden; }
+  .bar span { display: block; height: 100%; background: var(--green); }
+  ol { margin: 10px 0 0; padding-left: 22px; color: var(--muted); }
+  ol li { overflow-wrap: anywhere; }
+  .idle, .off { color: var(--muted); }
+</style>
+</head>
+<body>
+<main>
+  <h1><img src="img/logo.svg" alt=""> Panda 🐼</h1>
+  <div id="bots"></div>
+</main>
+<script>
+'use strict';
+// What the bots play, for anyone (when the panel's admins turned this page on); no names of who asked.
+const fmt = s => { s = Math.max(0, Math.floor(s)); const m = Math.floor(s / 60) % 60, h = Math.floor(s / 3600); return (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(s % 60).padStart(2, '0'); };
+const safe = u => { try { const x = new URL(u, location.href); return /^https?:$/.test(x.protocol) ? x.href : null; } catch { return null; } };
+function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+async function load() {
+  const box = document.getElementById('bots');
+  let r;
+  try { r = await fetch('api/public/now', { cache: 'no-store' }); } catch { return; }
+  if (r.status === 404) { box.replaceChildren(el('p', 'off card', 'This page is turned off.')); return; }
+  if (!r.ok) return;
+  const bots = await r.json();
+  box.replaceChildren(...bots.map(b => {
+    const card = el('section', 'card');
+    card.append(el('div', 'bot', b.nickname));
+    if (!b.title) { card.append(el('p', 'idle', 'Nothing is playing right now.')); return card; }
+    const now = el('div', 'now');
+    const img = el('img'); img.alt = ''; img.referrerPolicy = 'no-referrer'; img.src = safe(b.thumbnail) || 'img/avatar.png';
+    img.onerror = () => { img.onerror = null; img.src = 'img/avatar.png'; };
+    const text = el('div');
+    text.append(el('div', 'title', b.title), el('div', 'meta', [b.streamTitle, b.channel].filter(Boolean).join(' · ')));
+    if (b.live) text.append(el('span', 'live', 'LIVE'));
+    else {
+      const bar = el('div', 'bar'), fill = el('span'); fill.style.width = Math.min(100, b.position / Math.max(1, b.duration) * 100) + '%';
+      bar.append(fill); text.append(bar, el('div', 'meta', `${fmt(b.position)} / ${fmt(b.duration)}`));
+    }
+    now.append(img, text); card.append(now);
+    if (b.next.length) { const ol = el('ol'); for (const n of b.next) ol.append(el('li', null, n)); card.append(ol); }
+    return card;
+  }));
+}
+load(); setInterval(load, 5000);
+</script>
+</body>
+</html>

@@ -486,6 +486,8 @@ public sealed class BotSettings
 public sealed class PanelSettings
 {
 	public string Listen { get; set; } = "0.0.0.0";
+	/// <summary>The page /now.html shows anyone what the bots play (no names of who asked).</summary>
+	public bool PublicPage { get; set; }
 	/// <summary>How many bots there may be (!create bot stops there).</summary>
 	public int MaxBots { get; set; } = 10;
 	public int Port { get; set; } = 8080;

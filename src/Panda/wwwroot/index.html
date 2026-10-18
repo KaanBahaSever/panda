@@ -8,6 +8,7 @@
 <title>Panda 🐼</title>
 <link rel="icon" type="image/png" href="img/favicon.png">
 <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
 <link rel="stylesheet" href="style.css">
 <script>
   // Set the theme before first paint to avoid a flash.
@@ -290,6 +291,8 @@
           <label class="field"><span data-i18n="sSongIdle">When nothing plays</span><input name="songChannelIdle" type="text" maxlength="40"></label>
         </div>
         <p class="hint" data-i18n="sSongChannelHint"></p>
+        <label class="switch"><input type="checkbox" name="publicPage"><span class="track" aria-hidden="true"></span><span data-i18n="sPublic">Public "now playing" page</span></label>
+        <p class="hint"><span data-i18n="sPublicHint"></span> <a id="public-link" href="now.html" target="_blank" rel="noopener">now.html</a></p>
         <div class="row2">
           <label class="field"><span data-i18n="sMaxQueue">Max queue length</span>
             <input name="maxQueueLength" type="number" min="1" max="1000" required></label>

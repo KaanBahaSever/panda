@@ -115,6 +115,18 @@ check "at $AT the schedule played the list" "$(echo "$now" | cut -c1-9)" "List S
 put "pass" >/dev/null
 curl -s -b $J -X POST $P/api/bots/1/control/stop -o /dev/null
 
+echo "== the public page and the app"
+check "the public page is off unless turned on" "$(code $P/api/public/now)" 404
+put "d['publicPage'] = True" >/dev/null
+post /api/bots/1/play '{"query":"test tone"}' >/dev/null
+check "on: anyone sees the song" "$(curl -s $P/api/public/now | json "d[0]['title']")" "Test Tone Song"
+check "...but not who asked" "$(curl -s $P/api/public/now | grep -c 'requestedBy\|admin')" 0
+check "the page itself" "$(code $P/now.html)" 200
+check "the app manifest" "$(code $P/manifest.json)" 200
+check "the service worker" "$(code $P/sw.js)" 200
+put "pass" >/dev/null
+curl -s -b $J -X POST $P/api/bots/1/control/stop -o /dev/null
+
 echo "== playlists and the library"
 check "playlists take songs from other sites" "$(post /api/playlists '{"name":"Sites","songs":[{"id":"soundcloud:123","title":"SC Song","channel":"x","duration":90,"source":"link","link":"https://soundcloud.com/a/b"}]}' | json "len(d['songs'])")" 1
 check "but not with a link that isn't a web page" "$(post /api/playlists '{"name":"Sites","songs":[{"id":"x:1","title":"Bad","channel":"x","duration":9,"source":"link","link":"javascript:alert(1)"}]}' | json "len(d['songs'])")" 1
