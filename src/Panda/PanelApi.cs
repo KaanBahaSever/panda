@@ -54,8 +54,8 @@ public static class PanelApi
 				{
 					nickname = b.Config.Bot.Nickname,
 					title = t?.Title,
-					channel = t?.Channel,
-					thumbnail = t?.Thumbnail,
+					channel = t is { Source: Media.Direct or Media.Radio } ? null : t?.Channel,
+					thumbnail = t is { IsYouTube: false } ? t.Art : null,
 					streamTitle = s.Current?.StreamTitle,
 					live = t?.IsLive ?? false,
 					position = s.Current?.Position ?? 0,
@@ -225,22 +225,24 @@ public static class PanelApi
 		// A backup of the settings, identities, histories and lists; restoring one restarts Panda.
 		admin.MapGet("/backup", (DataPaths paths) =>
 			Results.File(Backup.Make(paths), "application/zip", $"panda-backup-{DateTime.Now:yyyyMMdd-HHmm}.zip"));
-		admin.MapPost("/restore", async (HttpContext ctx, DataPaths paths, PandaConfig config, BotManager bots, IHostApplicationLifetime life, ILoggerFactory logs) =>
+		admin.MapPost("/restore", async (HttpContext ctx, DataPaths paths, IHostApplicationLifetime life, ILoggerFactory logs) =>
 		{
+			// Only the panel itself: a zip from another page (another port or subdomain counts as the same
+			// site for the cookie) would need a preflight for this type, and the browser says where it's from.
+			if (ctx.Request.ContentType != "application/zip" || (ctx.Request.Headers["Sec-Fetch-Site"].FirstOrDefault() is { } site && site != "same-origin"))
+				return Results.StatusCode(StatusCodes.Status403Forbidden);
+			if (ctx.Features.Get<Microsoft.AspNetCore.Http.Features.IHttpMaxRequestBodySizeFeature>() is { IsReadOnly: false } limit)
+				limit.MaxRequestBodySize = Backup.MaxZip;
 			if (ctx.Request.ContentLength > Backup.MaxZip) return Problem("too-large");
 			var body = new MemoryStream();
-			await ctx.Request.Body.CopyToAsync(body, ctx.RequestAborted);
-			if (body.Length > Backup.MaxZip) return Problem("too-large");
+			try { await ctx.Request.Body.CopyToAsync(body, ctx.RequestAborted); }
+			catch (Microsoft.AspNetCore.Http.BadHttpRequestException) { return Problem("too-large"); }
 			body.Position = 0;
-			// The bots' queues aren't kept for after the restart: the restored settings may be a different setup.
-			config.Frozen = true;
-			if (Backup.Restore(body, paths) is { } error)
-			{
-				config.Frozen = false;
-				return Problem(error);
-			}
-			foreach (var f in Directory.EnumerateFiles(Path.Combine(paths.Data, "bots"), "session.json", SearchOption.AllDirectories)) File.Delete(f);
-			logs.CreateLogger("Panda.Backup").LogWarning("A backup was restored from the panel; Panda restarts");
+			string? error;
+			try { error = Backup.Stage(body, paths); }
+			catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { return Problem("backup-write"); }
+			if (error != null) return Problem(error);
+			logs.CreateLogger("Panda.Backup").LogWarning("A backup was restored from the panel; Panda restarts to put it in place");
 			_ = Task.Run(async () =>
 			{
 				await Task.Delay(1000);

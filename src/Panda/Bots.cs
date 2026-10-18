@@ -111,7 +111,8 @@ public sealed class BotManager(PandaConfig config, BotShared shared, DataPaths p
 		b.Player.Changed += RaiseChanged;
 		b.Ts.StatusChanged += RaiseChanged;
 		lock (gate) bots.Add(b);
-		await b.Ts.StartAsync(ct);
+		// Started on the thread pool: a bot made from another bot's chat must not run on that bot's thread.
+		await Task.Run(() => b.Ts.StartAsync(ct));
 		return b;
 	}
 
@@ -120,11 +121,15 @@ public sealed class BotManager(PandaConfig config, BotShared shared, DataPaths p
 	readonly SemaphoreSlim changing = new(1);
 
 	/// <summary>A new bot on the same server as <paramref name="like"/>; it connects right away.</summary>
-	public async Task<BotInstance> AddAsync(BotInstance? like, Action<BotConfig>? setUp = null)
+	public async Task<BotInstance> AddAsync(BotInstance? like) => (await AddAsync(like, null, null))!;
+
+	/// <param name="check">Looked at while nothing else is added or removed; false: no bot is added (null).</param>
+	public async Task<BotInstance?> AddAsync(BotInstance? like, Func<bool>? check, Action<BotConfig>? setUp)
 	{
 		await changing.WaitAsync();
 		try
 		{
+			if (check != null && !check()) return null;
 			// A folder left behind (it couldn't be deleted) keeps its id taken, so nobody inherits its identity.
 			var leftovers = Directory.Exists(Path.Combine(paths.Data, "bots"))
 				? Directory.EnumerateDirectories(Path.Combine(paths.Data, "bots")).Select(d => Path.GetFileName(d)!)
@@ -149,16 +154,22 @@ public sealed class BotManager(PandaConfig config, BotShared shared, DataPaths p
 	/// </summary>
 	public async Task<(BotInstance? Bot, string? Error)> CreateFromChatAsync(BotInstance from, ulong channel)
 	{
-		if (All.Count >= Math.Max(1, config.Panel.MaxBots)) return (null, "too-many-bots");
-		var used = All.Select(b => b.Config.Bot.CommandPrefix).ToHashSet();
-		var prefix = new[] { "!", ".", "?", "-", "+", "~", ">", "$", "%", "&" }.FirstOrDefault(p => !used.Contains(p));
-		if (prefix is null) return (null, "too-many-bots");
-		var b = await AddAsync(from, c =>
+		string? prefix = null;
+		// The count and the prefix are looked at while no other bot is being added (two !create at once).
+		var b = await AddAsync(from, check: () =>
+		{
+			if (All.Count >= Math.Max(1, config.Panel.MaxBots)) return false;
+			var used = All.Select(x => x.Config.Bot.CommandPrefix).ToHashSet();
+			prefix = new[] { "!", ".", "?", "-", "+", "~", ">", "$", "%", "&" }.FirstOrDefault(p => !used.Contains(p));
+			return prefix != null;
+		}, setUp: c =>
 		{
 			c.Server.Channel = "/" + channel;
 			var s = c.Bot;
 			var f = from.Config.Bot;
-			s.CommandPrefix = prefix;
+			s.CommandPrefix = prefix!;
+			// A bot made from the chat goes when nobody listens (30 min unless the first bot says otherwise).
+			s.LeaveWhenEmpty = f.LeaveWhenEmpty > 0 ? f.LeaveWhenEmpty : 30;
 			s.EveryoneCanUse = f.EveryoneCanUse;
 			s.Members = [.. f.Members]; s.MemberGroups = [.. f.MemberGroups];
 			s.Admins = [.. f.Admins]; s.AdminGroups = [.. f.AdminGroups];
@@ -168,7 +179,7 @@ public sealed class BotManager(PandaConfig config, BotShared shared, DataPaths p
 			s.OthersSongs = f.OthersSongs;
 			s.SettingsVersion = f.SettingsVersion;
 		});
-		return (b, null);
+		return b is null ? (null, "too-many-bots") : (b, null);
 	}
 
 	/// <summary>Disconnects the bot and deletes its identity and history. The last bot can't be removed.</summary>

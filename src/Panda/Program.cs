@@ -33,6 +33,8 @@ for (int i = 0; i < args.Length; i++)
 var dataDir = Path.GetFullPath(
 	ArgValue(args, "--data") ?? Environment.GetEnvironmentVariable("PANDA_DATA") ?? "data");
 Directory.CreateDirectory(dataDir);
+// A backup restored from the panel waits here until Panda starts again, before anything is loaded.
+if (Backup.ApplyPending(dataDir)) Console.WriteLine("Restored a backup from the panel.");
 var configPath = Path.Combine(dataDir, "config.json");
 var config = PandaConfig.Load(configPath);
 
@@ -170,7 +172,8 @@ PanelApi.Map(app);
 app.Logger.LogInformation("🐼 Panda {Version} — panel on http://{Listen}:{Port}, data in {Data}",
 	PanelApi.Version, config.Panel.Listen, config.Panel.Port, dataDir);
 await app.RunAsync();
-return 0;
+// 3 after a restore: the service manager starts Panda again (systemd Restart=on-failure).
+return Environment.ExitCode;
 
 static string? ArgValue(string[] args, string name)
 {

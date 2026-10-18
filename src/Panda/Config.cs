@@ -64,6 +64,12 @@ public sealed class PandaConfig
 		// A hand-edited config.json may say null.
 		cfg.Sources ??= new();
 		foreach (var b in cfg.Bots)
+		{
+			b.Bot.SongChannel ??= "";
+			b.Bot.SongChannelFormat ??= "🎵 {song}";
+			b.Bot.SongChannelIdle ??= "🎵 Panda";
+		}
+		foreach (var b in cfg.Bots)
 			b.Bot.Schedule = (b.Bot.Schedule ?? []).Where(e => e is { IsValid: true }).ToList();
 		cfg.YouTube.SponsorBlockCategories = (cfg.YouTube.SponsorBlockCategories ?? []).Where(YouTubeSettings.SponsorCategories.Contains).Distinct().ToList();
 		return cfg;
@@ -283,12 +289,8 @@ public sealed class PandaConfig
 
 	string UsersJson() => JsonSerializer.Serialize(Panel.Users, JsonOptions);
 
-	/// <summary>A backup was restored: nothing in memory may overwrite it before Panda restarts.</summary>
-	public bool Frozen { get; set; }
-
 	public void Save()
 	{
-		if (Frozen) return;
 		lock (saveLock)
 		{
 			AdoptUsersFromFileLocked();

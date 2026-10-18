@@ -66,6 +66,9 @@ public sealed class TsBot : BackgroundService
 	volatile int raisingTo;
 
 	public event Action? StatusChanged;
+	/// <summary>The unique ids of this Panda's bots: another bot in the channel isn't a listener.</summary>
+	static readonly System.Collections.Concurrent.ConcurrentDictionary<string, bool> PandaUids = new();
+
 	/// <summary>"!create bot": makes a new bot in that channel (set by BotManager).</summary>
 	public Func<ulong, Task<(BotInstance? Bot, string? Error)>>? CreateBot { get; set; }
 
@@ -77,7 +80,8 @@ public sealed class TsBot : BackgroundService
 			return await scheduler.Invoke(() =>
 			{
 				if (client is not { Connected: true } c || c.Book.Self() is not { } self) return -1;
-				return c.Book.Clients.Values.Count(x => x.Channel == self.Channel && x.Id != self.Id && x.ClientType == ClientType.Full);
+				return c.Book.Clients.Values.Count(x => x.Channel == self.Channel && x.Id != self.Id && x.ClientType == ClientType.Full
+					&& !(x.Uid is { } u && PandaUids.ContainsKey(u.Value)));
 			}).WaitAsync(TimeSpan.FromSeconds(5));
 		}
 		catch (Exception ex) when (ex is TimeoutException or ObjectDisposedException or TaskCanceledException) { return -1; }
@@ -249,6 +253,7 @@ public sealed class TsBot : BackgroundService
 		}
 
 		log.LogInformation("Connected to {Server}", c.Book.Server?.Name);
+		if (c.Book.Self()?.Uid is { } myUid) PandaUids[myUid.Value] = true;
 		lock (checks) checks.Clear();
 		_ = LoadServerGroups(c);
 		player.AttachOutput(c);
@@ -258,6 +263,8 @@ public sealed class TsBot : BackgroundService
 		var now = player.Current;
 		await SetDescription(now is null ? "" : Describe(now));
 		songChannelName = null;
+		songChannelId = null;
+		songChannelDenied = false;
 		await SetSongChannel(now);
 		return null;
 	}
@@ -387,15 +394,23 @@ public sealed class TsBot : BackgroundService
 	string? songChannelName;   // what Panda last named it (scheduler thread)
 	string? songChannelSpec;
 	ChannelId? songChannelId;
+	bool songChannelDenied;   // no permission: not tried again until a reconnect or new settings
 	bool songChannelWarned;
 
 	async Task SetSongChannel(Track? t)
 	{
-		if (client is not { Connected: true } c || Bot.SongChannel.Trim() is not { Length: > 0 } spec) return;
+		if (client is not { Connected: true } c || Bot.SongChannel.Trim() is not { Length: > 0 } spec || songChannelDenied) return;
 		// Found by its name once, then by its id: Panda renames it, so the name stops matching.
 		var channel = songChannelSpec == spec && songChannelId is { } known && c.Book.Channels.ContainsKey(known) ? known : FindChannel(c, spec);
 		songChannelSpec = spec;
 		songChannelId = channel;
+		// Found by its name: kept by its id from now on, since Panda changes the name (also after a restart).
+		if (channel is { } cid && !spec.StartsWith('/'))
+		{
+			Bot.SongChannel = "/" + cid.Value;
+			songChannelSpec = Bot.SongChannel;
+			config.Save();
+		}
 		if (channel is null)
 		{
 			if (!songChannelWarned) log.LogWarning("The channel for the song's name ({Channel}) isn't on the server", spec);
@@ -406,12 +421,13 @@ public sealed class TsBot : BackgroundService
 		var name = song is null ? Bot.SongChannelIdle : Bot.SongChannelFormat.Replace("{song}", song);
 		// TeamSpeak's limit is 40 characters, without control characters.
 		name = new string(name.Where(ch => !char.IsControl(ch)).ToArray()).Trim();
-		if (name.Length > 40) name = name[..39] + "…";
+		if (name.EnumerateRunes().Count() > 40) name = string.Concat(name.EnumerateRunes().Take(39).Select(r => r.ToString())) + "…";
 		if (name.Length == 0 || name == songChannelName) return;
 		var r = await c.SendVoid(new TSLib.Commands.TsCommand("channeledit") { { "cid", channel.Value }, { "channel_name", name } });
 		Note("channelname", r, "b_channel_modify_name");
 		if (r.Ok) songChannelName = name;
-		else if (!songChannelWarned)
+		else if (r.Error.Id == TsErrorCode.permissions_client_insufficient) songChannelDenied = true;
+		if (!r.Ok && !songChannelWarned)
 		{
 			songChannelWarned = true;
 			log.LogWarning("Could not rename the channel to the song: {Error}. On the TeamSpeak server, give the bot's group b_channel_modify_name for that channel", r.Error.ErrorFormat());
@@ -462,7 +478,13 @@ public sealed class TsBot : BackgroundService
 
 	/// <summary>The panel saved this bot's settings: what can change without reconnecting does so now.</summary>
 	public void SettingsChanged() =>
-		_ = scheduler.InvokeAsync(async () => { await SetDescription(player.Current is { } t ? Describe(t) : ""); await SetSongChannel(player.Current); });
+		_ = scheduler.InvokeAsync(async () =>
+		{
+			songChannelDenied = false;
+			songChannelId = null;
+			await SetDescription(player.Current is { } t ? Describe(t) : "");
+			await SetSongChannel(player.Current);
+		});
 
 	// A radio station with the song it plays, when it says.
 	string Describe(Track t) =>
@@ -1038,7 +1060,8 @@ public sealed class TsBot : BackgroundService
 		case "create":
 		{
 			if (CreateBot is null || !c.Book.Clients.TryGetValue(msg.InvokerId, out var asker)) return Strings.Get(Lang, "join-failed");
-			var (made, error) = await CreateBot(asker.Channel.Value);
+			// Off this bot's thread: the new bot must not live on it.
+			var (made, error) = await Task.Run(() => CreateBot(asker.Channel.Value));
 			if (made is null) return Strings.Get(Lang, "create-full", MaxBotsHint());
 			return Strings.Get(Lang, "create-done", Escape(made.Config.Bot.Nickname), made.Config.Bot.CommandPrefix);
 		}

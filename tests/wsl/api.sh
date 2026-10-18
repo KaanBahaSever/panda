@@ -146,6 +146,7 @@ check "a dj key can't restore" "$(code -H "Authorization: Bearer $DJ" -H 'Conten
 check "restoring a backup" "$(code -b $J -H 'Content-Type: application/zip' --data-binary @/tmp/panda-backup.zip $P/api/restore)" 202
 sleep 4
 check "...and Panda restarts (here: stops; the service manager starts it again)" "$(code -m 2 $P/api/version)" 000
+check "the backup waits to be put in place at the next start" "$([ -f "$HOME/panda-test-env/data/.restore/config.json" ] && echo yes)" yes
 
 echo; echo "api: $failed failed"
 exit $failed

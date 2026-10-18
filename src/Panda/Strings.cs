@@ -163,7 +163,7 @@ public static class Strings
 			"[b]{0}ara[/b] <şarkı> – sonuçlardan seç · [b]{0}sar[/b] 1:30 · [b]{0}önceki[/b] – önceki şarkı · [b]{0}git[/b] <#> · [b]{0}taşı[/b] <#> <#> · [b]{0}oyla[/b] – geçmek için oy\n" +
 			"[b]{0}otomatik[/b] <aç|kapat> – sıra bitince benzer şarkılar çalmaya devam et · [b]{0}fm[/b] <radyo> – internet radyosu (tek başına: favori radyolar)\n" +
 			"[b]{0}eq[/b] <bas|vokal|rock…|kapat> – ekolayzer · [b]{0}efekt[/b] <nightcore|yavaş|8d|kapat> – efektler · [b]{0}hız[/b] <0.5–2> · [b]{0}uyku[/b] <dakika|saat|kapat>\n" +
-			"[b]{0}liste[/b] <ad> – kayıtlı listeyi sıraya ekle · [b]{0}listeler[/b] · [b]{0}fav[/b] – bu şarkıyı Favoriler'e kaydet · [b]{0}myfav[/b] – kendi listen (çal, liste, sil)\n" +
+			"[b]{0}liste[/b] <ad> – kayıtlı listeyi sıraya ekle · [b]{0}listeler[/b] · [b]{0}fav[/b] – bu şarkıyı Favoriler'e kaydet · [b]{0}myfav[/b] – kendi listen (çal, liste, sil) · [b]{0}oluştur[/b] – kanalıma yeni bot\n" +
 			"(English commands like [b]{0}play[/b] work too)",
 			"🐼 Commandes de [b]Panda[/b] :\n" +
 			"[b]{0}jouer[/b] <morceau ou lien> – lire / ajouter à la file (YouTube, SoundCloud, Spotify, liens radio… ; [b]sc:[/b] / [b]ytm:[/b] cherche sur SoundCloud / YouTube Music) · [b]{0}jouermaintenant[/b] <morceau> – lire tout de suite\n" +
@@ -175,7 +175,7 @@ public static class Strings
 			"[b]{0}chercher[/b] <morceau> – choisir parmi les résultats · [b]{0}aller[/b] 1:30 · [b]{0}précédent[/b] · [b]{0}allerà[/b] <#> · [b]{0}déplacer[/b] <#> <#> · [b]{0}voter[/b] – voter pour passer\n" +
 			"[b]{0}auto[/b] <oui|non> – continuer avec des morceaux proches quand la file est finie · [b]{0}fm[/b] <station> – radio sur Internet (seul : les radios favorites)\n" +
 			"[b]{0}eq[/b] <basses|voix|rock…|non> – égaliseur · [b]{0}effet[/b] <nightcore|ralenti|8d|non> – effets · [b]{0}vitesse[/b] <0.5–2> · [b]{0}dormir[/b] <minutes|heure|non>\n" +
-			"[b]{0}playlist[/b] <nom> – ajouter une playlist enregistrée · [b]{0}playlists[/b] · [b]{0}fav[/b] – enregistrer ce morceau dans les Favoris · [b]{0}myfav[/b] – ta propre liste (jouer, liste, retirer)\n" +
+			"[b]{0}playlist[/b] <nom> – ajouter une playlist enregistrée · [b]{0}playlists[/b] · [b]{0}fav[/b] – enregistrer ce morceau dans les Favoris · [b]{0}myfav[/b] – ta propre liste (jouer, liste, retirer) · [b]{0}créer[/b] – un nouveau bot dans mon canal\n" +
 			"(les commandes anglaises comme [b]{0}play[/b] marchent aussi)",
 			"🐼 [b]Panda[/b]-Befehle:\n" +
 			"[b]{0}spielen[/b] <Song oder Link> – abspielen / einreihen (YouTube, SoundCloud, Spotify, Radio-Links…; [b]sc:[/b] / [b]ytm:[/b] sucht bei SoundCloud / YouTube Music) · [b]{0}jetztspielen[/b] <Song> – sofort abspielen\n" +
@@ -187,7 +187,7 @@ public static class Strings
 			"[b]{0}suchen[/b] <Song> – aus den Ergebnissen wählen · [b]{0}spulen[/b] 1:30 · [b]{0}zurück[/b] · [b]{0}springen[/b] <#> · [b]{0}verschieben[/b] <#> <#> · [b]{0}abstimmen[/b] – für das Überspringen abstimmen\n" +
 			"[b]{0}autoplay[/b] <an|aus> – ähnliche Songs weiterspielen, wenn die Warteschlange leer ist · [b]{0}fm[/b] <Sender> – Internetradio (allein: die Lieblingssender)\n" +
 			"[b]{0}eq[/b] <bass|gesang|rock…|aus> – Equalizer · [b]{0}effekt[/b] <nightcore|langsam|8d|aus> – Effekte · [b]{0}tempo[/b] <0.5–2> · [b]{0}schlafen[/b] <Minuten|Uhrzeit|aus>\n" +
-			"[b]{0}playlist[/b] <Name> – gespeicherte Playlist einreihen · [b]{0}playlists[/b] · [b]{0}fav[/b] – diesen Song in den Favoriten speichern · [b]{0}myfav[/b] – deine eigene Liste (spielen, liste, entfernen)\n" +
+			"[b]{0}playlist[/b] <Name> – gespeicherte Playlist einreihen · [b]{0}playlists[/b] · [b]{0}fav[/b] – diesen Song in den Favoriten speichern · [b]{0}myfav[/b] – deine eigene Liste (spielen, liste, entfernen) · [b]{0}erstellen[/b] – ein neuer Bot in meinem Channel\n" +
 			"(englische Befehle wie [b]{0}play[/b] gehen auch)"),
 	};
 
