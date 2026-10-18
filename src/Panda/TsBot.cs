@@ -962,6 +962,51 @@ public sealed class TsBot : BackgroundService
 			return Confirm(Strings.Get(Lang, "fav-added", Link(now), Escape(name)));
 		}
 
+		case "myfav":
+		{
+			// Everyone's own list, by their unique id: !myfav saves the song playing, "play" queues the list.
+			if (msg.InvokerUid?.Value is not { Length: > 0 } me) return Strings.Get(Lang, "myfav-no-id");
+			var own = playlists.OfOwner(me);
+			var words = arg.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+			switch (words.FirstOrDefault()?.ToLowerInvariant())
+			{
+			case null or "add" or "ekle" or "ajouter" or "hinzufügen":
+			{
+				if (player.Current is not { } now) return Strings.Get(Lang, "nothing-playing");
+				if (now.IsLive) return Strings.Get(Lang, "myfav-live", Prefix);
+				var list = playlists.SaveOwn(me, who, [PlaylistSong.From(now)], out var left);
+				if (left > 0) return Strings.Get(Lang, "playlist-full", Escape(list.Name), Playlists.MaxSongs);
+				return Confirm(Strings.Get(Lang, "myfav-added", Link(now), list.Songs.Count));
+			}
+			case "play" or "çal" or "cal" or "jouer" or "spielen" or "shuffle" or "karıştır" or "karistir" or "mélanger" or "melanger" or "mischen":
+			{
+				if (own is not { Songs.Count: > 0 }) return Strings.Get(Lang, "myfav-empty", Prefix);
+				var songs = own.Songs.Select(s => s.ToTrack(who) with { RequesterId = me });
+				if (words[0].ToLowerInvariant() is not ("play" or "çal" or "cal" or "jouer" or "spielen")) songs = songs.OrderBy(_ => Random.Shared.Next());
+				var added = player.EnqueueMany(songs.ToList(), exempt, out var limited);
+				if (added == 0) return limited ? Strings.Get(Lang, "user-limit", Bot.MaxSongsPerUser) : Strings.Get(Lang, "queue-full");
+				return Confirm(Strings.Get(Lang, "playlist-added", added, Escape(own.Name)));
+			}
+			case "list" or "liste" or "listele":
+			{
+				if (own is not { Songs.Count: > 0 }) return Strings.Get(Lang, "myfav-empty", Prefix);
+				var sb = new StringBuilder(Strings.Get(Lang, "myfav-list", own.Songs.Count, Prefix));
+				for (int i = 0; i < own.Songs.Count && i < 20; i++) sb.Append($"\n[b]{i + 1}.[/b] {Escape(own.Songs[i].Title)}");
+				return sb.ToString();
+			}
+			case "remove" or "sil" or "retirer" or "entfernen":
+			{
+				if (own is null || words.Length < 2 || !int.TryParse(words[1], out var n) || n < 1 || n > own.Songs.Count)
+					return Strings.Get(Lang, "bad-index", Escape(words.ElementAtOrDefault(1) ?? ""));
+				var song = own.Songs[n - 1];
+				playlists.RemoveSong(own.Name, n - 1, song.Id);
+				return Confirm(Strings.Get(Lang, "myfav-removed", Escape(song.Title)));
+			}
+			default:
+				return Strings.Get(Lang, "myfav-usage", Prefix);
+			}
+		}
+
 		case "eq":
 		{
 			var s = Sound.Of(Bot);
@@ -1180,6 +1225,7 @@ public static class Commands
 		["playlist"] = "playlist", ["pl"] = "playlist", ["çalmalistesi"] = "playlist", ["calmalistesi"] = "playlist",
 		["playlists"] = "playlists", ["lists"] = "playlists", ["listeler"] = "playlists",
 		["fav"] = "fav", ["favorite"] = "fav", ["favori"] = "fav",
+		["myfav"] = "myfav", ["myfavs"] = "myfav", ["mfav"] = "myfav", ["favorim"] = "myfav", ["favorilerim"] = "myfav", ["mesfavoris"] = "myfav", ["mesfavs"] = "myfav", ["meinefavs"] = "myfav", ["meinefavoriten"] = "myfav",
 		["search"] = "search", ["find"] = "search", ["ara"] = "search", ["bul"] = "search", ["chercher"] = "search", ["recherche"] = "search", ["suchen"] = "search",
 		["pick"] = "pick", ["seç"] = "pick", ["sec"] = "pick", ["choisir"] = "pick", ["wählen"] = "pick", ["waehlen"] = "pick",
 		["seek"] = "seek", ["jump"] = "seek", ["sar"] = "seek", ["aller"] = "seek", ["spulen"] = "seek",

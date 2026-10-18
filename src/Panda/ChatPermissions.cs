@@ -13,14 +13,14 @@ public static class ChatPermissions
 	public static readonly string[] Commands =
 	[
 		"play", "search", "playnow", "skip", "remove", "move", "skipto", "back", "seek", "pause", "stop", "clear",
-		"shuffle", "loop", "vol", "eq", "fx", "speed", "autoplay", "fm", "playlist", "fav", "join", "follow",
+		"shuffle", "loop", "vol", "eq", "fx", "speed", "autoplay", "fm", "playlist", "fav", "myfav", "join", "follow",
 	];
 
 	/// <summary>A sensible setup for a busy channel: adding and asking is for everyone, steering is for DJs.</summary>
 	public static readonly IReadOnlyDictionary<string, string> Recommended = new Dictionary<string, string>
 	{
 		["play"] = "everyone", ["search"] = "everyone", ["skip"] = "everyone", ["remove"] = "everyone",
-		["playlist"] = "everyone", ["fav"] = "everyone", ["fm"] = "everyone",
+		["playlist"] = "everyone", ["fav"] = "everyone", ["myfav"] = "everyone", ["fm"] = "everyone",
 		["playnow"] = "dj", ["move"] = "dj", ["skipto"] = "dj", ["back"] = "dj", ["seek"] = "dj", ["pause"] = "dj",
 		["stop"] = "dj", ["clear"] = "dj", ["shuffle"] = "dj", ["loop"] = "dj", ["vol"] = "dj", ["eq"] = "dj", ["fx"] = "dj", ["speed"] = "dj", ["autoplay"] = "dj",
 		["join"] = "dj", ["follow"] = "dj",

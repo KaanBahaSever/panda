@@ -16,7 +16,11 @@ public sealed record PlaylistSong(string Id, string Title, string Channel, int D
 	public Track ToTrack(string requestedBy) => new(Id, Title, Channel, Duration, requestedBy) { Source = Source, Link = Link, Art = Art };
 }
 
-public sealed record Playlist(string Name, IReadOnlyList<PlaylistSong> Songs, DateTimeOffset Updated);
+public sealed record Playlist(string Name, IReadOnlyList<PlaylistSong> Songs, DateTimeOffset Updated)
+{
+	/// <summary>A person's own list (!myfav): their TeamSpeak unique id. Null for a shared list.</summary>
+	public string? Owner { get; init; }
+}
 
 /// <summary>Saved playlists, shared by all bots, in playlists.json in the data folder.</summary>
 public sealed class Playlists
@@ -91,11 +95,39 @@ public sealed class Playlists
 				if (merged.Any(x => x.Id == s.Id)) continue;
 				else if (merged.Count < MaxSongs) merged.Add(s);
 				else left++;
-			list = new Playlist(old?.Name ?? name, merged, DateTimeOffset.UtcNow);
+			list = new Playlist(old?.Name ?? name, merged, DateTimeOffset.UtcNow) { Owner = old?.Owner };
 			lists = old is null ? [.. lists, list] : lists.Select(p => p == old ? list : p).ToList();
 		}
 		Persist();
 		return list;
+	}
+
+	/// <summary>This person's own list, or null.</summary>
+	public Playlist? OfOwner(string uid)
+	{
+		lock (gate) return lists.FirstOrDefault(p => p.Owner == uid);
+	}
+
+	/// <summary>Adds songs to a person's own list ("★ nickname", made on first use). <paramref name="left"/>
+	/// counts the songs that didn't fit.</summary>
+	public Playlist SaveOwn(string uid, string nickname, IEnumerable<PlaylistSong> songs, out int left)
+	{
+		string name;
+		lock (gate)
+		{
+			if (lists.FirstOrDefault(p => p.Owner == uid) is { } own) name = own.Name;
+			else
+			{
+				// A name of its own: "★ Kaan", "★ Kaan 2"... (the nickname may have no letters: "★ list").
+				var nick = new string(nickname.Where(c => c is not ('/' or '\\')).ToArray()).Trim();
+				if (Library.Normalize(nick).Trim().Length == 0) nick = "list";
+				if (nick.Length > 30) nick = nick[..30];
+				name = "★ " + nick;
+				for (var i = 2; ExactLocked(name) != null; i++) name = $"★ {nick} {i}";
+				lists = [.. lists, new Playlist(name, [], DateTimeOffset.UtcNow) { Owner = uid }];
+			}
+		}
+		return Save(name, songs, out left);
 	}
 
 	public bool Rename(string name, string newName)

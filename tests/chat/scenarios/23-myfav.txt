@@ -1,0 +1,18 @@
+# Everyone's own list (!myfav), by their unique id.
+s announce=false
+c !myfav list
+e Your own list is empty
+c !play test tone
+c !myfav
+e Saved to your own list (1 songs)
+c !myfav list
+e 1.[/b] Test Tone Song
+c !stop
+c !myfav play
+e Added 1 songs from
+c !myfav remove 1
+e Removed from your list
+c !myfav list
+e Your own list is empty
+c !myfav dance
+e saves the song playing to your own list
