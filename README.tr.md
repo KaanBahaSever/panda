@@ -38,6 +38,10 @@ programı yok: Panda sunucuyla doğrudan konuşur, bu yüzden hafiftir (bot ~130
   Varsayılan olarak kapalı; `!otomatik` ya da ✨ düğmesiyle açılır. (0.5'e kadar adı "radyo"ydu.)
 - ⏭️ **SponsorBlock** — açarsan videoların müzik olmayan kısımlarını (şarkı öncesi konuşma, reklam) atlar.
 - 🔊 **Eşit ses seviyesi** — kaydedilen şarkılar bir kez ölçülür ve hepsi aynı yükseklikte çalar.
+- 🎛️ **Ekolayzer ve efektler** — hazır ayarlar (bas, vokal, rock, klasik…) ya da kendi on bandın,
+  **nightcore**, **yavaşlatılmış**, **8D**, **hız** (sesin inceliği değişmeden) ve şarkılar arasında
+  **yumuşak geçiş (crossfade)**. Bot başına, 🎛️ düğmesinden ya da sohbetten (`!eq`, `!efekt`, `!hız`);
+  sen açana kadar hepsi kapalı.
 - 📃 **Çalma listeleri ve favoriler** — sırayı ya da tek tek şarkıları listelere kaydet, `!liste <ad>`
   ile çal, `!fav` ile çalan şarkıyı favorilere ekle.
 - 🤖 **Tek panelden birden fazla bot** — her botun kendi sunucusu, kanalı, sırası ve ayarları olur;
@@ -100,6 +104,17 @@ kendi yayınını çalar). Yıldızladığın radyolar favorilerde kalır; `!fm`
 bir dakikadan kısa videoları aramalardan çıkarma, ses kalitesi (en iyi ya da veri tasarrufu için yaklaşık
 70 kbps), SponsorBlock ve hangi kısımları atlayacağı, YouTube şarkıyı reddedince deneme sayısı ve otomatik
 devam (son kaç şarkıyı tekrarlamayacağı, aynı sanatçının tekrar gelip gelemeyeceği).
+
+## Ses: ekolayzer, efektler, yumuşak geçiş
+
+Ses düzeyinin yanındaki 🎛️ düğmesi (yöneticiler) botun ses ayarlarını açar:
+
+- **Ekolayzer**: hazır bir ayar ya da kendi on bandın (32 Hz – 16 kHz, ±12 dB). Anında duyulur.
+- **Efektler**: nightcore (daha hızlı ve ince), yavaşlatılmış (daha yavaş ve kalın), 8D (ses başının
+  etrafında döner) ve hız (0.5–2×, tempo değişir, sesin inceliği değil). Yeni hız şarkıyı kaldığı yerden
+  yeniden başlatır; ilerleme çubuğu şarkının kendi süresini göstermeye devam eder.
+- **Yumuşak geçiş (crossfade)** (0–12 sn): şarkının sonu bir sonrakinin başıyla üst üste çalar. Sadece
+  kütüphanede kayıtlı şarkılara geçerken olur, çünkü onlar hemen başlar.
 
 ## İstatistikler ve Sistem ekranı
 
@@ -186,6 +201,9 @@ Botun kanalına ya da bota özel mesaj olarak yaz. İngilizce karşılıkları d
 | `!takip` | `!follow` | `!suivre` | `!folgen` | Beni kanaldan kanala takip et (tekrar yazınca bırakır) |
 | `!otomatik <aç\|kapat>` | `!autoplay <on\|off>` | `!auto <oui\|non>` | `!autoplay <an\|aus>` | Sıra bitince benzer şarkılar çalmaya devam et |
 | `!fm <ad ya da #>` / `!istasyon` | `!fm` | `!fm` / `!station` | `!fm` / `!sender` | İnternet radyosu çal; tek başına: favori radyolar |
+| `!eq <bas\|vokal…\|kapat>` | `!eq <bass\|vocal…\|off>` | `!eq <basses\|voix…\|non>` | `!eq <bass\|gesang…\|aus>` | Ekolayzer: bas, tiz, vokal, pop, rock, klasik, elektronik, caz |
+| `!efekt <nightcore\|yavaş\|8d\|kapat>` | `!fx` | `!effet` | `!effekt` | Efektler (tekrar yazınca kapanır) |
+| `!hız <0.5–2>` | `!speed` | `!vitesse` | `!tempo` | Çalma hızı, ses inceliği aynı |
 | `!liste <ad>` | `!playlist` / `!pl` | `!playlist` | `!playlist` | Kayıtlı bir listeyi sıraya ekle |
 | `!listeler` | `!playlists` | `!playlists` | `!playlists` | Kayıtlı listeleri göster |
 | `!fav` | `!fav` | `!fav` | `!fav` | Çalan şarkıyı Favoriler'e kaydet |
@@ -275,7 +293,8 @@ Anahtar panelden iptal edilince hemen çalışmaz olur, açık canlı akışlar 
 Bazı çağrılar: `GET /api/bots/{bot}/state` (çalan, sıra), `POST /api/bots/{bot}/play` `{"query": "ad ya da link"}`
 (albüm ya da listede cevap kaç şarkının daha geleceğini `more` ile söyler), `POST /api/bots/{bot}/fm`
 `{"uuid": "<Radio Browser radyo kimliği>"}`, `GET /api/radio/search?name=&country=&tag=`,
-`POST /api/bots/{bot}/autoplay` `{"on": true}`.
+`POST /api/bots/{bot}/autoplay` `{"on": true}`, `PUT /api/bots/{bot}/sound` `{"equalizer": "bass", "effect": "nightcore",
+"speed": 1.25, "eightD": true, "crossfade": 5}` (verilmeyen değerler aynı kalır).
 
 ## Derleme
 

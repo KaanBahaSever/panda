@@ -17,7 +17,8 @@ public sealed record PlayerState(
 	IReadOnlyList<PlayedTrack> History,
 	int Volume,
 	LoopMode Loop,
-	bool Autoplay);
+	bool Autoplay,
+	Sound Sound);
 
 /// <summary>
 /// What a bot was playing when Panda stopped (an update or a restart), so it picks up where it left off.
@@ -35,7 +36,8 @@ public sealed class UserLimitException(int max) : Exception
 }
 
 /// <summary>
-/// Queue + audio pipeline: TrackSource (PCM) → timer → volume → Opus encoder → voice target → TeamSpeak.
+/// Queue + audio pipeline: TrackSource (PCM; two mixed during a crossfade) → timer → equalizer/8D → volume →
+/// Opus encoder → voice target → TeamSpeak.
 /// </summary>
 public sealed class Player : IDisposable
 {
@@ -51,6 +53,7 @@ public sealed class Player : IDisposable
 
 	readonly PreciseTimedPipe timePipe;
 	readonly VolumePipe volumePipe;
+	readonly SoundPipe soundPipe = new();
 	readonly OpusEncoderPipe encoder;
 	readonly StaticMetaPipe target;
 
@@ -58,6 +61,9 @@ public sealed class Player : IDisposable
 	readonly List<Track> queue = [];
 	Track? current;
 	TrackSource? source;
+	// Crossfade: the song before, still fading out under the new one; and the one handed to the next start.
+	TrackSource? fading;
+	TrackSource? crossfadeFrom;
 	int generation;
 	int startOffset;
 	// Tries of the current song so far (0 = the first): YouTube refuses a stream now and then.
@@ -110,7 +116,8 @@ public sealed class Player : IDisposable
 		volumePipe = new VolumePipe();
 		target = new StaticMetaPipe();
 		target.SetVoice();
-		timePipe.Chain(volumePipe).Chain(encoder).Chain(target);
+		timePipe.Chain(soundPipe).Chain(volumePipe).Chain(encoder).Chain(target);
+		soundPipe.Set(Sound.Of(settings.Bot));
 		SetVolume(settings.Bot.Volume, save: false);
 	}
 
@@ -141,12 +148,13 @@ public sealed class Player : IDisposable
 		lock (gate)
 		{
 			NowPlaying? now = current is null ? null : new(current, PositionLocked(), paused, streamTitle);
-			return new PlayerState(now, queue.ToArray(), history.Recent(), volume, Loop, settings.Bot.Autoplay);
+			return new PlayerState(now, queue.ToArray(), history.Recent(), volume, Loop, settings.Bot.Autoplay, Sound.Of(settings.Bot));
 		}
 	}
 
+	// Song seconds: with nightcore or another speed, one second heard is more (or less) of the song.
 	double PositionLocked() =>
-		source is null ? startOffset : startOffset + Interlocked.Read(ref source.BytesRead) / (double)BytesPerSecond;
+		source is null ? startOffset : startOffset + Interlocked.Read(ref source.BytesRead) / (double)BytesPerSecond * source.Rate;
 
 	/// <summary>Adds a track; starts it right away when nothing is playing. Returns its queue position (0 = playing now).</summary>
 	/// <param name="exempt">Not held to the songs-per-person limit (a panel admin).</param>
@@ -337,6 +345,47 @@ public sealed class Player : IDisposable
 		}
 		RaiseChanged();
 	}
+
+	/// <summary>A new equalizer, effect, speed or crossfade: saved, heard at once. A new rate (nightcore,
+	/// slowed, the speed) starts the song again where it is.</summary>
+	/// <summary>Changes the sound from what it is now (under the lock: a chat command and the panel at the
+	/// same moment don't undo each other). Returns the new sound.</summary>
+	public Sound UpdateSound(Func<Sound, Sound> change)
+	{
+		Sound s;
+		lock (gate)
+		{
+			s = change(Sound.Of(settings.Bot));
+			var b = settings.Bot;
+			b.Equalizer = s.Equalizer;
+			b.EqualizerBands = [.. s.Bands];
+			b.Effect = s.Effect;
+			b.Speed = s.Speed;
+			b.EightD = s.EightD;
+			b.Crossfade = s.Crossfade;
+			soundPipe.Set(s);
+			if (current != null && source != null && Math.Abs(source.Rate - For(current, s).Rate) > 0.001)
+			{
+				var wasPaused = paused;
+				var resume = resumeOnConnect;
+				var song = current;
+				StartLocked(song, (int)PositionLocked(), seeking: true);
+				if (wasPaused && current == song) { paused = true; timePipe.Paused = true; resumeOnConnect = resume; }
+			}
+			else if (source != null)
+			{
+				source.ArmFade(long.MaxValue);
+				SetFadePointLocked(s);
+			}
+		}
+		config.Save();
+		RaiseChanged();
+		return s;
+	}
+
+	/// <summary>The sound a song gets: a live stream keeps its pace (faster would run out of audio, slower
+	/// would fall behind more and more), so no nightcore, slowed or speed there.</summary>
+	static Sound For(Track t, Sound s) => t.IsLive ? s with { Effect = "off", Speed = 1 } : s;
 
 	public void SetLoop(LoopMode mode)
 	{
@@ -555,7 +604,7 @@ public sealed class Player : IDisposable
 	{
 		if (disposed) return;
 		resumeOnConnect = false;
-		StopSourceLocked();
+		StopSourceLocked(keepPlaying: crossfadeFrom != null);
 		var gen = ++generation;
 		current = track;
 		startOffset = startSeconds;
@@ -579,6 +628,7 @@ public sealed class Player : IDisposable
 		else if (segments is null && sponsorBlock.Enabled && track.IsYouTube && !track.IsLive)
 			_ = Task.Run(async () => { await sponsorBlock.GetAsync(track); SegmentsArrived(gen, track); });
 
+		var sound = For(track, Sound.Of(settings.Bot));
 		AudioStream audio;
 		// Only YouTube songs are saved (their id names the file).
 		var file = track.IsYouTube ? library.GetFile(track.Id) : null;
@@ -588,22 +638,22 @@ public sealed class Player : IDisposable
 		{
 			if (file != null)
 			{
-				audio = youtube.OpenFile(file, startSeconds, gain);
+				audio = youtube.OpenFile(file, startSeconds, gain, sound);
 			}
 			else if (track.Source == Media.Radio)
 			{
-				audio = youtube.OpenRadio(track, title => OnStreamTitle(gen, track, title));
+				audio = youtube.OpenRadio(track, title => OnStreamTitle(gen, track, title), sound);
 			}
 			else if (track.Source == Media.Direct)
 			{
-				audio = youtube.OpenUrl(track, startSeconds);
+				audio = youtube.OpenUrl(track, startSeconds, sound);
 			}
 			else
 			{
 				// Not on disk yet: stream it (from YouTube: and save it on the way).
 				tee = seeking || !track.IsYouTube ? null : library.BeginTee(track);
 				audio = youtube.OpenAudio(track, startSeconds, tee,
-					tee is null ? null : complete => library.EndTee(track, tee, complete), retry);
+					tee is null ? null : complete => library.EndTee(track, tee, complete), retry, sound);
 			}
 		}
 		catch (YouTubeException ex)
@@ -615,11 +665,19 @@ public sealed class Player : IDisposable
 			return;
 		}
 
-		source = new TrackSource(audio, gen, file != null, OnSourceEnded, OnSkipPoint);
+		source = new TrackSource(audio, gen, file != null, sound.Rate, OnSourceEnded, OnSkipPoint, OnFadePoint);
 		SetSkipPointLocked(segments);
+		SetFadePointLocked(sound);
 		// The next songs' parts to skip are known before they start (not a whole playlist's at once).
 		foreach (var next in queue.Take(2)) sponsorBlock.Prefetch(next);
-		timePipe.InStream = source;
+		// The song before fades out under this one.
+		if (crossfadeFrom is { } from)
+		{
+			crossfadeFrom = null;
+			fading = from;
+			timePipe.InStream = new Crossfade(from, source, (long)sound.Crossfade * BytesPerSecond);
+		}
+		else timePipe.InStream = source;
 		timePipe.Paused = false;
 		if (!seeking && retry == 0)
 		{
@@ -661,7 +719,94 @@ public sealed class Player : IDisposable
 		if (source is null || segments is null || current is null) return;
 		var at = Math.Max(startOffset, PositionLocked());
 		var next = segments.FirstOrDefault(s => s.Start > at + 0.5);
-		source.Arm(next is null ? long.MaxValue : (long)((next.Start - startOffset) * BytesPerSecond));
+		source.ArmSkip(next is null ? long.MaxValue : (long)((next.Start - startOffset) / source.Rate * BytesPerSecond));
+	}
+
+	// ---- crossfade: the end of a song under the start of the next ----
+
+	// Where this song starts fading into the next (when it may: see CanCrossfadeLocked).
+	void SetFadePointLocked(Sound sound)
+	{
+		if (source is null || current is null || sound.Crossfade <= 0 || current.IsLive || current.Duration < sound.Crossfade * 3) return;
+		// The song's end: a part at the end SponsorBlock skips doesn't count.
+		var end = (double)current.Duration;
+		if (sponsorBlock.Known(current)?.LastOrDefault(s => s.End >= current.Duration - 2) is { } outro) end = Math.Min(end, outro.Start);
+		// The fade lasts Crossfade seconds heard; at nightcore or another speed that's more (or less) of the song.
+		var fadeAt = end - (sound.Crossfade + 0.5) * source.Rate;
+		// Already past it (the setting changed late in the song): no fade this time.
+		if (fadeAt <= Math.Max(startOffset, PositionLocked())) return;
+		source.ArmFade((long)((fadeAt - startOffset) / source.Rate * BytesPerSecond));
+	}
+
+	// The next song has to start at once (a saved file): one that is still being fetched would stall the
+	// song fading out. Not when one song repeats, nor into a live stream.
+	bool CanCrossfadeLocked()
+	{
+		if (Sound.Of(settings.Bot).Crossfade <= 0 || paused || Loop == LoopMode.One || queue.Count == 0 || current is null) return false;
+		var next = queue[0];
+		return !next.IsLive && next.IsYouTube && library.GetFile(next.Id) != null && !youtube.TooLong(next);
+	}
+
+	void OnFadePoint(TrackSource reached)
+	{
+		lock (gate)
+		{
+			if (disposed || sessionSaved || reached != source || reached.Generation != generation || !CanCrossfadeLocked()) return;
+			log.LogInformation("Crossfading from {Title}", current!.Title);
+			// This song goes on, fading out; it counts as played to here.
+			heardBefore += SourceSecondsLocked();
+			crossfadeFrom = source;
+			source = null;
+			AdvanceLocked(finished: true);
+			// The next one didn't start after all: no fade.
+			crossfadeFrom?.Dispose();
+			crossfadeFrom = null;
+		}
+		RaiseChanged();
+	}
+
+	/// <summary>The song before (fading out) under the new one (fading in), equal power; then the new one alone.</summary>
+	sealed class Crossfade(TrackSource from, TrackSource to, long fadeBytes) : IAudioPassiveProducer
+	{
+		byte[] other = [];
+		long mixed;
+		bool fromDone;
+
+		public int Read(byte[] buffer, int offset, int length, out Meta? meta)
+		{
+			var n = to.Read(buffer, offset, length, out meta);
+			if (mixed >= fadeBytes) return n;
+			var m = 0;
+			if (!fromDone)
+			{
+				if (other.Length < length) other = new byte[length];
+				m = from.Read(other, 0, length, out _);
+			}
+			var a = System.Runtime.InteropServices.MemoryMarshal.Cast<byte, short>(buffer.AsSpan(offset, length));
+			var b = System.Runtime.InteropServices.MemoryMarshal.Cast<byte, short>(other.AsSpan(0, Math.Min(length, other.Length)));
+			var heardOld = m / 2;
+			for (int i = 0; i < a.Length; i++)
+			{
+				// The new song keeps rising to the end of the fade, even if the old one ended first.
+				var p = Math.Min(1.0, (mixed + i * 2L) / (double)Math.Max(1, fadeBytes));
+				var inGain = Math.Sin(p * Math.PI / 2);
+				var outGain = Math.Cos(p * Math.PI / 2);
+				var oldSample = i < heardOld ? b[i] : 0;
+				var newSample = i * 2 < n ? a[i] : 0;
+				a[i] = SoundPipe.Limit((float)(newSample * inGain + oldSample * outGain));
+			}
+			mixed += length;
+			if (!fromDone && (m < length || mixed >= fadeBytes))
+			{
+				fromDone = true;
+				// Closing ffmpeg can take a moment: not on the audio thread.
+				ThreadPool.QueueUserWorkItem(_ => from.Dispose());
+			}
+			// The old song may still be heard while the new one has nothing yet.
+			return n < length && m == length ? length : n;
+		}
+
+		public void Dispose() { }
 	}
 
 	void OnSkipPoint(TrackSource reached)
@@ -707,10 +852,16 @@ public sealed class Player : IDisposable
 		RaiseChanged();
 	}
 
-	void StopSourceLocked()
+	// keepPlaying: a crossfade starts; the song before goes on until the new one is mixed in.
+	void StopSourceLocked(bool keepPlaying = false)
 	{
-		timePipe.Paused = true;
-		timePipe.InStream = null;
+		fading?.Dispose();
+		fading = null;
+		if (!keepPlaying)
+		{
+			timePipe.Paused = true;
+			timePipe.InStream = null;
+		}
 		heardBefore += SourceSecondsLocked();
 		source?.Dispose();
 		source = null;
@@ -736,13 +887,15 @@ public sealed class Player : IDisposable
 			// Less than a second of audio means yt-dlp/ffmpeg failed rather than the song ending,
 			// unless it was started (seeked) right before its end.
 			var remaining = current.IsLive ? int.MaxValue : current.Duration - startOffset;
-			var played = Interlocked.Read(ref ended.BytesRead) / (double)BytesPerSecond;
-			var noAudio = played < 1 && remaining > 3;
+			// Seconds heard, and how far into the song that went (nightcore and the speed move faster).
+			var heard = Interlocked.Read(ref ended.BytesRead) / (double)BytesPerSecond;
+			var played = heard * ended.Rate;
+			var noAudio = heard < 1 && remaining > 3;
 			// yt-dlp stopped with an error halfway through: YouTube broke the stream off.
 			var cutOff = !noAudio && !ended.FromFile && ended.Errors.Contains("ERROR") && remaining - played > 5;
 			var reason = YouTube.FriendlyError(ended.Errors);
 			// A station that played for a while and then dropped gets all its tries again.
-			if (cutOff && current.IsLive && played > 60) attempt = 0;
+			if (cutOff && current.IsLive && heard > 60) attempt = 0;
 			if ((noAudio || cutOff) && attempt + 1 < MaxAttempts && (ended.FromFile || YouTube.IsRetryable(reason)))
 			{
 				log.LogWarning("{Title} ({Id}) {What}: {Reason}", current.Title, current.Id,
@@ -910,20 +1063,31 @@ public sealed class Player : IDisposable
 	}
 
 	/// <summary>Feeds ffmpeg's PCM into the timer pipe and notices when the song is over.</summary>
-	sealed class TrackSource(AudioStream audio, int generation, bool fromFile, Action<TrackSource> ended, Action<TrackSource> skipPoint) : IAudioPassiveProducer
+	sealed class TrackSource(AudioStream audio, int generation, bool fromFile, double rate,
+		Action<TrackSource> ended, Action<TrackSource> skipPoint, Action<TrackSource> fadePoint) : IAudioPassiveProducer
 	{
 		public bool FromFile => fromFile;
+		/// <summary>Song seconds per second of this audio (nightcore, the speed).</summary>
+		public double Rate => rate;
 		public long BytesRead;
 		public int Generation => generation;
 		public string Errors => audio.Errors;
 		/// <summary>When this much audio was read, the song reached a part to skip (SponsorBlock).</summary>
 		long SkipAt = long.MaxValue;
-		int done, skipped;
+		/// <summary>When this much audio was read, the crossfade into the next song starts.</summary>
+		long FadeAt = long.MaxValue;
+		int done, skipped, faded;
 
-		public void Arm(long at)
+		public void ArmSkip(long at)
 		{
 			Volatile.Write(ref SkipAt, at);
 			Interlocked.Exchange(ref skipped, 0);
+		}
+
+		public void ArmFade(long at)
+		{
+			Volatile.Write(ref FadeAt, at);
+			Interlocked.Exchange(ref faded, 0);
 		}
 
 		public int Read(byte[] buffer, int offset, int length, out Meta? meta)
@@ -940,8 +1104,14 @@ public sealed class Player : IDisposable
 			{
 				read = 0;
 			}
-			if (read > 0 && Interlocked.Add(ref BytesRead, read) >= Volatile.Read(ref SkipAt) && Interlocked.Exchange(ref skipped, 1) == 0)
-				ThreadPool.QueueUserWorkItem(_ => skipPoint(this));
+			if (read > 0)
+			{
+				var total = Interlocked.Add(ref BytesRead, read);
+				if (total >= Volatile.Read(ref SkipAt) && Interlocked.Exchange(ref skipped, 1) == 0)
+					ThreadPool.QueueUserWorkItem(_ => skipPoint(this));
+				if (total >= Volatile.Read(ref FadeAt) && Interlocked.Exchange(ref faded, 1) == 0)
+					ThreadPool.QueueUserWorkItem(_ => fadePoint(this));
+			}
 			if (read < length && Interlocked.Exchange(ref done, 1) == 0)
 				ThreadPool.QueueUserWorkItem(_ => ended(this));
 			return read;

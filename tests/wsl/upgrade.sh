@@ -57,7 +57,7 @@ OLDV=${FROM#v}
 api $P/api/bots/1/settings | python3 -c "
 import sys, json
 d = json.load(sys.stdin); d['allowedUsers'] = ['oldTestUid0000000000000000='];  d['allowedServerGroups'] = [6]
-d['commandLevels'] = {'radio': 'dj'}
+d['commandLevels'] = {'radio': 'dj', 'vol': 'dj'}
 print(json.dumps(d))" > $W/old-settings.json
 api -X PUT -d @$W/old-settings.json $P/api/bots/1/settings -o /dev/null
 api -d '{"on":true}' $P/api/bots/1/radio -o /dev/null
@@ -100,6 +100,11 @@ check "radio became autoplay (still on)" "$(api $P/api/bots/1/state | python3 -c
 check "the level of !radio went to !autoplay and !fm" "$(api $P/api/bots/1/settings | python3 -c "
 import sys, json
 l = json.load(sys.stdin)['commandLevels']; print(l.get('autoplay'), l.get('fm'))")" "dj dj" ;;
+esac
+case $OLDV in 0.[0-6].*)
+check "the equalizer, effects and speed got the level of the volume" "$(api $P/api/bots/1/settings | python3 -c "
+import sys, json
+l = json.load(sys.stdin)['commandLevels']; print(l.get('eq'), l.get('fx'), l.get('speed'))")" "dj dj dj" ;;
 esac
 check "playlist" "$(api "$P/api/playlists/Upgrade%20test" | python3 -c "import sys,json; print(len(json.load(sys.stdin)['songs']))")" 1
 check "saved song" "$(api "$P/api/library" | grep -c tstTone0001)" 1

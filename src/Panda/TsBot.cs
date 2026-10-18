@@ -595,6 +595,30 @@ public sealed class TsBot : BackgroundService
 
 	static bool IsSwitch(string arg) => arg.Length == 0 || Switch(arg) != null;
 
+	string EqLabel(string eq) => Strings.Get(Lang, "eqn-" + eq);
+
+	string EffectsNow(Sound s)
+	{
+		var on = new List<string>();
+		if (s.Effect != "off") on.Add(Strings.Get(Lang, "fx-" + s.Effect));
+		if (s.EightD) on.Add("8D");
+		if (Math.Abs(s.Speed - 1) >= 0.01) on.Add(FormatSpeed(s.Speed));
+		if (s.Equalizer != "off") on.Add(EqLabel(s.Equalizer));
+		return on.Count == 0 ? Strings.Get(Lang, "fx-none") : string.Join(", ", on);
+	}
+
+	static string FormatSpeed(double speed) => "×" + speed.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
+
+	/// <summary>"1.25", "1,25", "x1.5", "125%"; null when it isn't a speed between 0.5 and 2.</summary>
+	internal static double? ParseSpeed(string arg)
+	{
+		var t = arg.Trim().TrimStart('x', 'X', '×').Replace(',', '.');
+		var percent = t.EndsWith('%');
+		if (!double.TryParse(percent ? t[..^1] : t, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var v)) return null;
+		if (percent) v /= 100;
+		return v is >= 0.5 and <= 2 ? Math.Round(v, 2) : null;
+	}
+
 	/// <summary>The rest of an album or playlist is looked up in the background and added as it's found;
 	/// a !stop or !clear (or the queue filling up) ends it. Says how it went when it's done.</summary>
 	void AddListLater(TextMessage msg, Resolved r, bool exempt)
@@ -938,6 +962,47 @@ public sealed class TsBot : BackgroundService
 			return Confirm(Strings.Get(Lang, "fav-added", Link(now), Escape(name)));
 		}
 
+		case "eq":
+		{
+			var s = Sound.Of(Bot);
+			var names = string.Join(", ", Sound.Equalizers.Where(e => e != "custom" || s.Bands.Any(g => g != 0)).Select(EqLabel));
+			if (arg.Length == 0) return Strings.Get(Lang, "eq-now", EqLabel(s.Equalizer), names, Prefix);
+			if (Sound.EqualizerName(arg) is not { } eq) return Strings.Get(Lang, "eq-unknown", Escape(arg), names);
+			if (eq == "custom" && s.Bands.All(g => g == 0)) return Strings.Get(Lang, "eq-custom-empty");
+			player.UpdateSound(x => x with { Equalizer = eq });
+			return Confirm(eq == "off" ? Strings.Get(Lang, "eq-off") : Strings.Get(Lang, "eq-set", EqLabel(eq)));
+		}
+
+		case "fx":
+		{
+			var s = Sound.Of(Bot);
+			if (arg.Length == 0) return Strings.Get(Lang, "fx-now", EffectsNow(s), Prefix);
+			switch (Sound.EffectName(arg))
+			{
+			case "off":
+				player.UpdateSound(x => x with { Effect = "off", EightD = false, Speed = 1 });
+				return Confirm(Strings.Get(Lang, "fx-off"));
+			case "8d":
+				var turned = player.UpdateSound(x => x with { EightD = !x.EightD });
+				return Confirm(Strings.Get(Lang, turned.EightD ? "fx-8d-on" : "fx-8d-off"));
+			case { } effect:
+				// Again turns it off.
+				var on = player.UpdateSound(x => x with { Effect = x.Effect == effect ? "off" : effect }).Effect == effect;
+				return Confirm(on ? Strings.Get(Lang, "fx-on", Strings.Get(Lang, "fx-" + effect)) : Strings.Get(Lang, "fx-effect-off", Strings.Get(Lang, "fx-" + effect)));
+			default:
+				return Strings.Get(Lang, "fx-unknown", Escape(arg), Prefix);
+			}
+		}
+
+		case "speed":
+		{
+			var s = Sound.Of(Bot);
+			if (arg.Length == 0) return Strings.Get(Lang, "speed-now", FormatSpeed(s.Speed), Prefix);
+			if (ParseSpeed(arg) is not { } speed) return Strings.Get(Lang, "speed-bad", Prefix);
+			player.UpdateSound(x => x with { Speed = speed });
+			return Confirm(Strings.Get(Lang, "speed-set", FormatSpeed(speed)));
+		}
+
 		case "autoplay":
 		{
 			var on = Switch(arg) ?? !player.Autoplay;
@@ -1106,6 +1171,9 @@ public static class Commands
 		["join"] = "join", ["come"] = "join", ["gel"] = "join", ["viens"] = "join", ["rejoindre"] = "join", ["komm"] = "join",
 		["autoplay"] = "autoplay", ["auto"] = "autoplay", ["otomatik"] = "autoplay", ["otodevam"] = "autoplay", ["lectureauto"] = "autoplay", ["automatisch"] = "autoplay",
 		["fm"] = "fm", ["station"] = "fm", ["istasyon"] = "fm", ["sender"] = "fm",
+		["eq"] = "eq", ["equalizer"] = "eq", ["equaliser"] = "eq", ["ekolayzer"] = "eq", ["ekolayzır"] = "eq", ["égaliseur"] = "eq", ["egaliseur"] = "eq",
+		["fx"] = "fx", ["effect"] = "fx", ["effects"] = "fx", ["efekt"] = "fx", ["efektler"] = "fx", ["effet"] = "fx", ["effets"] = "fx", ["effekt"] = "fx", ["effekte"] = "fx",
+		["speed"] = "speed", ["hız"] = "speed", ["hiz"] = "speed", ["vitesse"] = "speed", ["tempo"] = "speed", ["geschwindigkeit"] = "speed",
 		// Up to 0.5 the name of autoplay; now it leads to autoplay or !fm (see HandleMessageAsync).
 		["radio"] = "radio", ["radyo"] = "radio",
 		["follow"] = "follow", ["followme"] = "follow", ["takip"] = "follow", ["takipet"] = "follow", ["suivre"] = "follow", ["folgen"] = "follow", ["folgmir"] = "follow",

@@ -9,6 +9,9 @@ const I18N = {
     nowPlaying: 'Now playing', live: 'LIVE', napping: 'Panda is napping 💤 — add a song!', seek: 'Seek',
     shuffle: 'Shuffle queue', stop: 'Stop', play: 'Play', pause: 'Pause', skip: 'Skip', mute: 'Mute', unmute: 'Unmute', volume: 'Volume',
     loopOff: 'Loop: off', loopAll: 'Loop: whole queue', loopOne: 'Loop: this song',
+    soundTitle: 'Sound', sEq: 'Equalizer', sEqPreset: 'Setting', sEqHint: 'Moving a band makes it your own setting. Everything is heard at once and kept for this bot.', 'eqn.off': 'Off', 'eqn.bass': 'Bass', 'eqn.treble': 'Treble', 'eqn.vocal': 'Vocal', 'eqn.pop': 'Pop', 'eqn.rock': 'Rock', 'eqn.classical': 'Classical', 'eqn.electronic': 'Electronic', 'eqn.jazz': 'Jazz', 'eqn.custom': 'My own',
+    sFx: 'Effects', 'fx.off': 'None', 'fx.nightcore': 'Nightcore', 'fx.slowed': 'Slowed', fx8d: '8D: the sound circles around your head', sSpeed: 'Speed', sFxHint: 'Nightcore plays faster and higher, slowed slower and lower; the speed changes the tempo, not the pitch. The song goes on where it was.', sCrossfade: 'Crossfade', sCrossfadeHint: 'The end of a song plays under the start of the next one. Only into songs that are in the library (they start at once). 0 = off.', secs: n => n ? `${n} s` : 'off',
+    'err.bad-sound': 'That sound setting is out of range.', 'err.bad-equalizer': 'Unknown equalizer setting.', 'err.bad-effect': 'Unknown effect.', 'cmd.eq': 'Equalizer', 'cmd.fx': 'Effects (nightcore, slowed, 8D)', 'cmd.speed': 'Speed',
     autoplayOn: 'Autoplay: on — similar songs follow when the queue ends', autoplayOff: 'Autoplay: off', autoplayToast: '✨ Autoplay on: similar songs follow when the queue ends',
     radio: 'Radio', radioTitle: 'Internet radio', radioFavs: 'Favorite stations', radioFavsEmpty: 'No favorite stations yet. Find one below and star it.', radioFind: 'Find a station', radioName: 'Name', radioCountry: 'Country', radioTag: 'Genre', radioAny: 'Any', radioSearch: 'Search', radioHint: "Stations come from Radio Browser (radio-browser.info), a free, open list. Panda plays each station's own stream and saves nothing.", radioNone: 'No stations found 🐾', radioFav: 'Add to favorite stations', radioUnfav: 'Remove from favorite stations', radioFaved: 'Added to favorite stations', radioUnfaved: 'Removed from favorite stations',
     fromSearch: 'Search results', listAdding: (n, x) => `${n} more songs from "${x}" are on the way`,
@@ -101,6 +104,9 @@ const I18N = {
     nowPlaying: 'Şimdi çalıyor', live: 'CANLI', napping: 'Panda uyukluyor 💤 — bir şarkı ekle!', seek: 'Sar',
     shuffle: 'Sırayı karıştır', stop: 'Durdur', play: 'Oynat', pause: 'Duraklat', skip: 'Geç', mute: 'Sessize al', unmute: 'Sesi aç', volume: 'Ses',
     loopOff: 'Tekrar: kapalı', loopAll: 'Tekrar: tüm sıra', loopOne: 'Tekrar: bu şarkı',
+    soundTitle: 'Ses', sEq: 'Ekolayzer', sEqPreset: 'Ayar', sEqHint: 'Bir bandı oynatınca kendi ayarın olur. Her değişiklik anında duyulur ve bu bot için saklanır.', 'eqn.off': 'Kapalı', 'eqn.bass': 'Bas', 'eqn.treble': 'Tiz', 'eqn.vocal': 'Vokal', 'eqn.pop': 'Pop', 'eqn.rock': 'Rock', 'eqn.classical': 'Klasik', 'eqn.electronic': 'Elektronik', 'eqn.jazz': 'Caz', 'eqn.custom': 'Kendi ayarım',
+    sFx: 'Efektler', 'fx.off': 'Yok', 'fx.nightcore': 'Nightcore', 'fx.slowed': 'Yavaşlatılmış', fx8d: '8D: ses başının etrafında döner', sSpeed: 'Hız', sFxHint: 'Nightcore daha hızlı ve ince, yavaşlatılmış daha yavaş ve kalın çalar; hız ise sesin inceliğini değil temposunu değiştirir. Şarkı kaldığı yerden sürer.', sCrossfade: 'Geçişte yumuşak ses (crossfade)', sCrossfadeHint: 'Şarkının sonu bir sonrakinin başıyla üst üste çalar. Sadece kütüphanedeki şarkılara geçerken (hemen başladıkları için). 0 = kapalı.', secs: n => n ? `${n} sn` : 'kapalı',
+    'err.bad-sound': 'Bu ses ayarı izin verilen aralığın dışında.', 'err.bad-equalizer': 'Bilinmeyen ekolayzer ayarı.', 'err.bad-effect': 'Bilinmeyen efekt.', 'cmd.eq': 'Ekolayzer', 'cmd.fx': 'Efektler (nightcore, yavaş, 8D)', 'cmd.speed': 'Hız',
     autoplayOn: 'Otomatik devam: açık — sıra bitince benzer şarkılar gelir', autoplayOff: 'Otomatik devam: kapalı', autoplayToast: '✨ Otomatik devam açık: sıra bitince benzer şarkılar gelir',
     radio: 'Radyo', radioTitle: 'İnternet radyosu', radioFavs: 'Favori radyolar', radioFavsEmpty: 'Henüz favori radyo yok. Aşağıdan bulup yıldızlayın.', radioFind: 'Radyo bul', radioName: 'Ad', radioCountry: 'Ülke', radioTag: 'Tür', radioAny: 'Hepsi', radioSearch: 'Ara', radioHint: "Radyolar Radio Browser'dan (radio-browser.info) gelir; ücretsiz ve açık bir liste. Panda her radyonun kendi yayınını çalar, hiçbir şey kaydetmez.", radioNone: 'Radyo bulunamadı 🐾', radioFav: 'Favori radyolara ekle', radioUnfav: 'Favori radyolardan çıkar', radioFaved: 'Favori radyolara eklendi', radioUnfaved: 'Favori radyolardan çıkarıldı',
     fromSearch: 'Arama sonuçları', listAdding: (n, x) => `"${x}" listesindeki ${n} şarkı daha ekleniyor`,
@@ -193,6 +199,9 @@ const I18N = {
     nowPlaying: 'En cours de lecture', live: 'EN DIRECT', napping: 'Panda fait la sieste 💤 — ajoutez un morceau !', seek: 'Position',
     shuffle: 'Mélanger la file', stop: 'Arrêter', play: 'Lecture', pause: 'Pause', skip: 'Passer', mute: 'Couper le son', unmute: 'Rétablir le son', volume: 'Volume',
     loopOff: 'Répétition : désactivée', loopAll: 'Répétition : toute la file', loopOne: 'Répétition : ce morceau',
+    soundTitle: 'Son', sEq: 'Égaliseur', sEqPreset: 'Réglage', sEqHint: "Bouger une bande en fait votre propre réglage. Tout s'entend tout de suite et reste pour ce bot.", 'eqn.off': 'Désactivé', 'eqn.bass': 'Basses', 'eqn.treble': 'Aigus', 'eqn.vocal': 'Voix', 'eqn.pop': 'Pop', 'eqn.rock': 'Rock', 'eqn.classical': 'Classique', 'eqn.electronic': 'Électro', 'eqn.jazz': 'Jazz', 'eqn.custom': 'Le mien',
+    sFx: 'Effets', 'fx.off': 'Aucun', 'fx.nightcore': 'Nightcore', 'fx.slowed': 'Ralenti', fx8d: '8D : le son tourne autour de votre tête', sSpeed: 'Vitesse', sFxHint: "Nightcore joue plus vite et plus aigu, ralenti plus lent et plus grave ; la vitesse change le tempo, pas la hauteur. Le morceau reprend là où il était.", sCrossfade: 'Fondu enchaîné', sCrossfadeHint: "La fin d'un morceau joue sous le début du suivant. Seulement vers des morceaux de la bibliothèque (ils démarrent tout de suite). 0 = désactivé.", secs: n => n ? `${n} s` : 'désactivé',
+    'err.bad-sound': 'Ce réglage du son est hors limites.', 'err.bad-equalizer': "Réglage d'égaliseur inconnu.", 'err.bad-effect': 'Effet inconnu.', 'cmd.eq': 'Égaliseur', 'cmd.fx': 'Effets (nightcore, ralenti, 8D)', 'cmd.speed': 'Vitesse',
     autoplayOn: 'Lecture auto : activée — des morceaux similaires suivent quand la file est finie', autoplayOff: 'Lecture auto : désactivée', autoplayToast: '✨ Lecture auto activée : des morceaux similaires suivent quand la file est finie',
     radio: 'Radio', radioTitle: 'Radio sur Internet', radioFavs: 'Radios favorites', radioFavsEmpty: 'Pas encore de radios favorites. Trouvez-en une ci-dessous et ajoutez une étoile.', radioFind: 'Trouver une radio', radioName: 'Nom', radioCountry: 'Pays', radioTag: 'Genre', radioAny: 'Tous', radioSearch: 'Chercher', radioHint: "Les radios viennent de Radio Browser (radio-browser.info), une liste libre et gratuite. Panda lit le flux de chaque radio et n'enregistre rien.", radioNone: 'Aucune radio trouvée 🐾', radioFav: 'Ajouter aux radios favorites', radioUnfav: 'Retirer des radios favorites', radioFaved: 'Ajoutée aux radios favorites', radioUnfaved: 'Retirée des radios favorites',
     fromSearch: 'Résultats de la recherche', listAdding: (n, x) => `${n} autres morceaux de « ${x} » arrivent`,
@@ -285,6 +294,9 @@ const I18N = {
     nowPlaying: 'Läuft gerade', live: 'LIVE', napping: 'Panda macht ein Nickerchen 💤 — füg einen Song hinzu!', seek: 'Position',
     shuffle: 'Warteschlange mischen', stop: 'Stopp', play: 'Abspielen', pause: 'Pause', skip: 'Überspringen', mute: 'Stummschalten', unmute: 'Ton an', volume: 'Lautstärke',
     loopOff: 'Wiederholung: aus', loopAll: 'Wiederholung: ganze Warteschlange', loopOne: 'Wiederholung: dieser Song',
+    soundTitle: 'Klang', sEq: 'Equalizer', sEqPreset: 'Einstellung', sEqHint: 'Ein bewegtes Band macht daraus deine eigene Einstellung. Alles ist sofort zu hören und bleibt für diesen Bot.', 'eqn.off': 'Aus', 'eqn.bass': 'Bass', 'eqn.treble': 'Höhen', 'eqn.vocal': 'Gesang', 'eqn.pop': 'Pop', 'eqn.rock': 'Rock', 'eqn.classical': 'Klassik', 'eqn.electronic': 'Elektro', 'eqn.jazz': 'Jazz', 'eqn.custom': 'Eigene',
+    sFx: 'Effekte', 'fx.off': 'Keine', 'fx.nightcore': 'Nightcore', 'fx.slowed': 'Verlangsamt', fx8d: '8D: der Klang kreist um deinen Kopf', sSpeed: 'Tempo', sFxHint: 'Nightcore spielt schneller und höher, verlangsamt langsamer und tiefer; das Tempo ändert die Geschwindigkeit, nicht die Tonhöhe. Der Song geht dort weiter, wo er war.', sCrossfade: 'Überblenden', sCrossfadeHint: 'Das Ende eines Songs läuft unter dem Anfang des nächsten. Nur zu Songs aus der Bibliothek (sie starten sofort). 0 = aus.', secs: n => n ? `${n} s` : 'aus',
+    'err.bad-sound': 'Diese Klangeinstellung liegt außerhalb des Bereichs.', 'err.bad-equalizer': 'Unbekannte Equalizer-Einstellung.', 'err.bad-effect': 'Unbekannter Effekt.', 'cmd.eq': 'Equalizer', 'cmd.fx': 'Effekte (Nightcore, langsam, 8D)', 'cmd.speed': 'Tempo',
     autoplayOn: 'Autoplay: an — ähnliche Songs folgen, wenn die Warteschlange leer ist', autoplayOff: 'Autoplay: aus', autoplayToast: '✨ Autoplay an: ähnliche Songs folgen, wenn die Warteschlange leer ist',
     radio: 'Radio', radioTitle: 'Internetradio', radioFavs: 'Lieblingssender', radioFavsEmpty: 'Noch keine Lieblingssender. Such unten einen und gib ihm einen Stern.', radioFind: 'Sender finden', radioName: 'Name', radioCountry: 'Land', radioTag: 'Genre', radioAny: 'Alle', radioSearch: 'Suchen', radioHint: 'Die Sender kommen von Radio Browser (radio-browser.info), einer freien, offenen Liste. Panda spielt den eigenen Stream jedes Senders und speichert nichts.', radioNone: 'Keine Sender gefunden 🐾', radioFav: 'Zu den Lieblingssendern', radioUnfav: 'Aus den Lieblingssendern entfernen', radioFaved: 'Zu den Lieblingssendern hinzugefügt', radioUnfaved: 'Aus den Lieblingssendern entfernt',
     fromSearch: 'Suchergebnisse', listAdding: (n, x) => `${n} weitere Songs aus „${x}“ kommen`,
@@ -733,6 +745,9 @@ function renderNow() {
   setIcon(lb, loop === 'One' ? 'repeat1' : 'repeat');
   lb.classList.toggle('on', loop !== 'Off');
   setLabel(lb, t('loop' + loop)); lb.setAttribute('aria-pressed', String(loop !== 'Off'));
+  const snd = p.sound || {};
+  $('open-sound').classList.toggle('on', (snd.equalizer && snd.equalizer !== 'off') || (snd.effect && snd.effect !== 'off') || !!snd.eightD || (snd.speed && snd.speed !== 1));
+  if ($('sound').open) renderSound();
   const ab = $('btn-autoplay');
   ab.classList.toggle('on', !!p.autoplay); ab.setAttribute('aria-pressed', String(!!p.autoplay));
   setLabel(ab, t(p.autoplay ? 'autoplayOn' : 'autoplayOff'));
@@ -745,7 +760,9 @@ function renderNow() {
 function position() {
   const cur = S && S.player.current;
   if (!cur) return 0;
-  let pos = cur.position + (cur.paused ? 0 : (Date.now() - recvAt) / 1000);
+  // Nightcore and the speed move through the song faster (or slower) than the clock; live streams don't.
+  const rate = cur.track.isLive ? 1 : (S.player.sound?.rate || 1);
+  let pos = cur.position + (cur.paused ? 0 : (Date.now() - recvAt) / 1000 * rate);
   if (cur.track.duration > 0) pos = Math.min(pos, cur.track.duration);
   return pos;
 }
@@ -1560,6 +1577,69 @@ function starButton(tr) {
   b.addEventListener('click', () => openPlMenu(b, [tr]));
   return b;
 }
+
+/* ---------------- sound: equalizer, effects, speed, crossfade ---------------- */
+const EQS = ['off', 'bass', 'treble', 'vocal', 'pop', 'rock', 'classical', 'electronic', 'jazz', 'custom'];
+const FREQS = ['32', '64', '125', '250', '500', '1k', '2k', '4k', '8k', '16k'];
+const FXS = ['off', 'nightcore', 'slowed'];
+let soundTouched = 0;   // while the user moves something, incoming state doesn't move it back
+
+function openSound() {
+  if (!$('sound').open) $('sound').showModal();
+  $('sound-bot').textContent = manyBots() ? botName() : '';
+  soundTouched = 0;
+  renderSound(true);
+}
+$('open-sound').addEventListener('click', openSound);
+$('sound').addEventListener('click', e => {
+  if (e.target === $('sound') || e.target.closest('[data-close]')) $('sound').close();
+});
+
+function renderSound(full = false) {
+  const s = S?.player.sound;
+  if (!s || (!full && Date.now() - soundTouched < 1500)) return;
+  const sel = $('eq-preset');
+  if (full || sel.options.length !== EQS.length) sel.replaceChildren(...EQS.map(e => el('option', { value: e, text: t('eqn.' + e) })));
+  sel.value = s.equalizer;
+  const gains = s.gains || [];
+  if (full || !$('eq-bands').children.length) {
+    $('eq-bands').replaceChildren(...FREQS.map((f, i) => {
+      const r = el('input', { type: 'range', min: -12, max: 12, step: 0.5, 'aria-label': `${f} Hz` });
+      r.addEventListener('input', () => { soundTouched = Date.now(); bandLabel(i, +r.value); pushBands(); });
+      return el('label', { class: 'eq-band' }, el('b', { text: '' }), r, el('span', { text: f }));
+    }));
+  }
+  [...$('eq-bands').querySelectorAll('input')].forEach((r, i) => { r.value = gains[i] ?? 0; bandLabel(i, gains[i] ?? 0); });
+  $('fx-seg').replaceChildren(...FXS.map(f => {
+    const b = el('button', { type: 'button', role: 'radio', 'aria-checked': String(s.effect === f), text: t('fx.' + f) });
+    b.addEventListener('click', () => { soundTouched = Date.now(); for (const x of $('fx-seg').children) x.setAttribute('aria-checked', String(x === b)); pushSound({ effect: f }); });
+    return b;
+  }));
+  $('fx-8d').checked = !!s.eightD;
+  $('speed').value = s.speed; $('speed-val').textContent = `${(+s.speed).toFixed(2)}×`;
+  $('crossfade').value = s.crossfade; $('crossfade-val').textContent = t('secs', s.crossfade);
+}
+function bandLabel(i, v) {
+  const b = $('eq-bands').children[i]?.querySelector('b');
+  if (b) b.textContent = v ? (v > 0 ? '+' : '') + v : '0';
+}
+// Changes made close together go out together.
+let soundPending = {};
+const sendSound = debounce(() => { const body = soundPending; soundPending = {}; act(() => api('PUT', B('/sound'), body)); }, 200);
+const pushSound = body => { Object.assign(soundPending, body); sendSound(); };
+// Moving a band: the whole setting becomes the bot's own.
+const pushBands = debounce(() => {
+  const bands = [...$('eq-bands').querySelectorAll('input')].map(r => +r.value);
+  $('eq-preset').value = 'custom';
+  act(() => api('PUT', B('/sound'), { equalizer: 'custom', bands }));
+}, 250);
+$('eq-preset').addEventListener('change', e => { soundTouched = 0; act(() => api('PUT', B('/sound'), { equalizer: e.target.value })); });
+$('fx-8d').addEventListener('change', e => { soundTouched = Date.now(); pushSound({ eightD: e.target.checked }); });
+// A new speed starts the song again where it is: sent once the slider is let go.
+$('speed').addEventListener('input', e => { soundTouched = Date.now(); $('speed-val').textContent = `${(+e.target.value).toFixed(2)}×`; });
+$('speed').addEventListener('change', e => { soundTouched = Date.now(); pushSound({ speed: +e.target.value }); });
+$('speed-reset').addEventListener('click', () => { $('speed').value = 1; $('speed-val').textContent = '1.00×'; soundTouched = Date.now(); pushSound({ speed: 1 }); });
+$('crossfade').addEventListener('input', e => { soundTouched = Date.now(); $('crossfade-val').textContent = t('secs', +e.target.value); pushSound({ crossfade: +e.target.value }); });
 
 /* ---------------- internet radio ---------------- */
 let radioFavs = [], radioSeq = 0, radioMeta = false;

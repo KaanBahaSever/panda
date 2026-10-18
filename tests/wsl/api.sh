@@ -88,6 +88,17 @@ check "only known SponsorBlock categories" "$(put "d['youTube']['sponsorBlockCat
 check "settings without the sources (an older panel) keep them" "$(put "d['sources']['radio'] = False; d['sources']['localLinks'] = True" >/dev/null; put "del d['sources']; del d['youTube']" | json "(d['sources']['radio'], d['youTube']['sponsorBlockCategories'])")" "(False, ['music_offtopic'])"
 put "pass" >/dev/null
 
+echo "== sound"
+sound() { curl -s -b $J -X PUT -H 'Content-Type: application/json' -d "$1" $P/api/bots/1/sound; }
+check "an equalizer preset" "$(sound '{"equalizer":"rock"}' | json "(d['equalizer'], d['gains'][0])")" "('rock', 4)"
+check "own bands are kept to ±12 dB" "$(sound '{"equalizer":"custom","bands":[20,-20,1,2,3,4,5,6,7,8]}' | json "d['bands'][:2]")" "[12, -12]"
+check "the speed goes from 0.5 to 2" "$(code -b $J -X PUT -H 'Content-Type: application/json' -d '{"speed":3}' $P/api/bots/1/sound)" 400
+check "ten bands" "$(code -b $J -X PUT -H 'Content-Type: application/json' -d '{"bands":[1,2]}' $P/api/bots/1/sound)" 400
+check "unknown effect" "$(code -b $J -X PUT -H 'Content-Type: application/json' -d '{"effect":"reverse"}' $P/api/bots/1/sound)" 400
+check "the state shows the sound" "$(curl -s -b $J $P/api/bots/1/state | json "d['player']['sound']['equalizer']")" custom
+check "a field left out stays" "$(sound '{"eightD":true}' | json "(d['equalizer'], d['eightD'])")" "('custom', True)"
+sound '{"equalizer":"off","eightD":false}' >/dev/null
+
 echo "== playlists and the library"
 check "playlists take songs from other sites" "$(post /api/playlists '{"name":"Sites","songs":[{"id":"soundcloud:123","title":"SC Song","channel":"x","duration":90,"source":"link","link":"https://soundcloud.com/a/b"}]}' | json "len(d['songs'])")" 1
 check "but not with a link that isn't a web page" "$(post /api/playlists '{"name":"Sites","songs":[{"id":"x:1","title":"Bad","channel":"x","duration":9,"source":"link","link":"javascript:alert(1)"}]}' | json "len(d['songs'])")" 1

@@ -90,6 +90,34 @@ public static class Strings
 		["fm-fav-full"] = ("There are already {0} favorite stations. Remove some in the panel first.", "Zaten {0} favori radyo var. Önce panelden birkaçını sil.", "Il y a déjà {0} radios favorites. Retire-en d'abord dans le panneau.", "Es gibt schon {0} Lieblingssender. Entferne zuerst ein paar im Panel."),
 		["list-adding"] = ("📃 {0} more songs from [b]{1}[/b] are looked up and added one by one.", "📃 [b]{1}[/b] listesindeki diğer {0} şarkı aranıp sırayla ekleniyor.", "📃 Les {0} autres morceaux de [b]{1}[/b] sont cherchés et ajoutés un par un.", "📃 Die {0} weiteren Songs aus [b]{1}[/b] werden gesucht und nach und nach hinzugefügt."),
 		["list-added"] = ("📃 Done: {0} songs from [b]{1}[/b] are in the queue.", "📃 Bitti: [b]{1}[/b] listesinden {0} şarkı sırada.", "📃 Terminé : {0} morceaux de [b]{1}[/b] sont dans la file.", "📃 Fertig: {0} Songs aus [b]{1}[/b] sind in der Warteschlange."),
+		["eq-now"] = ("🎛️ Equalizer: [b]{0}[/b]. Choose one with [b]{2}eq <name>[/b]: {1}.", "🎛️ Ekolayzer: [b]{0}[/b]. [b]{2}eq <ad>[/b] ile seç: {1}.", "🎛️ Égaliseur : [b]{0}[/b]. Choisis avec [b]{2}eq <nom>[/b] : {1}.", "🎛️ Equalizer: [b]{0}[/b]. Wähl einen mit [b]{2}eq <Name>[/b]: {1}."),
+		["eq-set"] = ("🎛️ Equalizer: [b]{0}[/b].", "🎛️ Ekolayzer: [b]{0}[/b].", "🎛️ Égaliseur : [b]{0}[/b].", "🎛️ Equalizer: [b]{0}[/b]."),
+		["eq-off"] = ("🎛️ Equalizer off.", "🎛️ Ekolayzer kapalı.", "🎛️ Égaliseur désactivé.", "🎛️ Equalizer aus."),
+		["eq-unknown"] = ("There is no equalizer called [b]{0}[/b]. Try: {1}.", "[b]{0}[/b] adında bir ekolayzer ayarı yok. Şunlardan biri: {1}.", "Il n'y a pas d'égaliseur nommé [b]{0}[/b]. Essaie : {1}.", "Es gibt keinen Equalizer namens [b]{0}[/b]. Versuch: {1}."),
+		["eq-custom-empty"] = ("Set your own bands in the panel first (🎛️ under the player).", "Önce kendi bantlarını panelden ayarla (oynatıcının altındaki 🎛️).", "Règle d'abord tes propres bandes dans le panneau (🎛️ sous le lecteur).", "Stell zuerst deine eigenen Bänder im Panel ein (🎛️ unter dem Player)."),
+		["eqn-off"] = ("off", "kapalı", "désactivé", "aus"),
+		["eqn-bass"] = ("bass", "bas", "basses", "Bass"),
+		["eqn-treble"] = ("treble", "tiz", "aigus", "Höhen"),
+		["eqn-vocal"] = ("vocal", "vokal", "voix", "Gesang"),
+		["eqn-pop"] = ("pop", "pop", "pop", "Pop"),
+		["eqn-rock"] = ("rock", "rock", "rock", "Rock"),
+		["eqn-classical"] = ("classical", "klasik", "classique", "Klassik"),
+		["eqn-electronic"] = ("electronic", "elektronik", "électro", "Elektro"),
+		["eqn-jazz"] = ("jazz", "caz", "jazz", "Jazz"),
+		["eqn-custom"] = ("custom", "özel", "perso", "eigene"),
+		["fx-now"] = ("✨ Sound now: {0}. [b]{1}fx nightcore[/b], [b]slowed[/b], [b]8d[/b] or [b]off[/b]; [b]{1}speed 1.25[/b].", "✨ Şu anki ses: {0}. [b]{1}fx nightcore[/b], [b]yavaş[/b], [b]8d[/b] ya da [b]kapat[/b]; [b]{1}hız 1.25[/b].", "✨ Son actuel : {0}. [b]{1}fx nightcore[/b], [b]ralenti[/b], [b]8d[/b] ou [b]non[/b] ; [b]{1}vitesse 1.25[/b].", "✨ Klang gerade: {0}. [b]{1}fx nightcore[/b], [b]langsam[/b], [b]8d[/b] oder [b]aus[/b]; [b]{1}tempo 1.25[/b]."),
+		["fx-none"] = ("no effects", "efekt yok", "aucun effet", "keine Effekte"),
+		["fx-nightcore"] = ("nightcore", "nightcore", "nightcore", "Nightcore"),
+		["fx-slowed"] = ("slowed", "yavaşlatılmış", "ralenti", "verlangsamt"),
+		["fx-on"] = ("✨ [b]{0}[/b] on.", "✨ [b]{0}[/b] açık.", "✨ [b]{0}[/b] activé.", "✨ [b]{0}[/b] an."),
+		["fx-effect-off"] = ("✨ [b]{0}[/b] off.", "✨ [b]{0}[/b] kapalı.", "✨ [b]{0}[/b] désactivé.", "✨ [b]{0}[/b] aus."),
+		["fx-8d-on"] = ("🎧 8D on: the sound circles around your head.", "🎧 8D açık: ses başının etrafında döner.", "🎧 8D activé : le son tourne autour de ta tête.", "🎧 8D an: der Klang kreist um deinen Kopf."),
+		["fx-8d-off"] = ("🎧 8D off.", "🎧 8D kapalı.", "🎧 8D désactivé.", "🎧 8D aus."),
+		["fx-off"] = ("✨ Effects off, normal speed.", "✨ Efektler kapalı, normal hız.", "✨ Effets désactivés, vitesse normale.", "✨ Effekte aus, normale Geschwindigkeit."),
+		["fx-unknown"] = ("Unknown effect [b]{0}[/b]. Try [b]{1}fx nightcore[/b], [b]slowed[/b], [b]8d[/b] or [b]off[/b].", "[b]{0}[/b] diye bir efekt yok. [b]{1}fx nightcore[/b], [b]yavaş[/b], [b]8d[/b] ya da [b]kapat[/b] dene.", "Effet inconnu : [b]{0}[/b]. Essaie [b]{1}fx nightcore[/b], [b]ralenti[/b], [b]8d[/b] ou [b]non[/b].", "Unbekannter Effekt [b]{0}[/b]. Versuch [b]{1}fx nightcore[/b], [b]langsam[/b], [b]8d[/b] oder [b]aus[/b]."),
+		["speed-now"] = ("⏩ Speed: [b]{0}[/b]. Change it with [b]{1}speed 0.5[/b] … [b]2[/b].", "⏩ Hız: [b]{0}[/b]. [b]{1}hız 0.5[/b] … [b]2[/b] ile değiştir.", "⏩ Vitesse : [b]{0}[/b]. Change-la avec [b]{1}vitesse 0.5[/b] … [b]2[/b].", "⏩ Tempo: [b]{0}[/b]. Ändern mit [b]{1}tempo 0.5[/b] … [b]2[/b]."),
+		["speed-set"] = ("⏩ Speed [b]{0}[/b].", "⏩ Hız [b]{0}[/b].", "⏩ Vitesse [b]{0}[/b].", "⏩ Tempo [b]{0}[/b]."),
+		["speed-bad"] = ("The speed goes from 0.5 to 2, like [b]{0}speed 1.25[/b].", "Hız 0.5 ile 2 arasında olur, örneğin [b]{0}hız 1.25[/b].", "La vitesse va de 0.5 à 2, par exemple [b]{0}vitesse 1.25[/b].", "Das Tempo geht von 0.5 bis 2, zum Beispiel [b]{0}tempo 1.25[/b]."),
 		["list-missed"] = ("{0} weren't found.", "{0} şarkı bulunamadı.", "{0} n'ont pas été trouvés.", "{0} wurden nicht gefunden."),
 		["playlist-added"] = ("📃 Added {0} songs from [b]{1}[/b].", "📃 [b]{1}[/b] listesinden {0} şarkı sıraya eklendi.", "📃 {0} morceaux de [b]{1}[/b] ajoutés à la file.", "📃 {0} Songs aus [b]{1}[/b] hinzugefügt."),
 		["playlist-not-found"] = ("There is no playlist called [b]{0}[/b]. {1}", "[b]{0}[/b] adında bir liste yok. {1}", "Il n'y a pas de playlist nommée [b]{0}[/b]. {1}", "Es gibt keine Playlist namens [b]{0}[/b]. {1}"),
@@ -108,6 +136,7 @@ public static class Strings
 			"[b]{0}remove[/b] <#> · [b]{0}clear[/b] · [b]{0}join[/b] – come to my channel · [b]{0}follow[/b] – follow me around\n" +
 			"[b]{0}search[/b] <song> – pick from the results · [b]{0}seek[/b] 1:30 · [b]{0}back[/b] – previous song · [b]{0}skipto[/b] <#> · [b]{0}move[/b] <#> <#> · [b]{0}voteskip[/b]\n" +
 			"[b]{0}autoplay[/b] <on|off> – keep playing similar songs when the queue ends · [b]{0}fm[/b] <station> – internet radio (alone: the favorite stations)\n" +
+			"[b]{0}eq[/b] <bass|vocal|rock…|off> – equalizer · [b]{0}fx[/b] <nightcore|slowed|8d|off> – effects · [b]{0}speed[/b] <0.5–2>\n" +
 			"[b]{0}playlist[/b] <name> – queue a saved playlist · [b]{0}playlists[/b] · [b]{0}fav[/b] – save this song to Favorites",
 			"🐼 [b]Panda[/b] komutları:\n" +
 			"[b]{0}çal[/b] <şarkı veya link> – çal / sıraya ekle (YouTube, SoundCloud, Spotify, radyo linkleri…; [b]sc:[/b] / [b]ytm:[/b] SoundCloud / YouTube Music'te arar) · [b]{0}şimdiçal[/b] <şarkı> – hemen çal\n" +
@@ -118,6 +147,7 @@ public static class Strings
 			"[b]{0}sil[/b] <#> · [b]{0}temizle[/b] · [b]{0}gel[/b] – kanalıma gel · [b]{0}takip[/b] – beni takip et\n" +
 			"[b]{0}ara[/b] <şarkı> – sonuçlardan seç · [b]{0}sar[/b] 1:30 · [b]{0}önceki[/b] – önceki şarkı · [b]{0}git[/b] <#> · [b]{0}taşı[/b] <#> <#> · [b]{0}oyla[/b] – geçmek için oy\n" +
 			"[b]{0}otomatik[/b] <aç|kapat> – sıra bitince benzer şarkılar çalmaya devam et · [b]{0}fm[/b] <radyo> – internet radyosu (tek başına: favori radyolar)\n" +
+			"[b]{0}eq[/b] <bas|vokal|rock…|kapat> – ekolayzer · [b]{0}efekt[/b] <nightcore|yavaş|8d|kapat> – efektler · [b]{0}hız[/b] <0.5–2>\n" +
 			"[b]{0}liste[/b] <ad> – kayıtlı listeyi sıraya ekle · [b]{0}listeler[/b] · [b]{0}fav[/b] – bu şarkıyı Favoriler'e kaydet\n" +
 			"(English commands like [b]{0}play[/b] work too)",
 			"🐼 Commandes de [b]Panda[/b] :\n" +
@@ -129,6 +159,7 @@ public static class Strings
 			"[b]{0}retirer[/b] <#> · [b]{0}vider[/b] · [b]{0}viens[/b] – viens dans mon canal · [b]{0}suivre[/b] – suis-moi de canal en canal\n" +
 			"[b]{0}chercher[/b] <morceau> – choisir parmi les résultats · [b]{0}aller[/b] 1:30 · [b]{0}précédent[/b] · [b]{0}allerà[/b] <#> · [b]{0}déplacer[/b] <#> <#> · [b]{0}voter[/b] – voter pour passer\n" +
 			"[b]{0}auto[/b] <oui|non> – continuer avec des morceaux proches quand la file est finie · [b]{0}fm[/b] <station> – radio sur Internet (seul : les radios favorites)\n" +
+			"[b]{0}eq[/b] <basses|voix|rock…|non> – égaliseur · [b]{0}effet[/b] <nightcore|ralenti|8d|non> – effets · [b]{0}vitesse[/b] <0.5–2>\n" +
 			"[b]{0}playlist[/b] <nom> – ajouter une playlist enregistrée · [b]{0}playlists[/b] · [b]{0}fav[/b] – enregistrer ce morceau dans les Favoris\n" +
 			"(les commandes anglaises comme [b]{0}play[/b] marchent aussi)",
 			"🐼 [b]Panda[/b]-Befehle:\n" +
@@ -140,6 +171,7 @@ public static class Strings
 			"[b]{0}entfernen[/b] <#> · [b]{0}leeren[/b] · [b]{0}komm[/b] – komm in meinen Channel · [b]{0}folgen[/b] – folge mir durch die Channels\n" +
 			"[b]{0}suchen[/b] <Song> – aus den Ergebnissen wählen · [b]{0}spulen[/b] 1:30 · [b]{0}zurück[/b] · [b]{0}springen[/b] <#> · [b]{0}verschieben[/b] <#> <#> · [b]{0}abstimmen[/b] – für das Überspringen abstimmen\n" +
 			"[b]{0}autoplay[/b] <an|aus> – ähnliche Songs weiterspielen, wenn die Warteschlange leer ist · [b]{0}fm[/b] <Sender> – Internetradio (allein: die Lieblingssender)\n" +
+			"[b]{0}eq[/b] <bass|gesang|rock…|aus> – Equalizer · [b]{0}effekt[/b] <nightcore|langsam|8d|aus> – Effekte · [b]{0}tempo[/b] <0.5–2>\n" +
 			"[b]{0}playlist[/b] <Name> – gespeicherte Playlist einreihen · [b]{0}playlists[/b] · [b]{0}fav[/b] – diesen Song in den Favoriten speichern\n" +
 			"(englische Befehle wie [b]{0}play[/b] gehen auch)"),
 	};

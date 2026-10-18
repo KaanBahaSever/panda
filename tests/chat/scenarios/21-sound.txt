@@ -1,0 +1,68 @@
+# The equalizer from the chat.
+s announce=false
+c !eq
+e Equalizer: [b]off[/b]
+c !eq bass
+e Equalizer: [b]bass[/b].
+c !eq nothing
+e There is no equalizer called
+c !eq custom
+e Set your own bands in the panel first
+# Effects; !fx alone says what's on.
+c !fx 8d
+e 8D on
+c !fx nightcore
+e [b]nightcore[/b] on.
+c !fx
+e nightcore, 8D, bass
+c !fx reverse
+e Unknown effect
+# Nightcore plays the song faster: 1.25 song seconds in a second.
+c !play test tone
+e Now playing
+w 8
+t 10 14
+c !fx nightcore
+e [b]nightcore[/b] off.
+# The speed, without the pitch; turning it on goes on where the song was.
+c !stop
+c !speed 2
+e Speed [b]×2[/b].
+c !play test tone
+w 5
+t 11 17
+c !speed 3
+e The speed goes from 0.5 to 2
+c !fx off
+e Effects off, normal speed.
+c !eq off
+e Equalizer off.
+# Turkish names work too.
+s language=tr
+c !efekt yavaş
+e [b]yavaşlatılmış[/b] açık.
+c !hız 1,5
+e Hız [b]×1.5[/b].
+c !fx kapat
+e Efektler kapalı
+s language=en
+# Crossfade: the next song (saved in the library) starts under the end of this one.
+S crossfade=6
+c !stop
+c !play test tone
+c !play test tone
+e Added to the queue (#1)
+c !seek 1:20
+w 6
+q 0
+t 1 8
+N Test Tone Song
+# Live streams keep their pace: nightcore doesn't touch a radio station (it would run out of audio).
+c !stop
+c !fx nightcore
+c !play http://127.0.0.1:8096/radio
+e Test FM
+w 5
+N Song A
+c !fx off
+e Effects off

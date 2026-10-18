@@ -116,6 +116,23 @@ public static class PanelApi
 		botAdmin.MapPost("/volume", (VolumeRequest req, BotInstance b) => Done(Run(() => b.Player.SetVolume(req.Volume))));
 		botAdmin.MapPost("/loop", (LoopRequest req, BotInstance b) => Done(Run(() => b.Player.SetLoop(req.Mode))));
 		botAdmin.MapPost("/autoplay", (AutoplayRequest req, BotInstance b) => Done(Run(() => b.Player.SetAutoplay(req.On))));
+		// Equalizer, effects, speed, crossfade: what's left out stays as it is.
+		botAdmin.MapPut("/sound", (SoundRequest req, BotInstance b) =>
+		{
+			if (req.Equalizer != null && !Sound.Equalizers.Contains(req.Equalizer)) return Problem("bad-equalizer");
+			if (req.Effect != null && !Sound.Effects.Contains(req.Effect)) return Problem("bad-effect");
+			if (req.Speed is < 0.5 or > 2 || req.Crossfade is < 0 or > Sound.MaxCrossfade || req.Bands is { Length: not 10 }) return Problem("bad-sound");
+			var now = b.Player.UpdateSound(s => s with
+			{
+				Equalizer = req.Equalizer ?? s.Equalizer,
+				Bands = req.Bands is { } bands ? Sound.Normalize(bands) : s.Bands,
+				Effect = req.Effect ?? s.Effect,
+				Speed = req.Speed is { } sp ? Math.Round(sp, 2) : s.Speed,
+				EightD = req.EightD ?? s.EightD,
+				Crossfade = req.Crossfade ?? s.Crossfade,
+			});
+			return Results.Ok(now);
+		});
 		// The name up to 0.5.
 		botAdmin.MapPost("/radio", (AutoplayRequest req, BotInstance b) => Done(Run(() => b.Player.SetAutoplay(req.On))));
 		// The song id guards against the queue having moved on since the panel showed it.
@@ -535,6 +552,7 @@ public static class PanelApi
 	public sealed record VolumeRequest(int Volume);
 	public sealed record LoopRequest(LoopMode Mode);
 	public sealed record AutoplayRequest(bool On);
+	public sealed record SoundRequest(string? Equalizer = null, double[]? Bands = null, string? Effect = null, double? Speed = null, bool? EightD = null, int? Crossfade = null);
 	public sealed record FmRequest(string? Uuid, bool Now = false);
 	public sealed record FavoriteRequest(string? Uuid = null, string? FromBot = null);
 

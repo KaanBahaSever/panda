@@ -22,6 +22,7 @@
 //   N <text>          the song playing (its title, or what the radio station says it plays) contains <text>
 //   t <min> <max>     the song playing is between <min> and <max> seconds in
 //   q <count>         the queue holds <count> songs
+//   S key=value ...   change bot 1's sound (equalizer, effect, speed, eightD, crossfade) through the panel
 // Exit code: the number of failed checks.
 using System.Globalization;
 using System.Net;
@@ -118,6 +119,7 @@ await scheduler.InvokeAsync(async () =>
 		Console.WriteLine($"\n=== {Path.GetFileName(file)}");
 		await DropListeners();
 		await panel.SetAsync(defaults);
+		await panel.SoundAsync(new() { ["equalizer"] = "off", ["effect"] = "off", ["speed"] = "1", ["eightD"] = "false", ["crossfade"] = "0" });
 		FakeYtDlp.Reset();
 		await c.SendChannelMessage("!stop");
 		await Task.Delay(1500);
@@ -176,6 +178,10 @@ await scheduler.InvokeAsync(async () =>
 					break;
 				case 'P': Console.WriteLine($"-> [panel] play {arg}"); await panel.PlayAsync(arg); await Task.Delay(1500); break;
 				case 'Y': Check(FakeYtDlp.Calls().Any(l => l.Contains(arg)), $"yt-dlp was called with \"{arg}\""); break;
+				case 'S':
+					await panel.SoundAsync(arg.Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(kv => kv.Split('=', 2)).ToDictionary(kv => kv[0], kv => kv[1]));
+					await Task.Delay(500);
+					break;
 				case 'N':
 				{
 					var now = (await panel.StateAsync())["player"]?["current"];
@@ -232,6 +238,16 @@ sealed class Panel(string url, string password)
 			else s[k] = value;
 		}
 		(await http.PutAsJsonAsync("/api/bots/1/settings", s)).EnsureSuccessStatusCode();
+	}
+
+	public async Task SoundAsync(Dictionary<string, string> values)
+	{
+		var body = new JsonObject();
+		foreach (var (k, v) in values)
+			body[k] = bool.TryParse(v, out var b) ? JsonValue.Create(b)
+				: double.TryParse(v, NumberStyles.Float, CultureInfo.InvariantCulture, out var d) ? JsonValue.Create(d)
+				: JsonValue.Create(v);
+		(await http.PutAsJsonAsync("/api/bots/1/sound", body)).EnsureSuccessStatusCode();
 	}
 
 	public async Task<JsonObject> StateAsync() =>

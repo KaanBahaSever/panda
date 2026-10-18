@@ -419,7 +419,8 @@ public sealed partial class YouTube(PandaConfig config, ILogger<YouTube> log)
 	/// <param name="teePath">Also write the downloaded bytes to this file (to save the song).</param>
 	/// <param name="teeDone">Called when the download ended; true when it completed.</param>
 	/// <param name="attempt">0 for the first try; from the third try on other YouTube clients are asked.</param>
-	public AudioStream OpenAudio(Track track, int startSeconds = 0, string? teePath = null, Action<bool>? teeDone = null, int attempt = 0)
+	/// <param name="sound">Nightcore, slowed, the speed: ffmpeg filters (null: none).</param>
+	public AudioStream OpenAudio(Track track, int startSeconds = 0, string? teePath = null, Action<bool>? teeDone = null, int attempt = 0, Sound? sound = null)
 	{
 		var yt = new ProcessStartInfo(config.YouTube.YtDlpPath)
 		{
@@ -435,7 +436,8 @@ public sealed partial class YouTube(PandaConfig config, ILogger<YouTube> log)
 			yt.ArgumentList.Add(a);
 
 		// Seeking a pipe means decoding up to that point, so -ss goes after the input here.
-		var ff = FfmpegInfo(["-i", "pipe:0", .. SeekArgs(startSeconds)], stdin: true);
+		// Here -ss cuts the output, after the filters: in heard seconds, not song seconds.
+		var ff = FfmpegInfo(["-i", "pipe:0", .. SeekArgs(startSeconds / (sound?.Rate ?? 1))], stdin: true, af: sound?.Filter);
 		// Only this one: other calls get paths that may be relative to Panda's own folder.
 		if (Directory.Exists(WorkDir.Value)) yt.WorkingDirectory = WorkDir.Value;
 		var ytProc = StartProcess(yt);
@@ -456,25 +458,25 @@ public sealed partial class YouTube(PandaConfig config, ILogger<YouTube> log)
 		: ["-protocol_whitelist", "http,https,tls,tcp,crypto,httpproxy"];
 
 	/// <summary>An audio file or an HLS stream on the web, read by ffmpeg itself (it can seek in files).</summary>
-	public AudioStream OpenUrl(Track track, int startSeconds = 0) =>
+	public AudioStream OpenUrl(Track track, int startSeconds = 0, Sound? sound = null) =>
 		new(null, StartProcess(FfmpegInfo([.. LinkInput(), "-reconnect", "1", "-reconnect_streamed", "1", "-reconnect_delay_max", "5",
-			.. SeekArgs(startSeconds), "-i", track.Url], stdin: false)), log, ffErrors: true);
+			.. SeekArgs(startSeconds), "-i", track.Url], stdin: false, af: sound?.Filter)), log, ffErrors: true);
 
 	/// <summary>
 	/// An internet radio stream (Icecast/Shoutcast), read by Panda and decoded by ffmpeg: the song titles
 	/// the station sends between the audio go to <paramref name="title"/>.
 	/// </summary>
-	public AudioStream OpenRadio(Track track, Action<string> title) =>
-		AudioStream.Radio(track.Url, StartProcess(FfmpegInfo(["-i", "pipe:0"], stdin: true)), log, title);
+	public AudioStream OpenRadio(Track track, Action<string> title, Sound? sound = null) =>
+		AudioStream.Radio(track.Url, StartProcess(FfmpegInfo(["-i", "pipe:0"], stdin: true, af: sound?.Filter)), log, title);
 
 	/// <summary>Plays a saved song; seeking in a file is instant.</summary>
 	/// <param name="gainDb">Loudness correction for this song, if it was measured.</param>
-	public AudioStream OpenFile(string path, int startSeconds = 0, double? gainDb = null) =>
-		new(null, StartProcess(FfmpegInfo([.. SeekArgs(startSeconds), "-i", path], stdin: false, gainDb)), log);
+	public AudioStream OpenFile(string path, int startSeconds = 0, double? gainDb = null, Sound? sound = null) =>
+		new(null, StartProcess(FfmpegInfo([.. SeekArgs(startSeconds), "-i", path], stdin: false, gainDb, sound?.Filter)), log);
 
-	static string[] SeekArgs(int seconds) => seconds > 0 ? ["-ss", seconds.ToString()] : [];
+	static string[] SeekArgs(double seconds) => seconds > 0 ? ["-ss", seconds.ToString("0.###", CultureInfo.InvariantCulture)] : [];
 
-	ProcessStartInfo FfmpegInfo(string[] input, bool stdin, double? gainDb = null)
+	ProcessStartInfo FfmpegInfo(string[] input, bool stdin, double? gainDb = null, string? af = null)
 	{
 		var ff = new ProcessStartInfo(config.YouTube.FfmpegPath)
 		{
@@ -483,7 +485,10 @@ public sealed partial class YouTube(PandaConfig config, ILogger<YouTube> log)
 			RedirectStandardError = true,
 			UseShellExecute = false,
 		};
-		string[] filter = gainDb is { } g && Math.Abs(g) >= 0.1 ? ["-af", $"volume={g.ToString("0.0", CultureInfo.InvariantCulture)}dB"] : [];
+		var filters = new List<string>();
+		if (gainDb is { } g && Math.Abs(g) >= 0.1) filters.Add($"volume={g.ToString("0.0", CultureInfo.InvariantCulture)}dB");
+		if (af is { Length: > 0 }) filters.Add(af);
+		string[] filter = filters.Count > 0 ? ["-af", string.Join(',', filters)] : [];
 		foreach (var a in (string[])["-hide_banner", "-loglevel", "error", .. input, "-vn", .. filter, "-f", "s16le", "-ar", "48000", "-ac", "2", "pipe:1"])
 			ff.ArgumentList.Add(a);
 		return ff;

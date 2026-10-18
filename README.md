@@ -44,6 +44,10 @@ Panda talks to the server directly, so it stays light: the bot itself uses about
 - ⏭️ **SponsorBlock** — skips the parts of a video that aren't music (talk before the song, ads), if you
   turn it on.
 - 🔊 **Equal loudness** — saved songs are measured once and play equally loud.
+- 🎛️ **Equalizer and effects** — presets (bass, vocal, rock, classical…) or your own ten bands,
+  **nightcore**, **slowed**, **8D**, the **speed** (without changing the pitch) and a **crossfade** between
+  songs. Per bot, from the 🎛️ button or the chat (`!eq`, `!fx`, `!speed`); everything is off until you
+  turn it on.
 - 📃 **Playlists & favorites** — save the queue or single songs into playlists, play them with
   `!playlist <name>`, star a song with `!fav`.
 - 🤖 **Several bots, one panel** — each bot has its own server, channel, queue and settings; they share
@@ -105,6 +109,17 @@ station plays adds it.
 streams or videos under a minute out of searches, audio quality (best, or about 70 kbps to save data),
 SponsorBlock and which parts it skips, the tries when YouTube refuses a song, and autoplay (how many
 recent songs it won't repeat, whether the same artist may come again).
+
+## Sound: equalizer, effects, crossfade
+
+The 🎛️ button next to the volume (admins) opens the sound settings of the bot:
+
+- **Equalizer**: a preset or your own ten bands (32 Hz – 16 kHz, ±12 dB). Heard at once.
+- **Effects**: nightcore (faster and higher), slowed (slower and lower), 8D (the sound circles around
+  your head) and the speed (0.5–2×, the tempo changes, not the pitch). A new speed starts the song again
+  where it was; the seek bar keeps showing the song's own time.
+- **Crossfade** (0–12 s): the end of a song plays under the start of the next one. It only happens into
+  songs saved in the library, because they start at once.
 
 ## Statistics and the System screen
 
@@ -184,6 +199,9 @@ Write them in the bot's channel or in a private message to the bot.
 | `!follow` | `!takip` | `!suivre` | `!folgen` | Follow me between channels (again to stop) |
 | `!autoplay <on\|off>` | `!otomatik <aç\|kapat>` | `!auto <oui\|non>` | `!autoplay <an\|aus>` | Keep playing similar songs when the queue ends |
 | `!fm <name or #>` | `!fm` / `!istasyon` | `!fm` / `!station` | `!fm` / `!sender` | Play an internet radio station; alone: the favorite stations |
+| `!eq <name\|off>` | `!eq <bas\|vokal…\|kapat>` | `!eq <basses\|voix…\|non>` | `!eq <bass\|gesang…\|aus>` | Equalizer: bass, treble, vocal, pop, rock, classical, electronic, jazz |
+| `!fx <nightcore\|slowed\|8d\|off>` | `!efekt <nightcore\|yavaş\|8d\|kapat>` | `!effet <nightcore\|ralenti\|8d\|non>` | `!effekt <nightcore\|langsam\|8d\|aus>` | Effects (again turns one off) |
+| `!speed <0.5–2>` | `!hız` | `!vitesse` | `!tempo` | Playback speed, same pitch |
 | `!playlist <name>` / `!pl` | `!liste <ad>` | `!playlist` | `!playlist` | Queue a saved playlist |
 | `!playlists` | `!listeler` | `!playlists` | `!playlists` | List saved playlists |
 | `!fav` | `!fav` | `!fav` | `!fav` | Save the song playing to Favorites |
@@ -258,6 +276,8 @@ Everything is editable in the panel; the file is `/var/lib/panda/config.json` (o
       "bot": {
         "nickname": "Panda 🐼", "commandPrefix": "!", "language": "en",   // chat replies: "en", "tr", "fr" or "de"
         "volume": 50, "showSongInDescription": true, "autoplay": false,
+        "equalizer": "off", "equalizerBands": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],   // "custom" uses the bands (dB)
+        "effect": "off", "speed": 1, "eightD": false, "crossfade": 0,          // effect: "nightcore" or "slowed"
         "announce": true,          // post every song in the channel as it starts
         "confirmCommands": true,   // short replies to !play, !skip…; questions and errors are always answered
         "maxQueueLength": 100,
@@ -311,7 +331,8 @@ Revoking the key in the panel stops it at once, including open live streams.
 A few of the calls: `GET /api/bots/{bot}/state` (what plays, the queue), `POST /api/bots/{bot}/play`
 `{"query": "name or link"}` (for an album or playlist the answer also says how many `more` songs come),
 `POST /api/bots/{bot}/fm` `{"uuid": "<Radio Browser station id>"}`, `GET /api/radio/search?name=&country=&tag=`,
-`POST /api/bots/{bot}/autoplay` `{"on": true}`.
+`POST /api/bots/{bot}/autoplay` `{"on": true}`, `PUT /api/bots/{bot}/sound` `{"equalizer": "bass", "effect": "nightcore",
+"speed": 1.25, "eightD": true, "crossfade": 5}` (what's left out stays).
 
 ## Building
 

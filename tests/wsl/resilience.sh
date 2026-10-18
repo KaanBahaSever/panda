@@ -59,7 +59,11 @@ sleep 8
 check "plays with a read-only library" "$(playing)" yes
 chmod 755 $T/data/library
 
-echo "== 4. long run: ${SOAK_MIN:-30} min"
+echo "== 4. long run: ${SOAK_MIN:-30} min, with the equalizer, 8D and crossfade on"
+# The songs are saved after their first play, so later rounds crossfade from file to file.
+check "sound settings" "$(api -X PUT -d '{"equalizer":"rock","eightD":true,"crossfade":4}' $P/api/bots/1/sound -o /dev/null -w '%{http_code}')" 200
+TICKS=$(getconf CLK_TCK)
+cpu() { awk '{print $14 + $15}' /proc/$PID/stat; }
 sample() {
 	local rss threads fds kids
 	rss=$(awk '/VmRSS/ {print $2}' /proc/$PID/status)
@@ -68,7 +72,7 @@ sample() {
 	kids=$(pgrep -P $PID | wc -l)
 	echo "$rss $threads $fds $kids"
 }
-first=""; samples=()
+first=""; samples=(); cpu0=$(cpu); t0=$(date +%s)
 for m in $(seq 0 "${SOAK_MIN:-30}"); do
 	s=$(sample); samples+=("$s")
 	[ -n "$first" ] || first=$s
@@ -84,6 +88,11 @@ check "open files steady" "$(( f2 - f1 <= 10 ))" 1
 check "child processes steady (yt-dlp/ffmpeg are not left behind)" "$(( k2 <= 4 ))" 1
 check "still playing" "$(playing)" yes
 check "played songs in the history" "$(( $(wc -l < $T/data/bots/1/history.jsonl) > 10 ))" 1
+# Panda's own CPU (not ffmpeg's) over the run, in % of one core.
+CPU=$(( ($(cpu) - cpu0) * 100 / TICKS / ($(date +%s) - t0) ))
+echo "   Panda used $CPU % of one core on average"
+check "CPU under 25 % of one core with the equalizer and 8D" "$(( CPU < 25 ))" 1
+check "crossfades happened" "$(( $(grep -c 'Crossfading from' $T/log.txt) > 0 ))" 1
 
 echo; echo "--- crashes or errors in Panda's log:"
 grep -E " (fail|crit): |Unhandled|Exception" "$T/log.txt" | grep -v "Could not play\|did not start\|broke off" | head -10 || echo "(none)"

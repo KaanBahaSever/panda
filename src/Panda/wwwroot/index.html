@@ -54,6 +54,7 @@
     <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.3 5.9.9-4.2 4.1 1 5.8-5.3-2.8-5.3 2.8 1-5.8-4.2-4.1 5.9-.9z"/></symbol>
     <symbol id="i-pencil" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></symbol>
     <symbol id="i-radio" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><path d="M16.2 7.8a6 6 0 0 1 0 8.4M7.8 16.2a6 6 0 0 1 0-8.4M19.1 4.9a10 10 0 0 1 0 14.2M4.9 19.1a10 10 0 0 1 0-14.2"/></symbol>
+    <symbol id="i-eq" viewBox="0 0 24 24"><path d="M6 4v16M12 4v16M18 4v16"/><path d="M4 15h4M10 8h4M16 13h4"/></symbol>
     <symbol id="i-auto" viewBox="0 0 24 24"><path d="M12 12c-2-2.7-3.6-4.5-6-4.5a4.5 4.5 0 0 0 0 9c2.4 0 4-1.8 6-4.5zm0 0c2 2.7 3.6 4.5 6 4.5a4.5 4.5 0 0 0 0-9c-2.4 0-4 1.8-6 4.5z"/></symbol>
     <symbol id="i-chart" viewBox="0 0 24 24"><path d="M5 20V11M11 20V5M17 20v-6M2 20h20"/></symbol>
     <symbol id="i-pulse" viewBox="0 0 24 24"><path d="M2 12h4l3-8 5 16 3-8h5"/></symbol>
@@ -150,6 +151,7 @@
         <button id="btn-mute" class="icon-btn" type="button" data-i18n-aria="mute"><svg class="ic"><use href="#i-vol"/></svg></button>
         <input id="vol" class="range" type="range" min="0" max="100" step="1" value="50" data-i18n-aria="volume">
         <output id="vol-val" class="vol-val">50</output>
+        <button id="open-sound" class="icon-btn" type="button" data-i18n-aria="soundTitle"><svg class="ic"><use href="#i-eq"/></svg></button>
       </div>
     </section>
 
@@ -463,6 +465,36 @@
       <span>Panda <span id="version"></span></span>
       <a href="https://github.com/KaanBahaSever/panda" target="_blank" rel="noopener noreferrer">GitHub <svg class="ic sm"><use href="#i-ext"/></svg></a>
     </footer>
+  </div>
+</dialog>
+
+<!-- ============ Sound: equalizer, effects, speed, crossfade (admins) ============ -->
+<dialog id="sound" class="sheet" aria-labelledby="sound-title">
+  <div class="sheet-head">
+    <h2 id="sound-title">🎛️ <span data-i18n="soundTitle">Sound</span> <span id="sound-bot" class="muted sum"></span></h2>
+    <button class="icon-btn" type="button" data-close data-i18n-aria="close"><svg class="ic"><use href="#i-x"/></svg></button>
+  </div>
+  <div class="sheet-body">
+    <section class="group">
+      <h3 class="legend">🎚️ <span data-i18n="sEq">Equalizer</span></h3>
+      <label class="field"><span data-i18n="sEqPreset">Setting</span><select id="eq-preset"></select></label>
+      <div id="eq-bands" class="eq-bands"></div>
+      <p class="hint" data-i18n="sEqHint"></p>
+    </section>
+    <section class="group">
+      <h3 class="legend">✨ <span data-i18n="sFx">Effects</span></h3>
+      <div id="fx-seg" class="tabs fx-seg" role="radiogroup"></div>
+      <label class="switch"><input id="fx-8d" type="checkbox"><span class="track" aria-hidden="true"></span><span data-i18n="fx8d">8D: the sound circles around your head</span></label>
+      <label class="field"><span data-i18n="sSpeed">Speed</span>
+        <span class="slide-row"><input id="speed" class="range" type="range" min="0.5" max="2" step="0.05"><output id="speed-val" class="vol-val"></output>
+          <button id="speed-reset" class="btn ghost sm" type="button">1×</button></span></label>
+      <p class="hint" data-i18n="sFxHint"></p>
+    </section>
+    <section class="group">
+      <h3 class="legend">🔀 <span data-i18n="sCrossfade">Crossfade</span></h3>
+      <span class="slide-row"><input id="crossfade" class="range" type="range" min="0" max="12" step="1" data-i18n-aria="sCrossfade"><output id="crossfade-val" class="vol-val"></output></span>
+      <p class="hint" data-i18n="sCrossfadeHint"></p>
+    </section>
   </div>
 </dialog>
 

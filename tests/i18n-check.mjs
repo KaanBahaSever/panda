@@ -45,8 +45,11 @@ if (fields !== chat.length) problems.push(`Strings.cs has ${fields} texts per st
 const defined = new Set([...strings.matchAll(/\["([a-z0-9-]+)"\] = \(/g)].map(m => m[1]));
 for (const file of readdirSync(src).filter(f => f.endsWith('.cs'))) {
   const code = readFileSync(join(src, file), 'utf8');
-  for (const m of code.matchAll(/Strings\.Get\([^,()]+,\s*"([a-z0-9-]+)"/g))
-    if (!defined.has(m[1])) problems.push(`chat: ${file} uses "${m[1]}", which Strings.cs doesn't have`);
+  for (const m of code.matchAll(/Strings\.Get\([^,()]+,\s*"([a-z0-9-]+)"/g)) {
+    // "eqn-" + name: some key has to start with it.
+    const ok = m[1].endsWith('-') ? [...defined].some(k => k.startsWith(m[1])) : defined.has(m[1]);
+    if (!ok) problems.push(`chat: ${file} uses "${m[1]}", which Strings.cs doesn't have`);
+  }
 }
 
 if (problems.length) {

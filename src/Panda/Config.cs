@@ -449,6 +449,21 @@ public sealed class BotSettings
 	public bool VoteSkip { get; set; }
 	/// <summary>When the queue runs out, keep playing songs like the last one (YouTube's Mix).</summary>
 	public bool Autoplay { get; set; }
+	// ---- how it sounds (see Sound) ----
+	/// <summary>"off", a preset (bass, treble, vocal, pop, rock, classical, electronic, jazz) or "custom".</summary>
+	public string Equalizer { get; set; } = "off";
+	/// <summary>The custom equalizer's ten gains in dB (32 Hz … 16 kHz).</summary>
+	public List<double> EqualizerBands { get; set; } = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+	/// <summary>"off", "nightcore" (faster and higher) or "slowed" (slower and lower).</summary>
+	public string Effect { get; set; } = "off";
+	/// <summary>Playback speed without changing the pitch, 0.5–2.</summary>
+	public double Speed { get; set; } = 1;
+	/// <summary>The sound slowly circles between the ears.</summary>
+	public bool EightD { get; set; }
+	/// <summary>Seconds the end of a song and the start of the next overlap; 0 = off.</summary>
+	public int Crossfade { get; set; }
+	/// <summary>The Panda version (minor) whose settings these are, for one-time changes on update.</summary>
+	public int SettingsVersion { get; set; }
 	/// <summary>Autoplay up to 0.5, when it was called radio; Load moves it.</summary>
 	[JsonPropertyName("radio"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
 	public bool? OldRadio { get; set; }
