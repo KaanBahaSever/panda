@@ -608,7 +608,7 @@ public sealed class SettingsDto
 	public IReadOnlyDictionary<string, string>? RecommendedLevels { get; set; }
 	public string OthersSongs { get; set; } = "everyone";
 	public bool OnlyFromChannel { get; set; }
-	public List<ScheduleEntry> Schedule { get; set; } = [];
+	public List<ScheduleEntry>? Schedule { get; set; }
 	/// <summary>The server's time, for the schedule (it runs on it); ignored when saving.</summary>
 	public string? ServerTime { get; set; }
 	public int MaxQueueLength { get; set; }
@@ -619,7 +619,7 @@ public sealed class SettingsDto
 	public int LibraryMaxSizeMb { get; set; }
 	public bool NormalizeVolume { get; set; }
 	/// <summary>The loudness songs are brought to: -18 (natural), -14 (standard), -11 (loud).</summary>
-	public double TargetLufs { get; set; } = -14;
+	public double? TargetLufs { get; set; }
 	public bool HasCookies { get; set; }
 	/// <summary>Shared by all bots: where songs may come from (see <see cref="SourcesSettings"/>).</summary>
 	public SourcesDto? Sources { get; set; }
@@ -742,7 +742,8 @@ public sealed class SettingsDto
 			.Where(kv => ChatPermissions.Commands.Contains(kv.Key) && ChatPermissions.IsLevel(kv.Value) && kv.Value != "everyone")
 			.ToDictionary(kv => kv.Key, kv => kv.Value);
 		b.Bot.OnlyFromChannel = OnlyFromChannel;
-		b.Bot.Schedule = (Schedule ?? []).Where(e => e is { IsValid: true }).Take(50)
+		// Left out (a script, an older panel): the schedule stays.
+		if (Schedule != null) b.Bot.Schedule = Schedule.Where(e => e is { IsValid: true }).Take(50)
 			.Select(e => e with { Days = (e.Days ?? []).Distinct().Order().ToList(), Target = e.Action == "stop" ? "" : e.Target.Trim() }).ToList();
 		if (ChatPermissions.IsLevel(OthersSongs)) b.Bot.OthersSongs = OthersSongs;
 		if (MaxQueueLength is >= 1 and <= 1000) b.Bot.MaxQueueLength = MaxQueueLength;
@@ -752,7 +753,7 @@ public sealed class SettingsDto
 		c.Library.Enabled = LibraryEnabled;
 		if (LibraryMaxSizeMb is 0 or (>= 100 and <= 1_000_000)) c.Library.MaxSizeMb = LibraryMaxSizeMb;
 		c.Audio.Normalize = NormalizeVolume;
-		if (TargetLufs is >= -24 and <= -9) c.Audio.TargetLufs = Math.Round(TargetLufs);
+		if (TargetLufs is >= -24 and <= -9) c.Audio.TargetLufs = Math.Round(TargetLufs.Value);
 		// Left out (an older panel, a script): kept as they are.
 		if (Sources is { } s)
 		{

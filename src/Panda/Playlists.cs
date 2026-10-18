@@ -26,6 +26,8 @@ public sealed record Playlist(string Name, IReadOnlyList<PlaylistSong> Songs, Da
 public sealed class Playlists
 {
 	public const int MaxSongs = 500;
+	/// <summary>Own lists (!myfav): one per TeamSpeak identity, and identities are free to make.</summary>
+	public const int MaxOwnLists = 300;
 
 	readonly string path;
 	readonly ILogger<Playlists> log;
@@ -68,15 +70,36 @@ public sealed class Playlists
 		if (n.Length == 0) return null;
 		lock (gate)
 		{
+			if (lists.FirstOrDefault(p => p.Name.Equals(name.Trim(), StringComparison.OrdinalIgnoreCase)) is { } exact) return exact;
+			// Someone's own list ("★ Kaan") is only found by its whole name, so it never stands in for a shared one.
 			string Key(Playlist p) => Library.Normalize(p.Name).Trim();
-			return lists.FirstOrDefault(p => Key(p) == n)
-				?? lists.FirstOrDefault(p => Key(p).StartsWith(n))
-				?? lists.FirstOrDefault(p => Key(p).Contains(n));
+			var shared = lists.Where(p => p.Owner is null).ToList();
+			return shared.FirstOrDefault(p => Key(p) == n)
+				?? shared.FirstOrDefault(p => Key(p).StartsWith(n))
+				?? shared.FirstOrDefault(p => Key(p).Contains(n));
 		}
 	}
 
+	/// <summary>The list with exactly this name (case aside), or null: for the schedule.</summary>
+	public Playlist? Exact(string name)
+	{
+		lock (gate) return lists.FirstOrDefault(p => p.Name.Equals(name.Trim(), StringComparison.OrdinalIgnoreCase));
+	}
+
+	/// <summary>Adds a song to the list if it still exists (a list being imported may be deleted or renamed meanwhile).</summary>
+	public bool AddIfExists(string name, PlaylistSong song, out int left)
+	{
+		left = 0;
+		lock (gate)
+			if (!lists.Any(p => p.Name.Equals(name, StringComparison.OrdinalIgnoreCase))) return false;
+		Save(name, [song], out left);
+		return true;
+	}
+
+	// The same name exactly, else the same letters; a shared name never matches someone's own list by letters.
 	Playlist? ExactLocked(string name) =>
-		lists.FirstOrDefault(p => Library.Normalize(p.Name).Trim() == Library.Normalize(name).Trim());
+		lists.FirstOrDefault(p => p.Name.Equals(name.Trim(), StringComparison.OrdinalIgnoreCase))
+		?? lists.FirstOrDefault(p => p.Owner is null && Library.Normalize(p.Name).Trim() == Library.Normalize(name).Trim());
 
 	/// <summary>Creates a list, or adds the songs to the list with that name. Returns the list.</summary>
 	public Playlist Save(string name, IEnumerable<PlaylistSong> songs) => Save(name, songs, out _);
@@ -110,12 +133,14 @@ public sealed class Playlists
 
 	/// <summary>Adds songs to a person's own list ("★ nickname", made on first use). <paramref name="left"/>
 	/// counts the songs that didn't fit.</summary>
-	public Playlist SaveOwn(string uid, string nickname, IEnumerable<PlaylistSong> songs, out int left)
+	public Playlist? SaveOwn(string uid, string nickname, IEnumerable<PlaylistSong> songs, out int left)
 	{
 		string name;
+		left = 0;
 		lock (gate)
 		{
 			if (lists.FirstOrDefault(p => p.Owner == uid) is { } own) name = own.Name;
+			else if (lists.Count(p => p.Owner != null) >= MaxOwnLists) return null;
 			else
 			{
 				// A name of its own: "★ Kaan", "★ Kaan 2"... (the nickname may have no letters: "★ list").
@@ -123,7 +148,7 @@ public sealed class Playlists
 				if (Library.Normalize(nick).Trim().Length == 0) nick = "list";
 				if (nick.Length > 30) nick = nick[..30];
 				name = "★ " + nick;
-				for (var i = 2; ExactLocked(name) != null; i++) name = $"★ {nick} {i}";
+				for (var i = 2; lists.Any(p => Library.Normalize(p.Name).Trim() == Library.Normalize(name).Trim()); i++) name = $"★ {nick} {i}";
 				lists = [.. lists, new Playlist(name, [], DateTimeOffset.UtcNow) { Owner = uid }];
 			}
 		}

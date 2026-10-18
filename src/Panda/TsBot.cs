@@ -741,9 +741,11 @@ public sealed class TsBot : BackgroundService
 		var others = !MayChangeOthers(level);
 		// Commands that cut the song playing short, or throw away queued songs, of someone else.
 		// (!skipto checks its number first: a wrong number is answered as one.)
-		if (others && command is "playnow" or "back" or "stop" && player.Current is { } playing && !Own(playing, msg))
+		// A sleep timer stops the bot later: the same as !stop.
+		var stopping = command == "stop" || (command == "sleep" && arg.Length > 0 && Switch(arg) != false);
+		if (others && (command is "playnow" or "back" || stopping) && player.Current is { } playing && !Own(playing, msg))
 			return OthersRefusal();
-		if (others && command is "stop" or "clear" or "shuffle" && player.GetState().Queue.Any(t => !Own(t, msg)))
+		if (others && (command is "clear" or "shuffle" || stopping) && player.GetState().Queue.Any(t => !Own(t, msg)))
 			return OthersRefusal(cutsSong: false);
 		if (others && command == "skipto" && int.TryParse(arg, out var upTo) && player.GetState().Queue is var q && upTo >= 1 && upTo <= q.Count
 			&& q.Take(upTo - 1).Any(t => !Own(t, msg)))
@@ -992,7 +994,8 @@ public sealed class TsBot : BackgroundService
 			{
 				if (player.Current is not { } now) return Strings.Get(Lang, "nothing-playing");
 				if (now.IsLive) return Strings.Get(Lang, "myfav-live", Prefix);
-				var list = playlists.SaveOwn(me, who, [PlaylistSong.From(now)], out var left);
+				if (playlists.SaveOwn(me, who, [PlaylistSong.From(now)], out var left) is not { } list)
+					return Strings.Get(Lang, "myfav-too-many");
 				if (left > 0) return Strings.Get(Lang, "playlist-full", Escape(list.Name), Playlists.MaxSongs);
 				return Confirm(Strings.Get(Lang, "myfav-added", Link(now), list.Songs.Count));
 			}
@@ -1015,9 +1018,9 @@ public sealed class TsBot : BackgroundService
 			case "remove" or "sil" or "retirer" or "entfernen":
 			{
 				if (own is null || words.Length < 2 || !int.TryParse(words[1], out var n) || n < 1 || n > own.Songs.Count)
-					return Strings.Get(Lang, "bad-index", Escape(words.ElementAtOrDefault(1) ?? ""));
+					return Strings.Get(Lang, "myfav-bad", Escape(words.ElementAtOrDefault(1) ?? ""));
 				var song = own.Songs[n - 1];
-				playlists.RemoveSong(own.Name, n - 1, song.Id);
+				if (!playlists.RemoveSong(own.Name, n - 1, song.Id)) return Strings.Get(Lang, "myfav-bad", n);
 				return Confirm(Strings.Get(Lang, "myfav-removed", Escape(song.Title)));
 			}
 			default:

@@ -8,7 +8,7 @@ RUN dotnet publish src/Panda/Panda.csproj -c Release -o /app -p:DebugType=none -
 FROM mcr.microsoft.com/dotnet/aspnet:8.0-bookworm-slim
 ARG TARGETARCH
 RUN apt-get update \
-	&& apt-get install -y --no-install-recommends ffmpeg curl unzip ca-certificates \
+	&& apt-get install -y --no-install-recommends ffmpeg curl unzip ca-certificates tzdata \
 	&& rm -rf /var/lib/apt/lists/* \
 	&& case "$TARGETARCH" in \
 		arm64) YTDLP=yt-dlp_linux_aarch64; DENO=deno-aarch64-unknown-linux-gnu.zip ;; \

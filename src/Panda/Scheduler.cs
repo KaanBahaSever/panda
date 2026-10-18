@@ -23,6 +23,9 @@ public sealed class Scheduler(BotManager bots, Playlists playlists, RadioBrowser
 	// What already ran today (bot, entry), so a minute that is looked at twice runs once.
 	readonly HashSet<string> done = [];
 	DateOnly today;
+	DateTime lastTick = DateTime.Now;
+	// A tick that came late (a pause, a slow radio lookup, the clock jumping) still runs what it passed; not older.
+	static readonly TimeSpan CatchUp = TimeSpan.FromMinutes(5);
 
 	protected override async Task ExecuteAsync(CancellationToken stop)
 	{
@@ -38,21 +41,25 @@ public sealed class Scheduler(BotManager bots, Playlists playlists, RadioBrowser
 	async Task TickAsync(DateTime now, CancellationToken ct)
 	{
 		var date = DateOnly.FromDateTime(now);
-		if (date != today) { today = date; done.Clear(); }
-		var minute = now.ToString("HH:mm");
+		if (date != today) { today = date; done.RemoveWhere(k => !k.StartsWith(date.ToString("yyyy-MM-dd"))); }
+		var from = now - lastTick > CatchUp || lastTick > now ? now.AddSeconds(-11) : lastTick;
+		lastTick = now;
 		foreach (var b in bots.All)
 		{
-			if (b.Player.SleepAt is { } sleep && sleep <= now)
+			if (b.Player.TryFireSleep(now))
+				log.LogInformation("Sleep timer: stopped bot {Bot}", b.Id);
+			foreach (var e in b.Config.Bot.Schedule.ToArray())
 			{
-				log.LogInformation("Sleep timer: stopping bot {Bot}", b.Id);
-				b.Player.SetSleep(null);
-				b.Player.Stop();
-			}
-			foreach (var (e, i) in b.Config.Bot.Schedule.Select((e, i) => (e, i)))
-			{
-				if (!e.Enabled || e.Time != minute || (e.Days is { Count: > 0 } days && !days.Contains((int)now.DayOfWeek))) continue;
-				if (!done.Add($"{b.Id}/{i}/{e.Time}/{e.Action}/{e.Target}")) continue;
-				await RunAsync(b, e, ct);
+				if (!e.Enabled || !TimeOnly.TryParseExact(e.Time, "HH:mm", out var time)) continue;
+				// Today's time, or yesterday's for a tick just after midnight.
+				foreach (var day in new[] { date, date.AddDays(-1) })
+				{
+					var at = day.ToDateTime(time);
+					if (at <= from || at > now || (e.Days is { Count: > 0 } days && !days.Contains((int)at.DayOfWeek))) continue;
+					// Once per day and entry (by what it is, not its place in the list).
+					if (!done.Add($"{day:yyyy-MM-dd}/{b.Id}/{e.Time}/{e.Action}/{e.Target}/{e.Shuffle}")) continue;
+					await RunAsync(b, e, ct);
+				}
 			}
 		}
 	}
@@ -67,7 +74,7 @@ public sealed class Scheduler(BotManager bots, Playlists playlists, RadioBrowser
 			b.Player.Stop();
 			break;
 		case "playlist":
-			if (playlists.Find(e.Target) is not { Songs.Count: > 0 } list)
+			if (playlists.Exact(e.Target) is not { Songs.Count: > 0 } list)
 			{
 				log.LogWarning("Schedule: there is no playlist called {Name}", e.Target);
 				return;
@@ -79,7 +86,7 @@ public sealed class Scheduler(BotManager bots, Playlists playlists, RadioBrowser
 			break;
 		case "station":
 			Station? station = favorites.All().FirstOrDefault(s => s.Uuid == e.Target);
-			if (station is null)
+			if (station is null && !e.Target.StartsWith("link-") && e.Target.Length <= 64)
 			{
 				try { station = await radios.FindAsync(e.Target, ct); }
 				catch (RadioException ex) { log.LogWarning("Schedule: the radio list didn't answer: {Error}", ex.Message); }

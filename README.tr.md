@@ -45,7 +45,10 @@ programı yok: Panda sunucuyla doğrudan konuşur, bu yüzden hafiftir (bot ~130
   **yumuşak geçiş (crossfade)**. Bot başına, 🎛️ düğmesinden ya da sohbetten (`!eq`, `!efekt`, `!hız`);
   sen açana kadar hepsi kapalı.
 - 📃 **Çalma listeleri ve favoriler** — sırayı ya da tek tek şarkıları listelere kaydet, `!liste <ad>`
-  ile çal, `!fav` ile çalan şarkıyı favorilere ekle.
+  ile çal, `!fav` ile çalan şarkıyı favorilere ekle. Herkesin bir de **kendi listesi** var (`!myfav`);
+  YouTube, Spotify ya da Deezer listeleri panelden **aktarılabilir**.
+- ⏰ **Zamanlayıcı** — belli saatlerde ve günlerde bir liste ya da radyo çal, ya da dur (Ayarlar →
+  Zamanlayıcı); `!uyku 30` 30 dakika sonra durdurur.
 - 🤖 **Tek panelden birden fazla bot** — her botun kendi sunucusu, kanalı, sırası ve ayarları olur;
   şarkı kütüphanesi ortaktır.
 - 🐼 **TeamSpeak 6 için yapıldı** (TS3 sunucularında da çalışır).
@@ -117,6 +120,17 @@ Ses düzeyinin yanındaki 🎛️ düğmesi (yöneticiler) botun ses ayarların�
   yeniden başlatır; ilerleme çubuğu şarkının kendi süresini göstermeye devam eder.
 - **Yumuşak geçiş (crossfade)** (0–12 sn): şarkının sonu bir sonrakinin başıyla üst üste çalar. Sadece
   kütüphanede kayıtlı şarkılara geçerken olur, çünkü onlar hemen başlar.
+
+## Listeler ve zamanlayıcı
+
+- **Kendi listen**: `!myfav` çalan şarkıyı kendi listene kaydeder (her TeamSpeak kimliğine bir liste,
+  panelde "★ adın" olarak görünür); `!myfav çal` sıraya ekler, `!myfav karıştır` karışık, `!myfav liste`,
+  `!myfav sil 3`.
+- **Aktarma**: Çalma listeleri → *Liste aktar*, bir YouTube listesini (hemen kaydedilir) ya da Spotify/Deezer
+  albüm ve listesini (her şarkı YouTube'da aranıp bulundukça eklenir) alır.
+- **Zamanlayıcı** (Ayarlar → Zamanlayıcı): belli bir saatte, seçilen günlerde bot kayıtlı bir listeyi
+  (istersen karışık) ya da favori bir radyoyu çalar veya durur. Saatler sunucunun saati; panel gösterir.
+- **Uyku zamanlayıcısı**: `!uyku 30`, `!uyku 02:00`, `!uyku kapat`.
 
 ## İstatistikler ve Sistem ekranı
 
@@ -206,6 +220,8 @@ Botun kanalına ya da bota özel mesaj olarak yaz. İngilizce karşılıkları d
 | `!eq <bas\|vokal…\|kapat>` | `!eq <bass\|vocal…\|off>` | `!eq <basses\|voix…\|non>` | `!eq <bass\|gesang…\|aus>` | Ekolayzer: bas, tiz, vokal, pop, rock, klasik, elektronik, caz |
 | `!efekt <nightcore\|yavaş\|8d\|kapat>` | `!fx` | `!effet` | `!effekt` | Efektler (tekrar yazınca kapanır) |
 | `!hız <0.5–2>` | `!speed` | `!vitesse` | `!tempo` | Çalma hızı, ses inceliği aynı |
+| `!favorim` / `!myfav çal\|karıştır\|liste\|sil <#>` | `!myfav` / `play`, `shuffle`, `list`, `remove` | `!mesfavoris` | `!meinefavs` | Kendi listen: çalan şarkıyı kaydet, çal, göster |
+| `!uyku <dakika\|SS:dd\|kapat>` | `!sleep` | `!dormir` | `!schlafen` | Sonra durdur (uyku zamanlayıcısı) |
 | `!liste <ad>` | `!playlist` / `!pl` | `!playlist` | `!playlist` | Kayıtlı bir listeyi sıraya ekle |
 | `!listeler` | `!playlists` | `!playlists` | `!playlists` | Kayıtlı listeleri göster |
 | `!fav` | `!fav` | `!fav` | `!fav` | Çalan şarkıyı Favoriler'e kaydet |

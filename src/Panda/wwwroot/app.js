@@ -1326,11 +1326,13 @@ let schStations = [];    // favorite stations to choose from
 const DAY_ORDER = [1, 2, 3, 4, 5, 6, 0];   // Monday first
 const dayName = d => new Date(2024, 0, 7 + d).toLocaleDateString(lang, { weekday: 'short' });   // 2024-01-07 was a Sunday
 
+let schedFor = null;      // the settings the edited schedule came from
 function fillSchedule(s) {
-  sched = (s.schedule || []).map(e => ({ ...e, days: [...(e.days || [])] }));
+  // The same settings shown again (a language switch): unsaved changes stay.
+  if (s !== schedFor) { sched = (s.schedule || []).map(e => ({ ...e, days: [...(e.days || [])] })); schedFor = s; }
   $('sch-hint').textContent = t('sScheduleHint', s.serverTime || '');
-  if (!$('sch-days').children.length)
-    $('sch-days').replaceChildren(...DAY_ORDER.map(d => el('label', { class: 'check' }, el('input', { type: 'checkbox', value: d, checked: true }), el('span', { text: dayName(d) }))));
+  const ticked = $('sch-days').children.length ? new Set([...$('sch-days').querySelectorAll('input:checked')].map(x => +x.value)) : new Set(DAY_ORDER);
+  $('sch-days').replaceChildren(...DAY_ORDER.map(d => el('label', { class: 'check' }, el('input', { type: 'checkbox', value: d, checked: ticked.has(d) }), el('span', { text: dayName(d) }))));
   api('GET', '/api/radio/favorites').then(r => { schStations = r; schTargets(); }).catch(() => {});
   schTargets();
   renderSchedule();
@@ -1609,7 +1611,7 @@ const saveToPlaylist = (name, body) => act(() => api('POST', '/api/playlists', {
 // A playlist from YouTube, Spotify or Deezer into a saved list (its own name, unless one is given).
 $('pl-import').addEventListener('click', async e => {
   const btn = e.currentTarget;
-  const url = await promptBox(t('plImportUrl'), { type: 'url' });
+  const url = await promptBox(t('plImportUrl'), { type: 'text' });
   if (!url?.trim()) return;
   const name = await promptBox(t('plImportName'), { type: 'text' });
   if (name == null) return;

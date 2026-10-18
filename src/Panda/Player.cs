@@ -141,8 +141,21 @@ public sealed class Player : IDisposable
 	public int Volume => volume;
 
 	/// <summary>The sleep timer (!sleep): when the bot stops; not kept over a restart.</summary>
-	public DateTime? SleepAt { get; private set; }
-	public void SetSleep(DateTime? at) { SleepAt = at; RaiseChanged(); }
+	public DateTime? SleepAt { get { lock (gate) return sleepAt; } }
+	DateTime? sleepAt;
+	public void SetSleep(DateTime? at) { lock (gate) sleepAt = at; RaiseChanged(); }
+
+	/// <summary>Stops the bot when its sleep timer is due (checked and cleared together). True when it did.</summary>
+	public bool TryFireSleep(DateTime now)
+	{
+		lock (gate)
+		{
+			if (sleepAt is not { } at || at > now) return false;
+			sleepAt = null;
+		}
+		Stop();
+		return true;
+	}
 	/// <summary>The bot was removed (or Panda is stopping): nothing more is added.</summary>
 	public bool Disposed { get { lock (gate) return disposed; } }
 	public Track? Current { get { lock (gate) return current; } }
@@ -157,7 +170,7 @@ public sealed class Player : IDisposable
 		{
 			NowPlaying? now = current is null ? null
 				: new(current, PositionLocked(), paused, streamTitle, source?.Leveler is { } lv ? Math.Round(lv.GainDb, 1) : null);
-			return new PlayerState(now, queue.ToArray(), history.Recent(), volume, Loop, settings.Bot.Autoplay, Sound.Of(settings.Bot), SleepAt);
+			return new PlayerState(now, queue.ToArray(), history.Recent(), volume, Loop, settings.Bot.Autoplay, Sound.Of(settings.Bot), sleepAt);
 		}
 	}
 

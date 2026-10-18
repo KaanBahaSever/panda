@@ -51,7 +51,10 @@ Panda talks to the server directly, so it stays light: the bot itself uses about
   songs. Per bot, from the 🎛️ button or the chat (`!eq`, `!fx`, `!speed`); everything is off until you
   turn it on.
 - 📃 **Playlists & favorites** — save the queue or single songs into playlists, play them with
-  `!playlist <name>`, star a song with `!fav`.
+  `!playlist <name>`, star a song with `!fav`. Everyone also has an **own list** (`!myfav`), and a
+  YouTube, Spotify or Deezer playlist can be **imported** from the panel.
+- ⏰ **Schedule** — play a playlist or a radio station, or stop, at set times and days (Settings →
+  Schedule); `!sleep 30` stops in 30 minutes.
 - 🤖 **Several bots, one panel** — each bot has its own server, channel, queue and settings; they share
   one song library.
 - 🐼 **Made for TeamSpeak 6** (TS3 servers work too).
@@ -122,6 +125,16 @@ The 🎛️ button next to the volume (admins) opens the sound settings of the b
   where it was; the seek bar keeps showing the song's own time.
 - **Crossfade** (0–12 s): the end of a song plays under the start of the next one. It only happens into
   songs saved in the library, because they start at once.
+
+## Lists and the schedule
+
+- **Own lists**: `!myfav` saves the song playing to your own list (one per TeamSpeak identity, shown in the
+  panel as "★ your name"); `!myfav play` queues it, `!myfav shuffle` mixed, `!myfav list`, `!myfav remove 3`.
+- **Import**: Playlists → *Import a playlist* takes a YouTube playlist (saved at once) or a Spotify/Deezer
+  album or playlist (each song is looked up on YouTube and added as it's found).
+- **Schedule** (Settings → Schedule): at a time, on chosen days, the bot plays a saved list (shuffled if
+  you like), plays a radio station (a favorite), or stops. Times are the server's own; the panel shows it.
+- **Sleep timer**: `!sleep 30`, `!sleep 02:00`, `!sleep off`.
 
 ## Statistics and the System screen
 
@@ -204,6 +217,8 @@ Write them in the bot's channel or in a private message to the bot.
 | `!eq <name\|off>` | `!eq <bas\|vokal…\|kapat>` | `!eq <basses\|voix…\|non>` | `!eq <bass\|gesang…\|aus>` | Equalizer: bass, treble, vocal, pop, rock, classical, electronic, jazz |
 | `!fx <nightcore\|slowed\|8d\|off>` | `!efekt <nightcore\|yavaş\|8d\|kapat>` | `!effet <nightcore\|ralenti\|8d\|non>` | `!effekt <nightcore\|langsam\|8d\|aus>` | Effects (again turns one off) |
 | `!speed <0.5–2>` | `!hız` | `!vitesse` | `!tempo` | Playback speed, same pitch |
+| `!myfav` / `!myfav play\|shuffle\|list\|remove <#>` | `!favorim` / `çal`, `karıştır`, `liste`, `sil` | `!mesfavoris` | `!meinefavs` | Your own list: save the song playing, play it, show it |
+| `!sleep <minutes\|HH:mm\|off>` | `!uyku` | `!dormir` | `!schlafen` | Stop later (a sleep timer) |
 | `!playlist <name>` / `!pl` | `!liste <ad>` | `!playlist` | `!playlist` | Queue a saved playlist |
 | `!playlists` | `!listeler` | `!playlists` | `!playlists` | List saved playlists |
 | `!fav` | `!fav` | `!fav` | `!fav` | Save the song playing to Favorites |
@@ -280,6 +295,7 @@ Everything is editable in the panel; the file is `/var/lib/panda/config.json` (o
         "volume": 50, "showSongInDescription": true, "autoplay": false,
         "equalizer": "off", "equalizerBands": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],   // "custom" uses the bands (dB)
         "effect": "off", "speed": 1, "eightD": false, "crossfade": 0,          // effect: "nightcore" or "slowed"
+        "schedule": [ { "time": "09:00", "days": [1, 2, 3, 4, 5], "action": "playlist", "target": "Morning", "shuffle": true } ],
         "announce": true,          // post every song in the channel as it starts
         "confirmCommands": true,   // short replies to !play, !skip…; questions and errors are always answered
         "maxQueueLength": 100,
@@ -306,7 +322,7 @@ Everything is editable in the panel; the file is `/var/lib/panda/config.json` (o
                "youTubeMusic": true, "soundCloud": true, "sites": true, "services": true, "pages": true, "radio": true,
                "localLinks": false },                              // links into the local network
   "library": { "enabled": true, "maxSizeMb": 5120, "path": "" },   // 0 MB = no limit; empty path = data/library
-  "audio": { "normalize": true, "targetLufs": -14 }
+  "audio": { "normalize": true, "targetLufs": -14 }   // -18 natural, -14 standard, -11 loud
 }
 ```
 

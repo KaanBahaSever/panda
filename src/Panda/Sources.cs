@@ -21,6 +21,7 @@ public sealed partial class Sources(PandaConfig config, YouTube youtube, Library
 	const int MaxListSongs = 200;
 	// Lists being added share these: many pasted playlists don't start many yt-dlp at once.
 	readonly SemaphoreSlim listSearches = new(2);
+	readonly SemaphoreSlim imports = new(1);
 
 	// "sc:words", "ytm:words", "yt:words": that search only.
 	[GeneratedRegex(@"^(sc|soundcloud|ytm|yt|youtube)\s*:(?!//)\s*(.*)$", RegexOptions.IgnoreCase)]
@@ -271,10 +272,18 @@ public sealed partial class Sources(PandaConfig config, YouTube youtube, Library
 		var url = YouTube.CleanInput(input);
 		if (!url.StartsWith("http", StringComparison.OrdinalIgnoreCase)) url = "https://" + url;
 		if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || uri.Scheme is not ("http" or "https")) throw new YouTubeException("not-found");
-		string Named(string? title) =>
-			name is { } n && Playlists.IsValidName(n) ? n.Trim()
-			: title is { } t && Playlists.IsValidName(t.Replace('/', '-')) ? (t.Length > 40 ? t[..40] : t).Replace('/', '-').Trim()
-			: "Import " + DateTime.Now.ToString("yyyy-MM-dd HH:mm");
+		if (name is { Length: > 0 } given && !Playlists.IsValidName(given)) throw new YouTubeException("bad-playlist-name");
+		// A given name adds to that list; the list's own title gets a number when it's taken ("Mix 2").
+		string Named(string? title)
+		{
+			if (name is { Length: > 0 } n) return n.Trim();
+			var t = (title ?? "").Replace('/', '-').Replace('\\', '-').Trim();
+			if (t.Length > 36) t = t[..36].Trim();
+			if (!Playlists.IsValidName(t)) t = "Import " + DateTime.Now.ToString("MM-dd HH:mm:ss");
+			var candidate = t;
+			for (var i = 2; lists.Exact(candidate) != null; i++) candidate = $"{t} {i}";
+			return candidate;
+		}
 		try
 		{
 			if (MusicLinks.IsService(uri))
@@ -288,13 +297,20 @@ public sealed partial class Sources(PandaConfig config, YouTube youtube, Library
 				}
 				var (title, queries) = await MusicLinks.ReadAsync(uri, ct);
 				if (queries.Count == 0) throw new YouTubeException("not-found");
-				var listName = Named(title);
-				lists.Save(listName, []);
-				_ = Task.Run(() => AddAllAsync(queries.Take(Playlists.MaxSongs).ToList(), "", t =>
+				var listName = lists.Save(Named(title), []).Name;
+				// One import at a time; it stops when the list is deleted or renamed meanwhile, or full.
+				_ = Task.Run(async () =>
 				{
-					lists.Save(listName, [PlaylistSong.From(t)], out var left);
-					return left == 0;
-				}));
+					await imports.WaitAsync();
+					try
+					{
+						var (added, missed) = await AddAllAsync(queries.Take(Playlists.MaxSongs).ToList(), "", t =>
+							lists.AddIfExists(listName, PlaylistSong.From(t), out var left) && left == 0);
+						log.LogInformation("Imported {Added} songs into {List} ({Missed} not found)", added, listName, missed);
+					}
+					catch (Exception ex) { log.LogWarning("Import into {List} failed: {Error}", listName, ex.Message); }
+					finally { imports.Release(); }
+				});
 				return (listName, 0, Math.Min(queries.Count, Playlists.MaxSongs));
 			}
 			var isYouTube = YouTube.IsYouTubeLink(url);
@@ -305,11 +321,15 @@ public sealed partial class Sources(PandaConfig config, YouTube youtube, Library
 			}
 			var (listTitle, songs) = await youtube.ReadListAsync(uri.AbsoluteUri, Playlists.MaxSongs, isYouTube, ct);
 			if (songs.Count == 0) throw new YouTubeException("playlist-empty");
-			var saved = lists.Save(Named(listTitle), songs.Where(s => !s.IsLive).Select(PlaylistSong.From), out _);
-			return (saved.Name, saved.Songs.Count, 0);
+			var target = Named(listTitle);
+			var before = lists.Exact(target)?.Songs.Count ?? 0;
+			var saved = lists.Save(target, songs.Select(PlaylistSong.From), out _);
+			return (saved.Name, saved.Songs.Count - before, 0);
 		}
 		catch (PrivateLinkException) { throw new YouTubeException("link-private"); }
 		catch (HttpRequestException) { throw new YouTubeException("link-unreachable"); }
+		catch (Exception ex) when (ex is IOException or System.Net.Sockets.SocketException) { throw new YouTubeException("link-unreachable"); }
+		catch (OperationCanceledException) when (!ct.IsCancellationRequested) { throw new YouTubeException("timeout"); }
 		catch (System.Text.Json.JsonException) { throw new YouTubeException("not-found"); }
 	}
 
