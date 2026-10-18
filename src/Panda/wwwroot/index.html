@@ -293,6 +293,23 @@
       </fieldset>
 
       <fieldset class="group">
+        <legend>⏰ <span data-i18n="sSchedule">Schedule</span></legend>
+        <p id="sch-hint" class="hint"></p>
+        <ul id="sch-list" class="users"></ul>
+        <div class="sch-add">
+          <div class="row2">
+            <label class="field"><span data-i18n="schTime">Time</span><input id="sch-time" type="time" value="09:00"></label>
+            <label class="field"><span data-i18n="schDo">Do</span>
+              <select id="sch-action"><option value="playlist" data-i18n="schPlaylist">Play a playlist</option><option value="station" data-i18n="schStation">Play a radio station</option><option value="stop" data-i18n="schStop">Stop</option></select></label>
+          </div>
+          <label class="field" id="sch-target-f"><span data-i18n="schWhat">Which</span><select id="sch-target"></select></label>
+          <label class="check" id="sch-shuffle-f"><input id="sch-shuffle" type="checkbox"><span data-i18n="schShuffle">Shuffled</span></label>
+          <div id="sch-days" class="sb-cats"></div>
+          <div class="save-row"><button id="sch-add" class="btn soft sm" type="button"><svg class="ic"><use href="#i-plus"/></svg><span data-i18n="schAdd">Add</span></button></div>
+        </div>
+      </fieldset>
+
+      <fieldset class="group">
         <legend>🛡️ <span data-i18n="sPerm">Chat permissions</span></legend>
         <label class="switch"><input type="checkbox" name="everyoneCanUse"><span class="track" aria-hidden="true"></span><span data-i18n="sEveryone">Everyone on the server can use the bot</span></label>
         <p class="hint" data-i18n="sEveryoneHint">When off, only the people below, DJs and admins can.</p>

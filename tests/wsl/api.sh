@@ -106,6 +106,15 @@ sleep 8
 check "...and is all there after a while" "$(curl -s -b $J "$P/api/playlists/From%20Spotify" | json "len(d['songs'])")" 3
 check "a link that isn't a playlist" "$(code -b $J -H 'Content-Type: application/json' -d '{"url":"not a link at all"}' $P/api/playlists/import)" 400
 
+echo "== schedule (the server's time)"
+AT=$(date -d '+1 min' +%H:%M)
+put "d['schedule'] = [{'time': '$AT', 'days': [], 'action': 'playlist', 'target': 'Fake List'}, {'time': '25:00', 'days': [], 'action': 'stop'}]" >/dev/null
+check "a valid entry is kept, a wrong time isn't" "$(curl -s -b $J $P/api/bots/1/settings | json "[e['time'] for e in d['schedule']]")" "['$AT']"
+for _ in $(seq 40); do now=$(curl -s -b $J $P/api/bots/1/state | json "(d['player']['current'] or {}).get('track', {}).get('title', '')"); [ "${now#List Song}" != "$now" ] && break; sleep 3; done
+check "at $AT the schedule played the list" "$(echo "$now" | cut -c1-9)" "List Song"
+put "pass" >/dev/null
+curl -s -b $J -X POST $P/api/bots/1/control/stop -o /dev/null
+
 echo "== playlists and the library"
 check "playlists take songs from other sites" "$(post /api/playlists '{"name":"Sites","songs":[{"id":"soundcloud:123","title":"SC Song","channel":"x","duration":90,"source":"link","link":"https://soundcloud.com/a/b"}]}' | json "len(d['songs'])")" 1
 check "but not with a link that isn't a web page" "$(post /api/playlists '{"name":"Sites","songs":[{"id":"x:1","title":"Bad","channel":"x","duration":9,"source":"link","link":"javascript:alert(1)"}]}' | json "len(d['songs'])")" 1

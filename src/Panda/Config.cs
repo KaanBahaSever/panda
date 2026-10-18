@@ -63,6 +63,8 @@ public sealed class PandaConfig
 		cfg.Panel.ApiKeys.RemoveAll(k => k.Hash.Length == 0 || !Roles.IsValid(k.Role));
 		// A hand-edited config.json may say null.
 		cfg.Sources ??= new();
+		foreach (var b in cfg.Bots)
+			b.Bot.Schedule = (b.Bot.Schedule ?? []).Where(e => e is { IsValid: true }).ToList();
 		cfg.YouTube.SponsorBlockCategories = (cfg.YouTube.SponsorBlockCategories ?? []).Where(YouTubeSettings.SponsorCategories.Contains).Distinct().ToList();
 		return cfg;
 	}
@@ -462,6 +464,8 @@ public sealed class BotSettings
 	public bool EightD { get; set; }
 	/// <summary>Seconds the end of a song and the start of the next overlap; 0 = off.</summary>
 	public int Crossfade { get; set; }
+	/// <summary>Things the bot does at set times (see Scheduler).</summary>
+	public List<ScheduleEntry> Schedule { get; set; } = [];
 	/// <summary>The Panda version (minor) whose settings these are, for one-time changes on update.</summary>
 	public int SettingsVersion { get; set; }
 	/// <summary>Autoplay up to 0.5, when it was called radio; Load moves it.</summary>

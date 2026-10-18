@@ -113,6 +113,7 @@ builder.Services.AddSingleton<SystemInfo>();
 builder.Services.AddSingleton<Stats>();
 builder.Services.AddSingleton<Updates>();
 builder.Services.AddHostedService(sp => sp.GetRequiredService<BotManager>());
+builder.Services.AddHostedService<Scheduler>();
 
 builder.Services.AddDataProtection()
 	.PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(dataDir, "keys")))

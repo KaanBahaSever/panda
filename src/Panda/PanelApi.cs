@@ -608,6 +608,9 @@ public sealed class SettingsDto
 	public IReadOnlyDictionary<string, string>? RecommendedLevels { get; set; }
 	public string OthersSongs { get; set; } = "everyone";
 	public bool OnlyFromChannel { get; set; }
+	public List<ScheduleEntry> Schedule { get; set; } = [];
+	/// <summary>The server's time, for the schedule (it runs on it); ignored when saving.</summary>
+	public string? ServerTime { get; set; }
 	public int MaxQueueLength { get; set; }
 	public int MaxSongsPerUser { get; set; }
 	public bool VoteSkip { get; set; }
@@ -665,6 +668,8 @@ public sealed class SettingsDto
 		ShowSongInDescription = b.Bot.ShowSongInDescription,
 		EveryoneCanUse = b.Bot.EveryoneCanUse,
 		Members = b.Bot.Members,
+		Schedule = b.Bot.Schedule,
+		ServerTime = DateTime.Now.ToString("HH:mm"),
 		MemberGroups = b.Bot.MemberGroups,
 		RecommendedLevels = ChatPermissions.Recommended,
 		Admins = b.Bot.Admins,
@@ -737,6 +742,8 @@ public sealed class SettingsDto
 			.Where(kv => ChatPermissions.Commands.Contains(kv.Key) && ChatPermissions.IsLevel(kv.Value) && kv.Value != "everyone")
 			.ToDictionary(kv => kv.Key, kv => kv.Value);
 		b.Bot.OnlyFromChannel = OnlyFromChannel;
+		b.Bot.Schedule = (Schedule ?? []).Where(e => e is { IsValid: true }).Take(50)
+			.Select(e => e with { Days = (e.Days ?? []).Distinct().Order().ToList(), Target = e.Action == "stop" ? "" : e.Target.Trim() }).ToList();
 		if (ChatPermissions.IsLevel(OthersSongs)) b.Bot.OthersSongs = OthersSongs;
 		if (MaxQueueLength is >= 1 and <= 1000) b.Bot.MaxQueueLength = MaxQueueLength;
 		if (MaxSongsPerUser is >= 0 and <= 1000) b.Bot.MaxSongsPerUser = MaxSongsPerUser;

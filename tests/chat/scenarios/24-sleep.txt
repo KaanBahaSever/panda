@@ -1,0 +1,15 @@
+# The sleep timer: !sleep 30 stops in 30 minutes, !sleep 02:00 at two, !sleep off.
+s announce=false
+c !sleep
+e No sleep timer
+c !sleep 30
+e I'll stop at
+c !sleep
+e I'll stop at
+c !sleep off
+e Sleep timer off.
+c !sleep soon
+e Give minutes or a time
+c !uyku 23:59
+e I'll stop at [b]23:59[/b]
+c !sleep off

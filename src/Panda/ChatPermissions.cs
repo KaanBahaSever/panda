@@ -13,7 +13,7 @@ public static class ChatPermissions
 	public static readonly string[] Commands =
 	[
 		"play", "search", "playnow", "skip", "remove", "move", "skipto", "back", "seek", "pause", "stop", "clear",
-		"shuffle", "loop", "vol", "eq", "fx", "speed", "autoplay", "fm", "playlist", "fav", "myfav", "join", "follow",
+		"shuffle", "loop", "vol", "eq", "fx", "speed", "autoplay", "fm", "playlist", "fav", "myfav", "sleep", "join", "follow",
 	];
 
 	/// <summary>A sensible setup for a busy channel: adding and asking is for everyone, steering is for DJs.</summary>
@@ -23,7 +23,7 @@ public static class ChatPermissions
 		["playlist"] = "everyone", ["fav"] = "everyone", ["myfav"] = "everyone", ["fm"] = "everyone",
 		["playnow"] = "dj", ["move"] = "dj", ["skipto"] = "dj", ["back"] = "dj", ["seek"] = "dj", ["pause"] = "dj",
 		["stop"] = "dj", ["clear"] = "dj", ["shuffle"] = "dj", ["loop"] = "dj", ["vol"] = "dj", ["eq"] = "dj", ["fx"] = "dj", ["speed"] = "dj", ["autoplay"] = "dj",
-		["join"] = "dj", ["follow"] = "dj",
+		["join"] = "dj", ["follow"] = "dj", ["sleep"] = "dj",
 	};
 
 	public static ChatLevel Parse(string? level) => level switch

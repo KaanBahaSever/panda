@@ -962,6 +962,24 @@ public sealed class TsBot : BackgroundService
 			return Confirm(Strings.Get(Lang, "fav-added", Link(now), Escape(name)));
 		}
 
+		case "sleep":
+		{
+			// "!sleep 30": in 30 minutes; "!sleep 02:00": at two; "!sleep off".
+			if (arg.Length == 0)
+				return player.SleepAt is { } at ? Strings.Get(Lang, "sleep-set", at.ToString("HH:mm")) : Strings.Get(Lang, "sleep-none", Prefix);
+			if (Switch(arg) == false) { player.SetSleep(null); return Confirm(Strings.Get(Lang, "sleep-off")); }
+			DateTime when;
+			if (int.TryParse(arg, out var minutes) && minutes is >= 1 and <= 24 * 60) when = DateTime.Now.AddMinutes(minutes);
+			else if (TimeOnly.TryParse(arg, System.Globalization.CultureInfo.InvariantCulture, out var time))
+			{
+				when = DateTime.Today.Add(time.ToTimeSpan());
+				if (when <= DateTime.Now) when = when.AddDays(1);
+			}
+			else return Strings.Get(Lang, "sleep-bad", Prefix);
+			player.SetSleep(when);
+			return Confirm(Strings.Get(Lang, "sleep-set", when.ToString("HH:mm")));
+		}
+
 		case "myfav":
 		{
 			// Everyone's own list, by their unique id: !myfav saves the song playing, "play" queues the list.
@@ -1225,6 +1243,7 @@ public static class Commands
 		["playlist"] = "playlist", ["pl"] = "playlist", ["çalmalistesi"] = "playlist", ["calmalistesi"] = "playlist",
 		["playlists"] = "playlists", ["lists"] = "playlists", ["listeler"] = "playlists",
 		["fav"] = "fav", ["favorite"] = "fav", ["favori"] = "fav",
+		["sleep"] = "sleep", ["uyku"] = "sleep", ["dormir"] = "sleep", ["schlafen"] = "sleep",
 		["myfav"] = "myfav", ["myfavs"] = "myfav", ["mfav"] = "myfav", ["favorim"] = "myfav", ["favorilerim"] = "myfav", ["mesfavoris"] = "myfav", ["mesfavs"] = "myfav", ["meinefavs"] = "myfav", ["meinefavoriten"] = "myfav",
 		["search"] = "search", ["find"] = "search", ["ara"] = "search", ["bul"] = "search", ["chercher"] = "search", ["recherche"] = "search", ["suchen"] = "search",
 		["pick"] = "pick", ["seç"] = "pick", ["sec"] = "pick", ["choisir"] = "pick", ["wählen"] = "pick", ["waehlen"] = "pick",

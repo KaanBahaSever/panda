@@ -90,6 +90,10 @@ public static class Strings
 		["fm-fav-full"] = ("There are already {0} favorite stations. Remove some in the panel first.", "Zaten {0} favori radyo var. Önce panelden birkaçını sil.", "Il y a déjà {0} radios favorites. Retire-en d'abord dans le panneau.", "Es gibt schon {0} Lieblingssender. Entferne zuerst ein paar im Panel."),
 		["list-adding"] = ("📃 {0} more songs from [b]{1}[/b] are looked up and added one by one.", "📃 [b]{1}[/b] listesindeki diğer {0} şarkı aranıp sırayla ekleniyor.", "📃 Les {0} autres morceaux de [b]{1}[/b] sont cherchés et ajoutés un par un.", "📃 Die {0} weiteren Songs aus [b]{1}[/b] werden gesucht und nach und nach hinzugefügt."),
 		["list-added"] = ("📃 Done: {0} songs from [b]{1}[/b] are in the queue.", "📃 Bitti: [b]{1}[/b] listesinden {0} şarkı sırada.", "📃 Terminé : {0} morceaux de [b]{1}[/b] sont dans la file.", "📃 Fertig: {0} Songs aus [b]{1}[/b] sind in der Warteschlange."),
+		["sleep-set"] = ("😴 I'll stop at [b]{0}[/b].", "😴 [b]{0}[/b]'de duracağım.", "😴 Je m'arrête à [b]{0}[/b].", "😴 Ich höre um [b]{0}[/b] auf."),
+		["sleep-off"] = ("😴 Sleep timer off.", "😴 Uyku zamanlayıcısı kapalı.", "😴 Minuteur de sommeil désactivé.", "😴 Schlaf-Timer aus."),
+		["sleep-none"] = ("😴 No sleep timer. [b]{0}sleep 30[/b] stops in 30 minutes, [b]{0}sleep 02:00[/b] at two.", "😴 Uyku zamanlayıcısı yok. [b]{0}uyku 30[/b] 30 dakika sonra, [b]{0}uyku 02:00[/b] saat ikide durdurur.", "😴 Pas de minuteur. [b]{0}dormir 30[/b] arrête dans 30 minutes, [b]{0}dormir 02:00[/b] à deux heures.", "😴 Kein Schlaf-Timer. [b]{0}schlafen 30[/b] hört in 30 Minuten auf, [b]{0}schlafen 02:00[/b] um zwei."),
+		["sleep-bad"] = ("Give minutes or a time: [b]{0}sleep 30[/b], [b]{0}sleep 02:00[/b], [b]{0}sleep off[/b].", "Dakika ya da saat yaz: [b]{0}uyku 30[/b], [b]{0}uyku 02:00[/b], [b]{0}uyku kapat[/b].", "Donne des minutes ou une heure : [b]{0}dormir 30[/b], [b]{0}dormir 02:00[/b], [b]{0}dormir non[/b].", "Gib Minuten oder eine Uhrzeit an: [b]{0}schlafen 30[/b], [b]{0}schlafen 02:00[/b], [b]{0}schlafen aus[/b]."),
 		["myfav-added"] = ("⭐ Saved to your own list ({1} songs): {0}", "⭐ Kendi listene kaydedildi ({1} şarkı): {0}", "⭐ Enregistré dans ta liste ({1} morceaux) : {0}", "⭐ In deiner eigenen Liste gespeichert ({1} Songs): {0}"),
 		["myfav-empty"] = ("Your own list is empty. While a song plays, [b]{0}myfav[/b] saves it.", "Kendi listen boş. Bir şarkı çalarken [b]{0}myfav[/b] onu kaydeder.", "Ta liste est vide. Pendant qu'un morceau joue, [b]{0}myfav[/b] l'enregistre.", "Deine eigene Liste ist leer. Während ein Song läuft, speichert [b]{0}myfav[/b] ihn."),
 		["myfav-list"] = ("⭐ Your own list ({0} songs; [b]{1}myfav play[/b], [b]{1}myfav remove <#>[/b]):", "⭐ Kendi listen ({0} şarkı; [b]{1}myfav çal[/b], [b]{1}myfav sil <#>[/b]):", "⭐ Ta liste ({0} morceaux ; [b]{1}myfav jouer[/b], [b]{1}myfav retirer <#>[/b]) :", "⭐ Deine eigene Liste ({0} Songs; [b]{1}myfav spielen[/b], [b]{1}myfav entfernen <#>[/b]):"),
@@ -143,7 +147,7 @@ public static class Strings
 			"[b]{0}remove[/b] <#> · [b]{0}clear[/b] · [b]{0}join[/b] – come to my channel · [b]{0}follow[/b] – follow me around\n" +
 			"[b]{0}search[/b] <song> – pick from the results · [b]{0}seek[/b] 1:30 · [b]{0}back[/b] – previous song · [b]{0}skipto[/b] <#> · [b]{0}move[/b] <#> <#> · [b]{0}voteskip[/b]\n" +
 			"[b]{0}autoplay[/b] <on|off> – keep playing similar songs when the queue ends · [b]{0}fm[/b] <station> – internet radio (alone: the favorite stations)\n" +
-			"[b]{0}eq[/b] <bass|vocal|rock…|off> – equalizer · [b]{0}fx[/b] <nightcore|slowed|8d|off> – effects · [b]{0}speed[/b] <0.5–2>\n" +
+			"[b]{0}eq[/b] <bass|vocal|rock…|off> – equalizer · [b]{0}fx[/b] <nightcore|slowed|8d|off> – effects · [b]{0}speed[/b] <0.5–2> · [b]{0}sleep[/b] <minutes|time|off>\n" +
 			"[b]{0}playlist[/b] <name> – queue a saved playlist · [b]{0}playlists[/b] · [b]{0}fav[/b] – save this song to Favorites · [b]{0}myfav[/b] – your own list (play, list, remove)",
 			"🐼 [b]Panda[/b] komutları:\n" +
 			"[b]{0}çal[/b] <şarkı veya link> – çal / sıraya ekle (YouTube, SoundCloud, Spotify, radyo linkleri…; [b]sc:[/b] / [b]ytm:[/b] SoundCloud / YouTube Music'te arar) · [b]{0}şimdiçal[/b] <şarkı> – hemen çal\n" +
@@ -154,7 +158,7 @@ public static class Strings
 			"[b]{0}sil[/b] <#> · [b]{0}temizle[/b] · [b]{0}gel[/b] – kanalıma gel · [b]{0}takip[/b] – beni takip et\n" +
 			"[b]{0}ara[/b] <şarkı> – sonuçlardan seç · [b]{0}sar[/b] 1:30 · [b]{0}önceki[/b] – önceki şarkı · [b]{0}git[/b] <#> · [b]{0}taşı[/b] <#> <#> · [b]{0}oyla[/b] – geçmek için oy\n" +
 			"[b]{0}otomatik[/b] <aç|kapat> – sıra bitince benzer şarkılar çalmaya devam et · [b]{0}fm[/b] <radyo> – internet radyosu (tek başına: favori radyolar)\n" +
-			"[b]{0}eq[/b] <bas|vokal|rock…|kapat> – ekolayzer · [b]{0}efekt[/b] <nightcore|yavaş|8d|kapat> – efektler · [b]{0}hız[/b] <0.5–2>\n" +
+			"[b]{0}eq[/b] <bas|vokal|rock…|kapat> – ekolayzer · [b]{0}efekt[/b] <nightcore|yavaş|8d|kapat> – efektler · [b]{0}hız[/b] <0.5–2> · [b]{0}uyku[/b] <dakika|saat|kapat>\n" +
 			"[b]{0}liste[/b] <ad> – kayıtlı listeyi sıraya ekle · [b]{0}listeler[/b] · [b]{0}fav[/b] – bu şarkıyı Favoriler'e kaydet · [b]{0}myfav[/b] – kendi listen (çal, liste, sil)\n" +
 			"(English commands like [b]{0}play[/b] work too)",
 			"🐼 Commandes de [b]Panda[/b] :\n" +
@@ -166,7 +170,7 @@ public static class Strings
 			"[b]{0}retirer[/b] <#> · [b]{0}vider[/b] · [b]{0}viens[/b] – viens dans mon canal · [b]{0}suivre[/b] – suis-moi de canal en canal\n" +
 			"[b]{0}chercher[/b] <morceau> – choisir parmi les résultats · [b]{0}aller[/b] 1:30 · [b]{0}précédent[/b] · [b]{0}allerà[/b] <#> · [b]{0}déplacer[/b] <#> <#> · [b]{0}voter[/b] – voter pour passer\n" +
 			"[b]{0}auto[/b] <oui|non> – continuer avec des morceaux proches quand la file est finie · [b]{0}fm[/b] <station> – radio sur Internet (seul : les radios favorites)\n" +
-			"[b]{0}eq[/b] <basses|voix|rock…|non> – égaliseur · [b]{0}effet[/b] <nightcore|ralenti|8d|non> – effets · [b]{0}vitesse[/b] <0.5–2>\n" +
+			"[b]{0}eq[/b] <basses|voix|rock…|non> – égaliseur · [b]{0}effet[/b] <nightcore|ralenti|8d|non> – effets · [b]{0}vitesse[/b] <0.5–2> · [b]{0}dormir[/b] <minutes|heure|non>\n" +
 			"[b]{0}playlist[/b] <nom> – ajouter une playlist enregistrée · [b]{0}playlists[/b] · [b]{0}fav[/b] – enregistrer ce morceau dans les Favoris · [b]{0}myfav[/b] – ta propre liste (jouer, liste, retirer)\n" +
 			"(les commandes anglaises comme [b]{0}play[/b] marchent aussi)",
 			"🐼 [b]Panda[/b]-Befehle:\n" +
@@ -178,7 +182,7 @@ public static class Strings
 			"[b]{0}entfernen[/b] <#> · [b]{0}leeren[/b] · [b]{0}komm[/b] – komm in meinen Channel · [b]{0}folgen[/b] – folge mir durch die Channels\n" +
 			"[b]{0}suchen[/b] <Song> – aus den Ergebnissen wählen · [b]{0}spulen[/b] 1:30 · [b]{0}zurück[/b] · [b]{0}springen[/b] <#> · [b]{0}verschieben[/b] <#> <#> · [b]{0}abstimmen[/b] – für das Überspringen abstimmen\n" +
 			"[b]{0}autoplay[/b] <an|aus> – ähnliche Songs weiterspielen, wenn die Warteschlange leer ist · [b]{0}fm[/b] <Sender> – Internetradio (allein: die Lieblingssender)\n" +
-			"[b]{0}eq[/b] <bass|gesang|rock…|aus> – Equalizer · [b]{0}effekt[/b] <nightcore|langsam|8d|aus> – Effekte · [b]{0}tempo[/b] <0.5–2>\n" +
+			"[b]{0}eq[/b] <bass|gesang|rock…|aus> – Equalizer · [b]{0}effekt[/b] <nightcore|langsam|8d|aus> – Effekte · [b]{0}tempo[/b] <0.5–2> · [b]{0}schlafen[/b] <Minuten|Uhrzeit|aus>\n" +
 			"[b]{0}playlist[/b] <Name> – gespeicherte Playlist einreihen · [b]{0}playlists[/b] · [b]{0}fav[/b] – diesen Song in den Favoriten speichern · [b]{0}myfav[/b] – deine eigene Liste (spielen, liste, entfernen)\n" +
 			"(englische Befehle wie [b]{0}play[/b] gehen auch)"),
 	};
