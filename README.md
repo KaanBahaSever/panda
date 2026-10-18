@@ -43,7 +43,9 @@ Panda talks to the server directly, so it stays light: the bot itself uses about
   Off by default; `!autoplay` or the ✨ button turns it on. (Up to 0.5 this was called "radio".)
 - ⏭️ **SponsorBlock** — skips the parts of a video that aren't music (talk before the song, ads), if you
   turn it on.
-- 🔊 **Equal loudness** — saved songs are measured once and play equally loud.
+- 🔊 **Equal loudness** — every song plays at the same loudness (-14 LUFS, like YouTube and Spotify):
+  saved songs from their first second, new songs, other sites and radio within a few seconds as they
+  play. A limiter keeps raised songs from distorting.
 - 🎛️ **Equalizer and effects** — presets (bass, vocal, rock, classical…) or your own ten bands,
   **nightcore**, **slowed**, **8D**, the **speed** (without changing the pitch) and a **crossfade** between
   songs. Per bot, from the 🎛️ button or the chat (`!eq`, `!fx`, `!speed`); everything is off until you

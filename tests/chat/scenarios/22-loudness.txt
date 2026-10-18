@@ -1,0 +1,24 @@
+# Songs play equally loud (-14 LUFS). The test tone is about -21.8 LUFS: it is raised by about 7.8 dB.
+# A saved, measured song gets its gain from the start.
+s announce=false
+c !play test tone
+w 1
+g 6.5 9
+# A song that wasn't measured yet (streamed) is listened to and leveled within a few seconds.
+c !stop
+c !play a new song
+e Now playing
+w 4
+g 5 9
+w 5
+g 6.5 9
+# Winding it on keeps what was heard (no settling again from 0 dB).
+c !seek 0:40
+w 1
+g 6.5 9
+# Off in the settings: songs play as they are.
+s normalizeVolume=false
+c !stop
+c !play test tone
+w 1
+g -

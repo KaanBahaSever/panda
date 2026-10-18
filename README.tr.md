@@ -37,7 +37,9 @@ programı yok: Panda sunucuyla doğrudan konuşur, bu yüzden hafiftir (bot ~130
 - ✨ **Otomatik devam** — sıra bitince Panda son şarkıya benzer şarkılar çalmaya devam eder (YouTube Mix).
   Varsayılan olarak kapalı; `!otomatik` ya da ✨ düğmesiyle açılır. (0.5'e kadar adı "radyo"ydu.)
 - ⏭️ **SponsorBlock** — açarsan videoların müzik olmayan kısımlarını (şarkı öncesi konuşma, reklam) atlar.
-- 🔊 **Eşit ses seviyesi** — kaydedilen şarkılar bir kez ölçülür ve hepsi aynı yükseklikte çalar.
+- 🔊 **Eşit ses seviyesi** — her şarkı aynı yükseklikte çalar (-14 LUFS, YouTube ve Spotify gibi):
+  kayıtlı şarkılar ilk saniyeden, yeni şarkılar, diğer siteler ve radyo çalarken birkaç saniyede.
+  Bir sınırlayıcı, yükseltilen şarkıların bozulmasını önler.
 - 🎛️ **Ekolayzer ve efektler** — hazır ayarlar (bas, vokal, rock, klasik…) ya da kendi on bandın,
   **nightcore**, **yavaşlatılmış**, **8D**, **hız** (sesin inceliği değişmeden) ve şarkılar arasında
   **yumuşak geçiş (crossfade)**. Bot başına, 🎛️ düğmesinden ya da sohbetten (`!eq`, `!efekt`, `!hız`);

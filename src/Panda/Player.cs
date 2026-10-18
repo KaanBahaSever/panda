@@ -9,7 +9,8 @@ namespace Panda;
 public enum LoopMode { Off, One, All }
 
 /// <param name="StreamTitle">What an internet radio station says it plays right now, when it says.</param>
-public sealed record NowPlaying(Track Track, double Position, bool Paused, string? StreamTitle = null);
+/// <param name="Gain">What the leveler does to the song now (dB), when the songs are played equally loud.</param>
+public sealed record NowPlaying(Track Track, double Position, bool Paused, string? StreamTitle = null, double? Gain = null);
 
 public sealed record PlayerState(
 	NowPlaying? Current,
@@ -64,6 +65,8 @@ public sealed class Player : IDisposable
 	// Crossfade: the song before, still fading out under the new one; and the one handed to the next start.
 	TrackSource? fading;
 	TrackSource? crossfadeFrom;
+	// The leveler of the song stopped last: a retry or a seek of the same song goes on from it.
+	(Track Track, Leveler Leveler)? lastLevel;
 	int generation;
 	int startOffset;
 	// Tries of the current song so far (0 = the first): YouTube refuses a stream now and then.
@@ -147,7 +150,8 @@ public sealed class Player : IDisposable
 	{
 		lock (gate)
 		{
-			NowPlaying? now = current is null ? null : new(current, PositionLocked(), paused, streamTitle);
+			NowPlaying? now = current is null ? null
+				: new(current, PositionLocked(), paused, streamTitle, source?.Leveler is { } lv ? Math.Round(lv.GainDb, 1) : null);
 			return new PlayerState(now, queue.ToArray(), history.Recent(), volume, Loop, settings.Bot.Autoplay, Sound.Of(settings.Bot));
 		}
 	}
@@ -605,6 +609,8 @@ public sealed class Player : IDisposable
 		if (disposed) return;
 		resumeOnConnect = false;
 		StopSourceLocked(keepPlaying: crossfadeFrom != null);
+		// The same song again (a seek, a retry, a new speed): its loudness so far isn't forgotten.
+		var heardLevel = (seeking || retry > 0) && lastLevel is { } last && ReferenceEquals(last.Track, track) ? last.Leveler : null;
 		var gen = ++generation;
 		current = track;
 		startOffset = startSeconds;
@@ -632,13 +638,16 @@ public sealed class Player : IDisposable
 		AudioStream audio;
 		// Only YouTube songs are saved (their id names the file).
 		var file = track.IsYouTube ? library.GetFile(track.Id) : null;
-		var gain = file is null ? null : library.GainFor(track.Id);
+		// Every song is brought to the same loudness: from the start when it was measured, else while it plays.
+		var measured = track.IsYouTube ? library.LoudnessOf(track.Id) : null;
+		var leveler = config.Audio.Normalize ? new Leveler(config.Audio.TargetLufs, measured, track.IsLive) : null;
+		if (heardLevel != null) leveler?.ContinueFrom(heardLevel);
 		string? tee = null;
 		try
 		{
 			if (file != null)
 			{
-				audio = youtube.OpenFile(file, startSeconds, gain, sound);
+				audio = youtube.OpenFile(file, startSeconds, sound: sound);
 			}
 			else if (track.Source == Media.Radio)
 			{
@@ -665,7 +674,7 @@ public sealed class Player : IDisposable
 			return;
 		}
 
-		source = new TrackSource(audio, gen, file != null, sound.Rate, OnSourceEnded, OnSkipPoint, OnFadePoint);
+		source = new TrackSource(audio, gen, file != null, sound.Rate, leveler, OnSourceEnded, OnSkipPoint, OnFadePoint);
 		SetSkipPointLocked(segments);
 		SetFadePointLocked(sound);
 		// The next songs' parts to skip are known before they start (not a whole playlist's at once).
@@ -689,7 +698,8 @@ public sealed class Player : IDisposable
 				startSeconds > 0 ? $" from {Strings.FormatTime(startSeconds)}" : "", retry + 1, MaxAttempts);
 		else
 			log.LogInformation("Playing {Title} ({Id}) for {User}{From}{Gain}", track.Title, track.Id, track.RequestedBy,
-				file != null ? " from the library" : "", gain is { } g ? $", loudness {g:+0.0;-0.0} dB" : "");
+				file != null ? " from the library" : "",
+				leveler is null ? "" : measured is null ? ", leveling as it plays" : $", loudness {leveler.GainDb:+0.0;-0.0} dB");
 	}
 
 	// ---- SponsorBlock: jumping over the parts that aren't music ----
@@ -862,6 +872,7 @@ public sealed class Player : IDisposable
 			timePipe.Paused = true;
 			timePipe.InStream = null;
 		}
+		if (source?.Leveler is { } lv && current != null) lastLevel = (current, lv);
 		heardBefore += SourceSecondsLocked();
 		source?.Dispose();
 		source = null;
@@ -1063,9 +1074,10 @@ public sealed class Player : IDisposable
 	}
 
 	/// <summary>Feeds ffmpeg's PCM into the timer pipe and notices when the song is over.</summary>
-	sealed class TrackSource(AudioStream audio, int generation, bool fromFile, double rate,
+	sealed class TrackSource(AudioStream audio, int generation, bool fromFile, double rate, Leveler? leveler,
 		Action<TrackSource> ended, Action<TrackSource> skipPoint, Action<TrackSource> fadePoint) : IAudioPassiveProducer
 	{
+		public Leveler? Leveler => leveler;
 		public bool FromFile => fromFile;
 		/// <summary>Song seconds per second of this audio (nightcore, the speed).</summary>
 		public double Rate => rate;
@@ -1104,6 +1116,11 @@ public sealed class Player : IDisposable
 			{
 				read = 0;
 			}
+			// The stream is over: what the limiter still holds (5 ms) comes out too.
+			var over = read < length;
+			if (read > 0) leveler?.Process(buffer.AsSpan(offset, read - read % 4));
+			if (over && leveler != null && Volatile.Read(ref done) == 0)
+				read += leveler.Drain(buffer.AsSpan(offset + read - read % 4, length - (read - read % 4))) - read % 4;
 			if (read > 0)
 			{
 				var total = Interlocked.Add(ref BytesRead, read);
@@ -1112,7 +1129,7 @@ public sealed class Player : IDisposable
 				if (total >= Volatile.Read(ref FadeAt) && Interlocked.Exchange(ref faded, 1) == 0)
 					ThreadPool.QueueUserWorkItem(_ => fadePoint(this));
 			}
-			if (read < length && Interlocked.Exchange(ref done, 1) == 0)
+			if (over && Interlocked.Exchange(ref done, 1) == 0)
 				ThreadPool.QueueUserWorkItem(_ => ended(this));
 			return read;
 		}

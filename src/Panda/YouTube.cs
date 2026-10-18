@@ -471,12 +471,12 @@ public sealed partial class YouTube(PandaConfig config, ILogger<YouTube> log)
 
 	/// <summary>Plays a saved song; seeking in a file is instant.</summary>
 	/// <param name="gainDb">Loudness correction for this song, if it was measured.</param>
-	public AudioStream OpenFile(string path, int startSeconds = 0, double? gainDb = null, Sound? sound = null) =>
-		new(null, StartProcess(FfmpegInfo([.. SeekArgs(startSeconds), "-i", path], stdin: false, gainDb, sound?.Filter)), log);
+	public AudioStream OpenFile(string path, int startSeconds = 0, Sound? sound = null) =>
+		new(null, StartProcess(FfmpegInfo([.. SeekArgs(startSeconds), "-i", path], stdin: false, sound?.Filter)), log);
 
 	static string[] SeekArgs(double seconds) => seconds > 0 ? ["-ss", seconds.ToString("0.###", CultureInfo.InvariantCulture)] : [];
 
-	ProcessStartInfo FfmpegInfo(string[] input, bool stdin, double? gainDb = null, string? af = null)
+	ProcessStartInfo FfmpegInfo(string[] input, bool stdin, string? af = null)
 	{
 		var ff = new ProcessStartInfo(config.YouTube.FfmpegPath)
 		{
@@ -485,10 +485,7 @@ public sealed partial class YouTube(PandaConfig config, ILogger<YouTube> log)
 			RedirectStandardError = true,
 			UseShellExecute = false,
 		};
-		var filters = new List<string>();
-		if (gainDb is { } g && Math.Abs(g) >= 0.1) filters.Add($"volume={g.ToString("0.0", CultureInfo.InvariantCulture)}dB");
-		if (af is { Length: > 0 }) filters.Add(af);
-		string[] filter = filters.Count > 0 ? ["-af", string.Join(',', filters)] : [];
+		string[] filter = af is { Length: > 0 } ? ["-af", af] : [];
 		foreach (var a in (string[])["-hide_banner", "-loglevel", "error", .. input, "-vn", .. filter, "-f", "s16le", "-ar", "48000", "-ac", "2", "pipe:1"])
 			ff.ArgumentList.Add(a);
 		return ff;
@@ -512,7 +509,9 @@ public sealed partial class YouTube(PandaConfig config, ILogger<YouTube> log)
 			RedirectStandardError = true,
 			UseShellExecute = false,
 		};
-		foreach (var a in new[] { "-hide_banner", "-nostats", "-threads", "1", "-i", path, "-vn", "-af", "ebur128=peak=sample:framelog=quiet", "-f", "null", "-" })
+		// framelog=verbose: the per-frame lines only at verbose log level. ("quiet" isn't known to ffmpeg 4.4,
+		// Ubuntu 22.04's: the filter failed and no song was ever measured there.)
+		foreach (var a in new[] { "-hide_banner", "-nostats", "-threads", "1", "-i", path, "-vn", "-af", "ebur128=peak=sample:framelog=verbose", "-f", "null", "-" })
 			psi.ArgumentList.Add(a);
 		using var proc = StartProcess(psi);
 		try { proc.PriorityClass = ProcessPriorityClass.BelowNormal; } catch { }

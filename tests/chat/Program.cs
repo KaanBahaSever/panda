@@ -22,6 +22,7 @@
 //   N <text>          the song playing (its title, or what the radio station says it plays) contains <text>
 //   t <min> <max>     the song playing is between <min> and <max> seconds in
 //   q <count>         the queue holds <count> songs
+//   g <min> <max>     the song playing is leveled by <min>…<max> dB (g - : not leveled)
 //   S key=value ...   change bot 1's sound (equalizer, effect, speed, eightD, crossfade) through the panel
 // Exit code: the number of failed checks.
 using System.Globalization;
@@ -48,7 +49,7 @@ var defaults = new Dictionary<string, string>
 	// The test's own web server (radio, pages, music services) is on 127.0.0.1.
 	["sources.localLinks"] = "true", ["sources.search"] = "youtube", ["sources.fallback"] = "true", ["sources.youTubeMusic"] = "true",
 	["sources.soundCloud"] = "true", ["sources.sites"] = "true", ["sources.services"] = "true", ["sources.pages"] = "true", ["sources.radio"] = "true",
-	["youTube.sponsorBlock"] = "false", ["youTube.searchResults"] = "5", ["youTube.hideLive"] = "false", ["youTube.hideShort"] = "false",
+	["normalizeVolume"] = "true", ["youTube.sponsorBlock"] = "false", ["youTube.searchResults"] = "5", ["youTube.hideLive"] = "false", ["youTube.hideShort"] = "false",
 };
 var panel = new Panel(args[1], Environment.GetEnvironmentVariable("PANDA_TEST_PASSWORD") ?? "testpass123");
 await panel.LoginAsync();
@@ -194,6 +195,17 @@ await scheduler.InvokeAsync(async () =>
 					var range = arg.Split(' ').Select(x => double.Parse(x, CultureInfo.InvariantCulture)).ToArray();
 					var at = (double?)(await panel.StateAsync())["player"]?["current"]?["position"] ?? -1;
 					Check(at >= range[0] && at <= range[1], $"position {range[0]}–{range[1]} s ({at:0.0})");
+					break;
+				}
+				case 'g':
+				{
+					var g = (double?)(await panel.StateAsync())["player"]?["current"]?["gain"];
+					if (arg == "-") Check(g is null, $"not leveled ({g})");
+					else
+					{
+						var range = arg.Split(' ').Select(x => double.Parse(x, CultureInfo.InvariantCulture)).ToArray();
+						Check(g >= range[0] && g <= range[1], $"leveled by {range[0]}–{range[1]} dB ({g})");
+					}
 					break;
 				}
 				case 'q':

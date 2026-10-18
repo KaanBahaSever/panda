@@ -596,8 +596,9 @@ public static class PasswordHasher
 public sealed class AudioSettings
 {
 	/// <summary>
-	/// Play saved songs equally loud: each is measured once (EBU R128) and played with a fixed gain,
-	/// so its own dynamics stay. Songs not measured yet (the first play) play as they are.
+	/// Play every song equally loud (see <see cref="Leveler"/>): a saved song is measured once (EBU R128) and
+	/// played with a fixed gain, so its own dynamics stay; one that isn't (the first play, other sites,
+	/// radio) is measured while it plays. A limiter keeps raised songs from going over -1.5 dBFS.
 	/// </summary>
 	public bool Normalize { get; set; } = true;
 	/// <summary>Integrated loudness to aim for, in LUFS. -14 is what YouTube and Spotify use.</summary>

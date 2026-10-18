@@ -221,21 +221,15 @@ public sealed class Library : IDisposable
 
 	// ---- loudness ----
 
-	/// <summary>
-	/// Volume change (dB) that brings this song to the target loudness, without pushing its peaks
-	/// over -1 dBFS. Null when normalizing is off or the song hasn't been measured yet.
-	/// </summary>
-	public double? GainFor(string id)
+	/// <summary>The song's measured integrated loudness (LUFS) and peak (dBFS), or null when it wasn't
+	/// measured yet (<see cref="Leveler"/> then listens while it plays).</summary>
+	public (double Lufs, double Peak)? LoudnessOf(string id)
 	{
-		var audio = config.Audio;
-		if (!audio.Normalize) return null;
-		(double Lufs, double Peak) m;
 		lock (gate)
 		{
-			if (songs.TryGetValue(id, out var s) && s.Loudness is { } l) m = (l, s.Peak ?? 0);
-			else if (!prefetchLoudness.TryGetValue(id, out m)) return null;
+			if (songs.TryGetValue(id, out var s) && s.Loudness is { } l) return (l, s.Peak ?? 0);
+			return prefetchLoudness.TryGetValue(id, out var m) ? m : null;
 		}
-		return Math.Clamp(Math.Min(audio.TargetLufs - m.Lufs, -1 - m.Peak), -20, 12);
 	}
 
 	/// <summary>Queues every saved song that has no loudness yet (older libraries, or normalizing just turned on).</summary>
