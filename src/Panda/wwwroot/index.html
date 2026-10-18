@@ -130,7 +130,7 @@
       <div id="np-track" hidden>
         <div class="np-art"><img id="np-thumb" alt="" referrerpolicy="no-referrer"></div>
         <a id="np-title" class="np-title" target="_blank" rel="noopener noreferrer"></a>
-        <p class="np-meta"><span id="np-channel"></span></p>
+        <p class="np-meta"><span id="np-channel"></span> <span id="np-gain" class="badge src sm" hidden></span></p>
         <p id="np-stream" class="np-stream" hidden><span class="eq" aria-hidden="true"><i></i><i></i><i></i></span><span id="np-stream-title"></span></p>
         <p class="np-req"><svg class="ic sm"><use href="#i-user"/></svg><span id="np-req"></span>
           <button id="np-save" class="icon-btn sm admin-only" type="button" data-i18n-aria="plAdd"><svg class="ic"><use href="#i-star"/></svg></button></p>
@@ -341,6 +341,9 @@
         <p class="hint" data-i18n="sLibMaxHint"></p>
         <label class="switch"><input type="checkbox" name="normalizeVolume"><span class="track" aria-hidden="true"></span><span data-i18n="sNorm">Play songs equally loud</span></label>
         <p class="hint" data-i18n="sNormHint"></p>
+        <label class="field"><span data-i18n="sTarget">How loud</span>
+          <select name="targetLufs"><option value="-18" data-i18n="tNatural">Natural</option><option value="-14" data-i18n="tStandard">Standard</option><option value="-11" data-i18n="tLoud">Loud</option></select></label>
+        <p class="hint" data-i18n="sTargetHint"></p>
       </fieldset>
 
       <fieldset class="group">

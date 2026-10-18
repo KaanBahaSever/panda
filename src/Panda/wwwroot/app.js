@@ -9,6 +9,7 @@ const I18N = {
     nowPlaying: 'Now playing', live: 'LIVE', napping: 'Panda is napping 💤 — add a song!', seek: 'Seek',
     shuffle: 'Shuffle queue', stop: 'Stop', play: 'Play', pause: 'Pause', skip: 'Skip', mute: 'Mute', unmute: 'Unmute', volume: 'Volume',
     loopOff: 'Loop: off', loopAll: 'Loop: whole queue', loopOne: 'Loop: this song',
+    sTarget: 'How loud', tNatural: 'Natural (-18 LUFS)', tStandard: 'Standard (-14 LUFS, like YouTube)', tLoud: 'Loud (-11 LUFS)', sTargetHint: "Natural keeps the music's dynamics fully; loud stands out in a busy channel but squeezes the peaks a little. The bot's volume works on top of this.", gainTip: 'Loudness leveling for this song',
     soundTitle: 'Sound', sEq: 'Equalizer', sEqPreset: 'Setting', sEqHint: 'Moving a band makes it your own setting. Everything is heard at once and kept for this bot.', 'eqn.off': 'Off', 'eqn.bass': 'Bass', 'eqn.treble': 'Treble', 'eqn.vocal': 'Vocal', 'eqn.pop': 'Pop', 'eqn.rock': 'Rock', 'eqn.classical': 'Classical', 'eqn.electronic': 'Electronic', 'eqn.jazz': 'Jazz', 'eqn.custom': 'My own',
     sFx: 'Effects', 'fx.off': 'None', 'fx.nightcore': 'Nightcore', 'fx.slowed': 'Slowed', fx8d: '8D: the sound circles around your head', sSpeed: 'Speed', sFxHint: 'Nightcore plays faster and higher, slowed slower and lower; the speed changes the tempo, not the pitch. The song goes on where it was.', sCrossfade: 'Crossfade', sCrossfadeHint: 'The end of a song plays under the start of the next one. Only into songs that are in the library (they start at once). 0 = off.', secs: n => n ? `${n} s` : 'off',
     'err.bad-sound': 'That sound setting is out of range.', 'err.bad-equalizer': 'Unknown equalizer setting.', 'err.bad-effect': 'Unknown effect.', 'cmd.eq': 'Equalizer', 'cmd.fx': 'Effects (nightcore, slowed, 8D)', 'cmd.speed': 'Speed',
@@ -104,6 +105,7 @@ const I18N = {
     nowPlaying: 'Şimdi çalıyor', live: 'CANLI', napping: 'Panda uyukluyor 💤 — bir şarkı ekle!', seek: 'Sar',
     shuffle: 'Sırayı karıştır', stop: 'Durdur', play: 'Oynat', pause: 'Duraklat', skip: 'Geç', mute: 'Sessize al', unmute: 'Sesi aç', volume: 'Ses',
     loopOff: 'Tekrar: kapalı', loopAll: 'Tekrar: tüm sıra', loopOne: 'Tekrar: bu şarkı',
+    sTarget: 'Ne kadar yüksek', tNatural: 'Doğal (-18 LUFS)', tStandard: 'Standart (-14 LUFS, YouTube gibi)', tLoud: 'Yüksek (-11 LUFS)', sTargetHint: 'Doğal, müziğin dinamiğini tamamen korur; yüksek, kalabalık kanalda öne çıkar ama tepeleri biraz sıkıştırır. Botun ses düzeyi bunun üstüne çalışır.', gainTip: 'Bu şarkıya uygulanan ses eşitleme',
     soundTitle: 'Ses', sEq: 'Ekolayzer', sEqPreset: 'Ayar', sEqHint: 'Bir bandı oynatınca kendi ayarın olur. Her değişiklik anında duyulur ve bu bot için saklanır.', 'eqn.off': 'Kapalı', 'eqn.bass': 'Bas', 'eqn.treble': 'Tiz', 'eqn.vocal': 'Vokal', 'eqn.pop': 'Pop', 'eqn.rock': 'Rock', 'eqn.classical': 'Klasik', 'eqn.electronic': 'Elektronik', 'eqn.jazz': 'Caz', 'eqn.custom': 'Kendi ayarım',
     sFx: 'Efektler', 'fx.off': 'Yok', 'fx.nightcore': 'Nightcore', 'fx.slowed': 'Yavaşlatılmış', fx8d: '8D: ses başının etrafında döner', sSpeed: 'Hız', sFxHint: 'Nightcore daha hızlı ve ince, yavaşlatılmış daha yavaş ve kalın çalar; hız ise sesin inceliğini değil temposunu değiştirir. Şarkı kaldığı yerden sürer.', sCrossfade: 'Geçişte yumuşak ses (crossfade)', sCrossfadeHint: 'Şarkının sonu bir sonrakinin başıyla üst üste çalar. Sadece kütüphanedeki şarkılara geçerken (hemen başladıkları için). 0 = kapalı.', secs: n => n ? `${n} sn` : 'kapalı',
     'err.bad-sound': 'Bu ses ayarı izin verilen aralığın dışında.', 'err.bad-equalizer': 'Bilinmeyen ekolayzer ayarı.', 'err.bad-effect': 'Bilinmeyen efekt.', 'cmd.eq': 'Ekolayzer', 'cmd.fx': 'Efektler (nightcore, yavaş, 8D)', 'cmd.speed': 'Hız',
@@ -199,6 +201,7 @@ const I18N = {
     nowPlaying: 'En cours de lecture', live: 'EN DIRECT', napping: 'Panda fait la sieste 💤 — ajoutez un morceau !', seek: 'Position',
     shuffle: 'Mélanger la file', stop: 'Arrêter', play: 'Lecture', pause: 'Pause', skip: 'Passer', mute: 'Couper le son', unmute: 'Rétablir le son', volume: 'Volume',
     loopOff: 'Répétition : désactivée', loopAll: 'Répétition : toute la file', loopOne: 'Répétition : ce morceau',
+    sTarget: 'Quel volume', tNatural: 'Naturel (-18 LUFS)', tStandard: 'Standard (-14 LUFS, comme YouTube)', tLoud: 'Fort (-11 LUFS)', sTargetHint: "Naturel garde toute la dynamique de la musique ; fort ressort dans un canal animé mais compresse un peu les crêtes. Le volume du bot s'applique en plus.", gainTip: 'Égalisation du volume pour ce morceau',
     soundTitle: 'Son', sEq: 'Égaliseur', sEqPreset: 'Réglage', sEqHint: "Bouger une bande en fait votre propre réglage. Tout s'entend tout de suite et reste pour ce bot.", 'eqn.off': 'Désactivé', 'eqn.bass': 'Basses', 'eqn.treble': 'Aigus', 'eqn.vocal': 'Voix', 'eqn.pop': 'Pop', 'eqn.rock': 'Rock', 'eqn.classical': 'Classique', 'eqn.electronic': 'Électro', 'eqn.jazz': 'Jazz', 'eqn.custom': 'Le mien',
     sFx: 'Effets', 'fx.off': 'Aucun', 'fx.nightcore': 'Nightcore', 'fx.slowed': 'Ralenti', fx8d: '8D : le son tourne autour de votre tête', sSpeed: 'Vitesse', sFxHint: "Nightcore joue plus vite et plus aigu, ralenti plus lent et plus grave ; la vitesse change le tempo, pas la hauteur. Le morceau reprend là où il était.", sCrossfade: 'Fondu enchaîné', sCrossfadeHint: "La fin d'un morceau joue sous le début du suivant. Seulement vers des morceaux de la bibliothèque (ils démarrent tout de suite). 0 = désactivé.", secs: n => n ? `${n} s` : 'désactivé',
     'err.bad-sound': 'Ce réglage du son est hors limites.', 'err.bad-equalizer': "Réglage d'égaliseur inconnu.", 'err.bad-effect': 'Effet inconnu.', 'cmd.eq': 'Égaliseur', 'cmd.fx': 'Effets (nightcore, ralenti, 8D)', 'cmd.speed': 'Vitesse',
@@ -294,6 +297,7 @@ const I18N = {
     nowPlaying: 'Läuft gerade', live: 'LIVE', napping: 'Panda macht ein Nickerchen 💤 — füg einen Song hinzu!', seek: 'Position',
     shuffle: 'Warteschlange mischen', stop: 'Stopp', play: 'Abspielen', pause: 'Pause', skip: 'Überspringen', mute: 'Stummschalten', unmute: 'Ton an', volume: 'Lautstärke',
     loopOff: 'Wiederholung: aus', loopAll: 'Wiederholung: ganze Warteschlange', loopOne: 'Wiederholung: dieser Song',
+    sTarget: 'Wie laut', tNatural: 'Natürlich (-18 LUFS)', tStandard: 'Standard (-14 LUFS, wie YouTube)', tLoud: 'Laut (-11 LUFS)', sTargetHint: 'Natürlich behält die Dynamik der Musik ganz; laut sticht in einem vollen Channel hervor, drückt aber die Spitzen etwas. Die Lautstärke des Bots wirkt zusätzlich.', gainTip: 'Lautheitsausgleich für diesen Song',
     soundTitle: 'Klang', sEq: 'Equalizer', sEqPreset: 'Einstellung', sEqHint: 'Ein bewegtes Band macht daraus deine eigene Einstellung. Alles ist sofort zu hören und bleibt für diesen Bot.', 'eqn.off': 'Aus', 'eqn.bass': 'Bass', 'eqn.treble': 'Höhen', 'eqn.vocal': 'Gesang', 'eqn.pop': 'Pop', 'eqn.rock': 'Rock', 'eqn.classical': 'Klassik', 'eqn.electronic': 'Elektro', 'eqn.jazz': 'Jazz', 'eqn.custom': 'Eigene',
     sFx: 'Effekte', 'fx.off': 'Keine', 'fx.nightcore': 'Nightcore', 'fx.slowed': 'Verlangsamt', fx8d: '8D: der Klang kreist um deinen Kopf', sSpeed: 'Tempo', sFxHint: 'Nightcore spielt schneller und höher, verlangsamt langsamer und tiefer; das Tempo ändert die Geschwindigkeit, nicht die Tonhöhe. Der Song geht dort weiter, wo er war.', sCrossfade: 'Überblenden', sCrossfadeHint: 'Das Ende eines Songs läuft unter dem Anfang des nächsten. Nur zu Songs aus der Bibliothek (sie starten sofort). 0 = aus.', secs: n => n ? `${n} s` : 'aus',
     'err.bad-sound': 'Diese Klangeinstellung liegt außerhalb des Bereichs.', 'err.bad-equalizer': 'Unbekannte Equalizer-Einstellung.', 'err.bad-effect': 'Unbekannter Effekt.', 'cmd.eq': 'Equalizer', 'cmd.fx': 'Effekte (Nightcore, langsam, 8D)', 'cmd.speed': 'Tempo',
@@ -729,6 +733,10 @@ function renderNow() {
       $('np-channel').textContent = tr.channel;
     }
     $('np-req').textContent = `${t('requestedBy')} ${tr.requestedBy}`;
+    // What leveling does to this song, when it does something.
+    const g = cur.gain;
+    $('np-gain').hidden = g == null || Math.abs(g) < 0.5;
+    if (g != null) { $('np-gain').textContent = `🔊 ${g > 0 ? '+' : ''}${g.toFixed(1)} dB`; $('np-gain').title = t('gainTip'); }
     // A radio station names the song it plays.
     $('np-stream').hidden = !cur.streamTitle; $('np-stream-title').textContent = cur.streamTitle || '';
     setLabel($('np-save'), t(isStation(tr) ? 'radioFav' : 'plAdd'));
@@ -1214,6 +1222,9 @@ function fillSettings(s) {
   f.othersSongs.value = s.othersSongs || 'everyone';
   fillPerm(s);
   f.libraryEnabled.checked = !!s.libraryEnabled; f.normalizeVolume.checked = !!s.normalizeVolume;
+  // Another value from config.json shows as the nearest choice.
+  f.targetLufs.value = [-18, -14, -11].reduce((a, b) => Math.abs(b - s.targetLufs) < Math.abs(a - s.targetLufs) ? b : a, -14);
+  f.targetLufs.disabled = !s.normalizeVolume;
   f.libraryMaxGb.value = Math.round((s.libraryMaxSizeMb || 0) / 1024 * 100) / 100;
   for (const k of ['serverPassword', 'channelPassword']) {
     const has = s['has' + k[0].toUpperCase() + k.slice(1)];
@@ -1248,6 +1259,7 @@ function renderSbCats(on) {
 }
 function sbEnable() { for (const i of $('sb-cats').querySelectorAll('input')) i.disabled = !F().ytSponsorBlock.checked; }
 F().ytSponsorBlock.addEventListener('change', sbEnable);
+F().normalizeVolume.addEventListener('change', e => { F().targetLufs.disabled = !e.target.checked; });
 // Searching SoundCloud first: its songs aren't saved and autoplay can't follow them.
 function srcWarn() { $('src-warn').hidden = F().srcSearch.value !== 'soundcloud'; }
 F().srcSearch.addEventListener('change', srcWarn);
@@ -1276,7 +1288,7 @@ $('set-form').addEventListener('submit', async e => {
     everyoneCanUse: f.everyoneCanUse.checked, onlyFromChannel: f.onlyFromChannel.checked, othersSongs: f.othersSongs.value,
     members: perm.members, memberGroups: perm.memberGroups, admins: perm.admins, adminGroups: perm.adminGroups, djs: perm.djs, djGroups: perm.djGroups, blocked: perm.blocked,
     commandLevels: perm.commandLevels,
-    libraryEnabled: f.libraryEnabled.checked, libraryMaxSizeMb: Math.round(gb * 1024), normalizeVolume: f.normalizeVolume.checked,
+    libraryEnabled: f.libraryEnabled.checked, libraryMaxSizeMb: Math.round(gb * 1024), normalizeVolume: f.normalizeVolume.checked, targetLufs: +f.targetLufs.value,
     sources: {
       search: f.srcSearch.value, fallback: f.srcFallback.checked, youTubeMusic: f.srcYouTubeMusic.checked, soundCloud: f.srcSoundCloud.checked,
       sites: f.srcSites.checked, services: f.srcServices.checked, pages: f.srcPages.checked, radio: f.srcRadio.checked, localLinks: f.srcLocal.checked,

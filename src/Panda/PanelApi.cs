@@ -604,6 +604,8 @@ public sealed class SettingsDto
 	public bool LibraryEnabled { get; set; }
 	public int LibraryMaxSizeMb { get; set; }
 	public bool NormalizeVolume { get; set; }
+	/// <summary>The loudness songs are brought to: -18 (natural), -14 (standard), -11 (loud).</summary>
+	public double TargetLufs { get; set; } = -14;
 	public bool HasCookies { get; set; }
 	/// <summary>Shared by all bots: where songs may come from (see <see cref="SourcesSettings"/>).</summary>
 	public SourcesDto? Sources { get; set; }
@@ -669,6 +671,7 @@ public sealed class SettingsDto
 		LibraryEnabled = c.Library.Enabled,
 		LibraryMaxSizeMb = c.Library.MaxSizeMb,
 		NormalizeVolume = c.Audio.Normalize,
+		TargetLufs = c.Audio.TargetLufs,
 		HasCookies = c.YouTube.CookiesFile.Length > 0 && File.Exists(c.YouTube.CookiesFile),
 		Sources = new()
 		{
@@ -731,6 +734,7 @@ public sealed class SettingsDto
 		c.Library.Enabled = LibraryEnabled;
 		if (LibraryMaxSizeMb is 0 or (>= 100 and <= 1_000_000)) c.Library.MaxSizeMb = LibraryMaxSizeMb;
 		c.Audio.Normalize = NormalizeVolume;
+		if (TargetLufs is >= -24 and <= -9) c.Audio.TargetLufs = Math.Round(TargetLufs);
 		// Left out (an older panel, a script): kept as they are.
 		if (Sources is { } s)
 		{
