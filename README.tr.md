@@ -50,7 +50,10 @@ programı yok: Panda sunucuyla doğrudan konuşur, bu yüzden hafiftir (bot ~130
 - ⏰ **Zamanlayıcı** — belli saatlerde ve günlerde bir liste ya da radyo çal, ya da dur (Ayarlar →
   Zamanlayıcı); `!uyku 30` 30 dakika sonra durdurur.
 - 🤖 **Tek panelden birden fazla bot** — her botun kendi sunucusu, kanalı, sırası ve ayarları olur;
-  şarkı kütüphanesi ortaktır.
+  şarkı kütüphanesi ortaktır. `!create bot` kanalına yeni bir bot getirir (yöneticiler), bot kimse
+  dinlemezse kendiliğinden ayrılabilir.
+- 📺 **Kanal adında şarkı**, **herkese açık "şimdi çalıyor" sayfası** (açana kadar kapalı), **telefonda
+  uygulama** olarak panel (HTTPS gerekir) ve panelden indirip yüklediğin **yedekler**.
 - 🐼 **TeamSpeak 6 için yapıldı** (TS3 sunucularında da çalışır).
 - 🌐 **Web paneli** — şimdi çalan, sürükle-bırak sıra, arama, kütüphane, çalma listeleri, saatli geçmiş,
   istatistikler, ses, tekrar, ileri/geri sarma, açık/koyu tema, Türkçe/İngilizce/Fransızca/Almanca.
@@ -131,6 +134,21 @@ Ses düzeyinin yanındaki 🎛️ düğmesi (yöneticiler) botun ses ayarların�
 - **Zamanlayıcı** (Ayarlar → Zamanlayıcı): belli bir saatte, seçilen günlerde bot kayıtlı bir listeyi
   (istersen karışık) ya da favori bir radyoyu çalar veya durur. Saatler sunucunun saati; panel gösterir.
 - **Uyku zamanlayıcısı**: `!uyku 30`, `!uyku 02:00`, `!uyku kapat`.
+
+## Daha fazla bot, şarkı kanalı, açık sayfa, yedek
+
+- **`!create bot`** (aksi ayarlanmadıkça yöneticiler): kanalına aynı sohbet yetkileriyle ve başka botun
+  kullanmadığı bir önekle yeni bir bot gelir (cevapta yazar). Botun ayarlarındaki **Kimse dinlemezse ayrıl
+  (dk)**, bot yalnız ve sessiz kaldığında onu kaldırır; son bot hiç gitmez. `panel.maxBots` (10) üst sınırdır.
+- **Adı şarkı olan kanal**: bir kanal seç (yolu ya da `/numarası`); bir şey çalarken adı "🎵 Şarkı" olur.
+  Botun orada `b_channel_modify_name` izni olmalı.
+- **Herkese açık "şimdi çalıyor" sayfası**: `http://sunucun:8080/now.html` botların şarkısını ve sıradakileri
+  isimsiz ve kontrolsüz gösterir. Ayarlardan açana kadar kapalıdır.
+- **Telefonda**: paneli aç ve "Ana ekrana ekle". Tarayıcılar sadece HTTPS üzerinden uygulama olarak kurar.
+- **Yedek** (Ayarlar → Yedek): ayarlar, panel kullanıcıları, anahtarlar, her botun TeamSpeak kimliği ve
+  geçmişi, listeler, favori radyolar ve çerezlerle bir zip (kayıtlı şarkılar hariç). Yüklemek Panda'yı yeniden
+  başlatır (systemd ve Docker kendisi açar; Windows'ta elle açın). Yedekleri güvenli saklayın: şifre ve
+  kimlik içerir.
 
 ## İstatistikler ve Sistem ekranı
 
@@ -222,6 +240,7 @@ Botun kanalına ya da bota özel mesaj olarak yaz. İngilizce karşılıkları d
 | `!hız <0.5–2>` | `!speed` | `!vitesse` | `!tempo` | Çalma hızı, ses inceliği aynı |
 | `!favorim` / `!myfav çal\|karıştır\|liste\|sil <#>` | `!myfav` / `play`, `shuffle`, `list`, `remove` | `!mesfavoris` | `!meinefavs` | Kendi listen: çalan şarkıyı kaydet, çal, göster |
 | `!uyku <dakika\|SS:dd\|kapat>` | `!sleep` | `!dormir` | `!schlafen` | Sonra durdur (uyku zamanlayıcısı) |
+| `!oluştur` | `!create bot` | `!créer` | `!erstellen` | Kanalına kendi önekiyle yeni bir bot (yöneticiler) |
 | `!liste <ad>` | `!playlist` / `!pl` | `!playlist` | `!playlist` | Kayıtlı bir listeyi sıraya ekle |
 | `!listeler` | `!playlists` | `!playlists` | `!playlists` | Kayıtlı listeleri göster |
 | `!fav` | `!fav` | `!fav` | `!fav` | Çalan şarkıyı Favoriler'e kaydet |

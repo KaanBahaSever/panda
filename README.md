@@ -56,7 +56,10 @@ Panda talks to the server directly, so it stays light: the bot itself uses about
 - ⏰ **Schedule** — play a playlist or a radio station, or stop, at set times and days (Settings →
   Schedule); `!sleep 30` stops in 30 minutes.
 - 🤖 **Several bots, one panel** — each bot has its own server, channel, queue and settings; they share
-  one song library.
+  one song library. `!create bot` brings a new one to your channel (admins), and a bot can leave by itself
+  when nobody listens.
+- 📺 **Song in a channel's name**, a **public "now playing" page** (off until you turn it on), the panel
+  as an **app on your phone** (needs HTTPS), and **backups** you download and restore from the panel.
 - 🐼 **Made for TeamSpeak 6** (TS3 servers work too).
 - 🌐 **Web panel** — now playing, queue with drag & drop, search, library, playlists, history with
   times, statistics, volume, loop, seek, light/dark theme, English/Turkish/French/German.
@@ -135,6 +138,22 @@ The 🎛️ button next to the volume (admins) opens the sound settings of the b
 - **Schedule** (Settings → Schedule): at a time, on chosen days, the bot plays a saved list (shuffled if
   you like), plays a radio station (a favorite), or stops. Times are the server's own; the panel shows it.
 - **Sleep timer**: `!sleep 30`, `!sleep 02:00`, `!sleep off`.
+
+## More bots, the song channel, the public page, backups
+
+- **`!create bot`** (admins unless you set otherwise): a new bot joins your channel with the same chat
+  permissions and a prefix no other bot uses (the reply says which). **Leave when nobody listens for (min)**
+  in a bot's settings removes it when it's alone with nothing playing; the last bot never goes.
+  `panel.maxBots` (10) caps the number of bots.
+- **Channel named after the song**: pick a channel (its path or `/id`); its name becomes "🎵 Song" while
+  something plays. The bot needs `b_channel_modify_name` there.
+- **Public "now playing" page**: `http://your-server:8080/now.html` shows the bots' songs and what comes
+  next, without names and without controls. Off until you turn it on in the settings.
+- **On your phone**: open the panel and "Add to Home Screen". Browsers only install it over HTTPS.
+- **Backup** (Settings → Backup): a zip with the settings, panel users, keys, each bot's TeamSpeak identity
+  and history, the playlists, favorite stations and cookies (not the saved songs). Restoring one restarts
+  Panda (systemd and Docker start it again; on Windows, start it yourself). Keep backups safe: they hold
+  passwords and identities.
 
 ## Statistics and the System screen
 
@@ -219,6 +238,7 @@ Write them in the bot's channel or in a private message to the bot.
 | `!speed <0.5–2>` | `!hız` | `!vitesse` | `!tempo` | Playback speed, same pitch |
 | `!myfav` / `!myfav play\|shuffle\|list\|remove <#>` | `!favorim` / `çal`, `karıştır`, `liste`, `sil` | `!mesfavoris` | `!meinefavs` | Your own list: save the song playing, play it, show it |
 | `!sleep <minutes\|HH:mm\|off>` | `!uyku` | `!dormir` | `!schlafen` | Stop later (a sleep timer) |
+| `!create bot` | `!oluştur` | `!créer` | `!erstellen` | A new bot in your channel, with its own prefix (admins) |
 | `!playlist <name>` / `!pl` | `!liste <ad>` | `!playlist` | `!playlist` | Queue a saved playlist |
 | `!playlists` | `!listeler` | `!playlists` | `!playlists` | List saved playlists |
 | `!fav` | `!fav` | `!fav` | `!fav` | Save the song playing to Favorites |
