@@ -46,7 +46,7 @@ public sealed partial class Updates(PandaConfig config, DataPaths paths, SystemI
 
 	static string InstallKind()
 	{
-		if (File.Exists("/.dockerenv")) return "docker";
+		if (InContainer()) return "docker";
 		if (OperatingSystem.IsLinux() && File.Exists("/etc/systemd/system/panda.service"))
 			return File.Exists("/etc/systemd/system/panda-upgrade.path") ? "systemd" : "systemd-old";
 		return canReplaceItself.Value ? "self" : "manual";
@@ -65,7 +65,12 @@ public sealed partial class Updates(PandaConfig config, DataPaths paths, SystemI
 		try
 		{
 			var ytDlp = (await system.ToolsAsync(fresh)).YtDlp;
-			if (fresh || latest is null || DateTime.UtcNow - checkedAt > TimeSpan.FromHours(1))
+			var due = fresh || latest is null || DateTime.UtcNow - checkedAt > TimeSpan.FromHours(1);
+			// GitHub didn't answer a little while ago: not asked again yet (it allows 60 questions an hour).
+			if (due && !fresh && DateTime.UtcNow - failedAt < TimeSpan.FromMinutes(30) && latest is null)
+				return new UpdateInfo(PanelApi.Version, null, false, null, null, null,
+					ytDlp, null, false, InstallKind(), null, "unreachable", await UpgradingAsync(), await YtDlpUpdatingAsync(), config.Panel.AutoUpdate);
+			if (due && (fresh || DateTime.UtcNow - failedAt >= TimeSpan.FromMinutes(30)))
 			{
 				try
 				{
@@ -87,6 +92,7 @@ public sealed partial class Updates(PandaConfig config, DataPaths paths, SystemI
 					or KeyNotFoundException or InvalidOperationException)
 				{
 					log.LogWarning("Could not check for updates: {Error}", ex.Message);
+					failedAt = DateTime.UtcNow;
 					return new UpdateInfo(PanelApi.Version, null, false, null, null, null,
 						ytDlp, null, false, InstallKind(), null, "unreachable", await UpgradingAsync(), await YtDlpUpdatingAsync(), config.Panel.AutoUpdate);
 				}
@@ -102,6 +108,7 @@ public sealed partial class Updates(PandaConfig config, DataPaths paths, SystemI
 	sealed record Release(string Panda, string? Notes, string? Url, DateTimeOffset? Published, string? YtDlp);
 	Release? latest;
 	DateTime checkedAt;
+	DateTime failedAt = DateTime.MinValue;
 
 	static async Task<JsonDocument> GetJsonAsync(string url, CancellationToken ct) =>
 		JsonDocument.Parse(await Http.GetStringAsync(url, ct));
@@ -114,12 +121,12 @@ public sealed partial class Updates(PandaConfig config, DataPaths paths, SystemI
 	/// Asks systemd to run the installer, which downloads the latest release and restarts Panda.
 	/// Only on installs made by install.sh; false elsewhere.
 	/// </summary>
-	public async Task<bool> StartUpgradeAsync()
+	public async Task<bool> StartUpgradeAsync(Func<bool>? mayRestart = null)
 	{
 		if (InstallKind() == "self")
 		{
 			if (await CheckAsync() is not { Newer: true, Latest: { } version }) return false;
-			StartSelfUpdate(version);   // a second click while it runs changes nothing
+			StartSelfUpdate(version, mayRestart);   // a second click while it runs changes nothing
 			return true;
 		}
 		if (InstallKind() != "systemd") return false;
@@ -185,16 +192,28 @@ public sealed partial class Updates(PandaConfig config, DataPaths paths, SystemI
 	/// </summary>
 	public async Task AutoUpdateAsync(BotManager bots)
 	{
-		if (!config.Panel.AutoUpdate || !CanUpdate || await UpgradingAsync()) return;
-		if (bots.All.Any(b => b.Player.Current != null)) return;
+		if (!config.Panel.AutoUpdate || !CanUpdate || await UpgradingAsync())
+		{
+			quietSince = null;
+			return;
+		}
+		// Quiet: no bot plays or has songs waiting (a paused song counts as playing), for two minutes in a row,
+		// so the moment between two songs (autoplay looking for the next one) isn't taken for it.
+		bool Quiet() => bots.All.All(b => b.Player.Current is null && b.Player.GetState().Queue.Count == 0);
+		if (!Quiet()) { quietSince = null; return; }
+		quietSince ??= DateTime.UtcNow;
+		if (DateTime.UtcNow - quietSince < TimeSpan.FromMinutes(2)) return;
 		var info = await CheckAsync();
 		if (!info.Newer || info.Latest is null) return;
 		if (autoTried == info.Latest && DateTime.UtcNow - autoTriedAt < TimeSpan.FromHours(6)) return;
 		autoTried = info.Latest;
 		autoTriedAt = DateTime.UtcNow;
 		log.LogInformation("Installing Panda {Version} by itself (automatic updates are on, nothing is playing)", info.Latest);
-		await StartUpgradeAsync();
+		// The download takes a while: right before the switch it waits again until nothing plays.
+		await StartUpgradeAsync(Quiet);
 	}
+
+	DateTime? quietSince;
 
 	async Task<bool> YtDlpUpdatingAsync()
 	{

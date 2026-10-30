@@ -27,6 +27,7 @@ public sealed class Scheduler(BotManager bots, Playlists playlists, RadioBrowser
 	// The first copy comes after a while: a session that breaks the start isn't written again at once.
 	DateTime lastSessionSave = DateTime.Now;
 	DateTime lastUpdateLook = DateTime.Now;
+	int autoUpdating;
 	// A tick that came late (a pause, a slow radio lookup, the clock jumping) still runs what it passed; not older.
 	static readonly TimeSpan CatchUp = TimeSpan.FromMinutes(5);
 
@@ -71,8 +72,14 @@ public sealed class Scheduler(BotManager bots, Playlists playlists, RadioBrowser
 		if (now - lastUpdateLook >= TimeSpan.FromMinutes(1))
 		{
 			lastUpdateLook = now;
-			try { await updates.AutoUpdateAsync(bots); }
-			catch (Exception ex) { log.LogWarning("Automatic update failed: {Error}", ex.Message); }
+			// Beside the tick: asking GitHub may take a while, and schedules must not wait for it.
+			if (Interlocked.Exchange(ref autoUpdating, 1) == 0)
+				_ = Task.Run(async () =>
+				{
+					try { await updates.AutoUpdateAsync(bots); }
+					catch (Exception ex) { log.LogWarning("Automatic update failed: {Error}", ex.Message); }
+					finally { Volatile.Write(ref autoUpdating, 0); }
+				});
 		}
 		// What plays, kept on disk in case Panda doesn't get to stop properly.
 		if (now - lastSessionSave >= TimeSpan.FromSeconds(30))

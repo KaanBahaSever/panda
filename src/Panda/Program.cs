@@ -10,9 +10,12 @@ Console.OutputEncoding = System.Text.Encoding.UTF8; // emoji in logs on Windows 
 
 const string Usage = "usage: panda [--data <dir>] [version | set-password <password> [user]]";
 // Anything unknown stops here: it must not start a full Panda (with a new data folder) by accident.
+string? afterPid = null;   // set by an update on Windows (SelfUpdate.cs), before any command
+var command = false;
 for (int i = 0; i < args.Length; i++)
 {
-	if (args[i] is "--data" or "--after" && i + 1 < args.Length) i++;
+	if (args[i] == "--data" && i + 1 < args.Length) i++;
+	else if (args[i] == "--after" && i + 1 < args.Length) afterPid = args[++i];
 	else if (args[i] is "version" or "--version" or "-v")
 	{
 		Console.WriteLine(PanelApi.Version);
@@ -23,7 +26,7 @@ for (int i = 0; i < args.Length; i++)
 		Console.WriteLine(Usage);
 		return 0;
 	}
-	else if (args[i] == "set-password") break;   // what follows is its own (a password may start with "-")
+	else if (args[i] == "set-password") { command = true; break; }   // what follows is its own (a password may start with "-")
 	else
 	{
 		Console.Error.WriteLine(Usage);
@@ -31,8 +34,13 @@ for (int i = 0; i < args.Length; i++)
 	}
 }
 
-// Started by an update (SelfUpdate.cs): the Panda it replaces finishes stopping first.
-Updates.AfterUpdate(ArgValue(args, "--after"));
+if (!command)
+{
+	// Started by an update (SelfUpdate.cs): the Panda it replaces finishes stopping first.
+	Updates.AfterUpdate(afterPid);
+	// A new version that didn't get going twice: the previous one comes back.
+	if (Updates.TrialFailedBefore()) { Updates.StartAgain(); return 1; }
+}
 var dataDir = Path.GetFullPath(
 	ArgValue(args, "--data") ?? Environment.GetEnvironmentVariable("PANDA_DATA") ?? "data");
 Directory.CreateDirectory(dataDir);
@@ -41,7 +49,7 @@ if (Backup.ApplyPending(dataDir)) Console.WriteLine("Restored a backup from the 
 var configPath = Path.Combine(dataDir, "config.json");
 var config = PandaConfig.Load(configPath);
 
-switch (args.FirstOrDefault(a => !a.StartsWith("--") && a != ArgValue(args, "--data") && a != ArgValue(args, "--after")))
+switch (command ? "set-password" : null)
 {
 case "set-password":
 {
@@ -202,7 +210,20 @@ using var hangUp = System.Runtime.InteropServices.PosixSignalRegistration.Create
 	app.Lifetime.StopApplication();
 	app.Lifetime.ApplicationStopped.WaitHandle.WaitOne(TimeSpan.FromSeconds(4));
 });
-await app.RunAsync();
+if (Updates.TestReleases != null) Console.WriteLine($"PANDA_TEST_RELEASES is set: updates come from {Updates.TestReleases}.");
+// A Panda put in place by an update has passed once it has run two minutes.
+app.Lifetime.ApplicationStarted.Register(() => _ = Task.Delay(TimeSpan.FromMinutes(2), app.Lifetime.ApplicationStopping)
+	.ContinueWith(t => { if (!t.IsCanceled) Updates.TrialPassed(); }));
+try { await app.RunAsync(); }
+catch (Exception ex) when (Updates.RollBackIfOnTrial(ex.Message))
+{
+	// The new version can't start (a port, a setting it doesn't take): the previous one runs again.
+	Console.Error.WriteLine(ex);
+	Updates.StartAgain();
+	return 1;
+}
+// An update on Linux or macOS: this process turns into the new program, now that the queue is saved.
+if (Updates.ExecAfterStop is { } next) Updates.ExecNow(next);
 // 3 after a restore: the service manager starts Panda again (systemd Restart=on-failure).
 return Environment.ExitCode;
 
