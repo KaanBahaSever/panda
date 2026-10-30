@@ -12,7 +12,7 @@ const string Usage = "usage: panda [--data <dir>] [version | set-password <passw
 // Anything unknown stops here: it must not start a full Panda (with a new data folder) by accident.
 for (int i = 0; i < args.Length; i++)
 {
-	if (args[i] == "--data" && i + 1 < args.Length) i++;
+	if (args[i] is "--data" or "--after" && i + 1 < args.Length) i++;
 	else if (args[i] is "version" or "--version" or "-v")
 	{
 		Console.WriteLine(PanelApi.Version);
@@ -31,6 +31,8 @@ for (int i = 0; i < args.Length; i++)
 	}
 }
 
+// Started by an update (SelfUpdate.cs): the Panda it replaces finishes stopping first.
+Updates.AfterUpdate(ArgValue(args, "--after"));
 var dataDir = Path.GetFullPath(
 	ArgValue(args, "--data") ?? Environment.GetEnvironmentVariable("PANDA_DATA") ?? "data");
 Directory.CreateDirectory(dataDir);
@@ -39,7 +41,7 @@ if (Backup.ApplyPending(dataDir)) Console.WriteLine("Restored a backup from the 
 var configPath = Path.Combine(dataDir, "config.json");
 var config = PandaConfig.Load(configPath);
 
-switch (args.FirstOrDefault(a => !a.StartsWith("--") && a != ArgValue(args, "--data")))
+switch (args.FirstOrDefault(a => !a.StartsWith("--") && a != ArgValue(args, "--data") && a != ArgValue(args, "--after")))
 {
 case "set-password":
 {

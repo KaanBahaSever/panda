@@ -3,7 +3,7 @@
 # server), stop time, and with "all" also the panel update test (installs Panda in WSL as root).
 # Runs from Git Bash on Windows (tests in WSL) or on Linux.
 # usage: tests/run.sh            translations, chat, stop time
-#        tests/run.sh all        and the panel update test
+#        tests/run.sh all        and the panel update test, and the self update test
 #        tests/run.sh long       failure cases and a long run (SOAK_MIN minutes, default 30)
 #        tests/run.sh chat 12 13 only these chat scenarios (by number)
 set -u
@@ -55,6 +55,14 @@ if [ "$MODE" = all ]; then
 		run "panel update" sudo bash "$R/tests/wsl/upgrade.sh" "$B/panda-linux-x64.tar.gz" "${UPGRADE_FROM:-latest}"
 	fi
 	in_linux bash "$(lp "$R/tests/wsl/env.sh")" stop
+	# Two "newer" releases for the self update test (a Panda not installed by install.sh: Windows, macOS).
+	for v in 9.0.1 9.0.2; do
+		dotnet publish "$R/src/Panda/Panda.csproj" -c Release -r linux-x64 --self-contained -p:PublishSingleFile=true \
+			-p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=none -p:Version=$v -o "$B/v$v" -nologo -v q || exit 1
+		mkdir -p "$B/releases/v$v"; cp "$R/deploy/panda.service" "$R/scripts/install.sh" "$R/LICENSE" "$B/v$v/"
+	done
+	in_linux bash "$(lp "$R/tests/wsl/pack-releases.sh")" "$(lp "$B")" 9.0.1 9.0.2
+	run "self update" in_linux bash "$(lp "$R/tests/wsl/selfupdate.sh")" "$(lp "$B/panda/panda")" "$(lp "$B/releases")"
 fi
 
 echo; echo "##### results"

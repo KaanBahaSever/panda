@@ -90,12 +90,13 @@ const I18N = {
     updInstalled: 'Installed', updNewest: 'Newest', updOk: 'Up to date', updNew: 'New version',
     updPandaWhat: 'The bot itself. Your songs, history, playlists and settings stay; the queue carries on after the restart.',
     updYtWhat: 'The tool that fetches songs from YouTube. YouTube changes often; the server also updates it daily.',
+    updAuto: 'Install updates by themselves', updAutoHint: 'When a new version is out, Panda installs it at a moment when no bot is playing, and picks up where it left off.', updAutoOn: 'Panda installs updates by itself now.', updAutoOff: 'Updates are only installed when you click.',
     updNow: 'Update Panda', updStarted: 'Updating… Panda restarts in a minute or two.', updDone: x => `Panda was updated to v${x}. Reloading…`,
     updSlow: 'Panda hasn\'t come back yet; see the logs on the server.',
     updFailed: 'The update didn\'t go through (GitHub may have had a hiccup). Panda keeps running as it was; try again in a minute.',
     'updHow.docker': 'Docker: in the Panda folder run "git pull && docker compose up -d --build".',
     'updHow.systemd-old': 'Run the installer on the server once more (the command in the README); after that you can update from here.',
-    'updHow.manual': 'Download the new release from GitHub and replace the program.',
+    'updHow.manual': 'Download the new release from GitHub and replace the program (Panda can do it itself when its folder can be written to).',
     ytUpdate: 'Update yt-dlp', ytBusy: 'Updating… this can take a minute.', ytDone: (a, b) => `Updated: ${a || '?'} → ${b || '?'}`,
     ytCurrent: x => `Already the newest version (${x || '?'}).`, ytPending: 'The server is still updating it; press Check in a minute.',
     'err.ytdlp-update-failed': 'yt-dlp could not be updated; see the logs.',
@@ -194,12 +195,13 @@ const I18N = {
     updInstalled: 'Kurulu', updNewest: 'En son', updOk: 'Güncel', updNew: 'Yeni sürüm var',
     updPandaWhat: 'Botun kendisi. Şarkılar, geçmiş, listeler ve ayarlar silinmez; kuyruk yeniden başlayınca kaldığı yerden sürer.',
     updYtWhat: 'Şarkıları YouTube\'dan çeken araç. YouTube sık değiştiği için sunucu bunu her gün kendisi de günceller.',
+    updAuto: 'Güncellemeleri kendisi kursun', updAutoHint: 'Yeni sürüm çıkınca Panda onu hiçbir bot çalmazken kurar ve kaldığı yerden devam eder.', updAutoOn: 'Panda güncellemeleri artık kendisi kuracak.', updAutoOff: 'Güncellemeler sadece sen tıklayınca kurulur.',
     updNow: 'Panda\'yı güncelle', updStarted: 'Güncelleniyor… Panda bir iki dakika içinde yeniden başlayacak.', updDone: x => `Panda v${x} sürümüne güncellendi. Sayfa yenileniyor…`,
     updSlow: 'Panda henüz geri gelmedi; sunucudaki kayıtlara bak.',
     updFailed: 'Güncelleme yapılamadı (GitHub anlık bir hata vermiş olabilir). Panda eskisi gibi çalışıyor; bir dakika sonra tekrar dene.',
     'updHow.docker': 'Docker: Panda klasöründe "git pull && docker compose up -d --build" çalıştır.',
     'updHow.systemd-old': 'Sunucuda kurulum komutunu bir kez daha çalıştır (README\'deki komut); sonra buradan güncelleyebilirsin.',
-    'updHow.manual': 'Yeni sürümü GitHub\'dan indirip programı değiştir.',
+    'updHow.manual': 'Yeni sürümü GitHub\'dan indirip programı değiştir (Panda\'nın klasörüne yazılabiliyorsa bunu kendisi yapar).',
     ytUpdate: 'yt-dlp\'yi güncelle', ytBusy: 'Güncelleniyor… bir dakika sürebilir.', ytDone: (a, b) => `Güncellendi: ${a || '?'} → ${b || '?'}`,
     ytCurrent: x => `Zaten en son sürüm (${x || '?'}).`, ytPending: 'Sunucu hâlâ güncelliyor; bir dakika sonra Denetle\'ye bas.',
     'err.ytdlp-update-failed': 'yt-dlp güncellenemedi; kayıtlara bak.',
@@ -298,12 +300,13 @@ const I18N = {
     updInstalled: 'Installée', updNewest: 'La plus récente', updOk: 'À jour', updNew: 'Nouvelle version',
     updPandaWhat: 'Le bot lui-même. Vos morceaux, l\'historique, les playlists et les paramètres sont conservés ; la file reprend après le redémarrage.',
     updYtWhat: 'L\'outil qui récupère les morceaux sur YouTube. YouTube change souvent ; le serveur le met aussi à jour chaque jour.',
+    updAuto: 'Installer les mises à jour tout seul', updAutoHint: "Quand une nouvelle version sort, Panda l'installe à un moment où aucun bot ne joue, puis reprend là où il en était.", updAutoOn: 'Panda installera désormais les mises à jour tout seul.', updAutoOff: 'Les mises à jour ne sont installées que quand vous cliquez.',
     updNow: 'Mettre à jour Panda', updStarted: 'Mise à jour… Panda redémarre dans une ou deux minutes.', updDone: x => `Panda est passé en v${x}. Rechargement…`,
     updSlow: 'Panda n\'est pas encore revenu ; consultez les journaux sur le serveur.',
     updFailed: 'La mise à jour n\'a pas abouti (GitHub a peut-être eu un souci). Panda continue de tourner comme avant ; réessayez dans une minute.',
     'updHow.docker': 'Docker : dans le dossier de Panda, lancez « git pull && docker compose up -d --build ».',
     'updHow.systemd-old': 'Relancez une fois l\'installateur sur le serveur (la commande du README) ; ensuite vous pourrez mettre à jour d\'ici.',
-    'updHow.manual': 'Téléchargez la nouvelle version sur GitHub et remplacez le programme.',
+    'updHow.manual': 'Téléchargez la nouvelle version sur GitHub et remplacez le programme (Panda le fait lui-même si son dossier est accessible en écriture).',
     ytUpdate: 'Mettre à jour yt-dlp', ytBusy: 'Mise à jour… cela peut prendre une minute.', ytDone: (a, b) => `Mis à jour : ${a || '?'} → ${b || '?'}`,
     ytCurrent: x => `Déjà la dernière version (${x || '?'}).`, ytPending: 'Le serveur est encore en train de le mettre à jour ; appuyez sur Vérifier dans une minute.',
     'err.ytdlp-update-failed': 'Impossible de mettre à jour yt-dlp ; consultez les journaux.',
@@ -402,12 +405,13 @@ const I18N = {
     updInstalled: 'Installiert', updNewest: 'Neueste', updOk: 'Aktuell', updNew: 'Neue Version',
     updPandaWhat: 'Der Bot selbst. Deine Songs, der Verlauf, die Playlists und Einstellungen bleiben; die Warteschlange geht nach dem Neustart weiter.',
     updYtWhat: 'Das Programm, das Songs von YouTube holt. YouTube ändert sich oft; der Server aktualisiert es auch täglich selbst.',
+    updAuto: 'Updates selbst installieren', updAutoHint: 'Wenn eine neue Version erscheint, installiert Panda sie, wenn gerade kein Bot spielt, und macht dort weiter, wo er war.', updAutoOn: 'Panda installiert Updates jetzt selbst.', updAutoOff: 'Updates werden nur installiert, wenn du klickst.',
     updNow: 'Panda aktualisieren', updStarted: 'Aktualisiere… Panda startet in ein, zwei Minuten neu.', updDone: x => `Panda wurde auf v${x} aktualisiert. Lade neu…`,
     updSlow: 'Panda ist noch nicht zurück; schau dir das Protokoll auf dem Server an.',
     updFailed: 'Das Update hat nicht geklappt (vielleicht hatte GitHub einen Aussetzer). Panda läuft weiter wie vorher; versuch es in einer Minute nochmal.',
     'updHow.docker': 'Docker: Führ im Panda-Ordner „git pull && docker compose up -d --build“ aus.',
     'updHow.systemd-old': 'Führ das Installationsskript einmal erneut auf dem Server aus (der Befehl aus der README); danach kannst du von hier aus aktualisieren.',
-    'updHow.manual': 'Lade das neue Release von GitHub herunter und ersetze das Programm.',
+    'updHow.manual': 'Lade das neue Release von GitHub herunter und ersetze das Programm (Panda macht das selbst, wenn sein Ordner beschreibbar ist).',
     ytUpdate: 'yt-dlp aktualisieren', ytBusy: 'Aktualisiere… das kann eine Minute dauern.', ytDone: (a, b) => `Aktualisiert: ${a || '?'} → ${b || '?'}`,
     ytCurrent: x => `Schon die neueste Version (${x || '?'}).`, ytPending: 'Der Server aktualisiert es noch; drück in einer Minute auf Prüfen.',
     'err.ytdlp-update-failed': 'yt-dlp konnte nicht aktualisiert werden; schau ins Protokoll.',
@@ -2032,7 +2036,8 @@ function renderUpdate() {
   };
 
   const pandaActions = [];
-  if (u?.newer && u.install === 'systemd') pandaActions.push(button(t('updNow'), 'download', startUpgrade, true));
+  const canUpdate = u && (u.install === 'systemd' || u.install === 'self');
+  if (u?.newer && canUpdate) pandaActions.push(button(t('updNow'), 'download', startUpgrade, true));
   if (u?.newer && u.notes) pandaActions.push(el('details', { class: 'upd-notes' }, el('summary', { text: t('updNotes') }), el('pre', { class: 'notes', text: u.notes })));
   if (u?.newer && u.url && safeUrl(u.url)) pandaActions.push(el('a', { class: 'btn ghost sm', href: safeUrl(u.url), target: '_blank', rel: 'noopener noreferrer' }, icon('ext'), el('span', { text: t('updRelease') })));
   // Unknown newest version (GitHub unreachable) or a missing yt-dlp: let them try anyway.
@@ -2042,9 +2047,23 @@ function renderUpdate() {
     el('div', { class: 'upd-head' }, el('h3', { text: t('updates') }), el('div', { class: 'upd-check' }, when, check)), sub ?? '',
     item({ name: 'Panda', what: t('updPandaWhat'), installed: u && 'v' + u.current, newest: u?.latest && 'v' + u.latest,
       newer: u?.newer, msg: updMsg.panda, actions: pandaActions,
-      hint: u?.newer && u.install !== 'systemd' ? t('updHow.' + u.install) : null }),
+      hint: u?.newer && !canUpdate ? t('updHow.' + u.install) : null }),
+    canUpdate ? autoUpdateSwitch(u) : '',
     item({ name: 'yt-dlp', what: t('updYtWhat'), installed: u?.ytDlp, newest: u?.ytDlpLatest,
       newer: u?.ytDlpNewer, msg: updMsg.yt, actions: ytActions }));
+}
+
+// "Install updates by themselves": saved at once; Panda does it when no bot plays anything.
+function autoUpdateSwitch(u) {
+  const box = el('input', { type: 'checkbox' });
+  box.checked = !!u.auto;
+  box.addEventListener('change', async () => {
+    try { await api('PUT', '/api/update/auto', { on: box.checked }); updateInfo.auto = box.checked; toast(t(box.checked ? 'updAutoOn' : 'updAutoOff')); }
+    catch (e) { box.checked = !box.checked; toast(errText(e), 'err'); }
+  });
+  return el('div', { class: 'upd-auto' },
+    el('label', { class: 'switch' }, box, el('span', { class: 'track', 'aria-hidden': 'true' }), el('span', { text: t('updAuto') })),
+    el('p', { class: 'hint', text: t('updAutoHint') }));
 }
 
 async function startUpgrade() {

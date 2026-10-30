@@ -497,6 +497,8 @@ public sealed class BotSettings
 public sealed class PanelSettings
 {
 	public string Listen { get; set; } = "0.0.0.0";
+	/// <summary>A newer Panda is installed by itself when nothing plays (where the panel can update it).</summary>
+	public bool AutoUpdate { get; set; }
 	/// <summary>Where people open the panel when it's behind a proxy (https://panda.example.com); only shown.</summary>
 	public string PublicUrl { get; set; } = "";
 	/// <summary>Proxies in front of the panel whose X-Forwarded-For is believed (an IP, or a network like

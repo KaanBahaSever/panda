@@ -18,7 +18,7 @@ public sealed record ScheduleEntry(string Time, List<int> Days, string Action, s
 /// Runs the bots' schedules (Settings → Schedule) and the sleep timers (!sleep): looks every few seconds
 /// whether a time has come. Times are the server's local time.
 /// </summary>
-public sealed class Scheduler(BotManager bots, Playlists playlists, RadioBrowser radios, RadioFavorites favorites, ILogger<Scheduler> log) : BackgroundService
+public sealed class Scheduler(BotManager bots, Playlists playlists, RadioBrowser radios, RadioFavorites favorites, Updates updates, ILogger<Scheduler> log) : BackgroundService
 {
 	// What already ran today (bot, entry), so a minute that is looked at twice runs once.
 	readonly HashSet<string> done = [];
@@ -26,6 +26,7 @@ public sealed class Scheduler(BotManager bots, Playlists playlists, RadioBrowser
 	DateTime lastTick = DateTime.Now;
 	// The first copy comes after a while: a session that breaks the start isn't written again at once.
 	DateTime lastSessionSave = DateTime.Now;
+	DateTime lastUpdateLook = DateTime.Now;
 	// A tick that came late (a pause, a slow radio lookup, the clock jumping) still runs what it passed; not older.
 	static readonly TimeSpan CatchUp = TimeSpan.FromMinutes(5);
 
@@ -66,6 +67,13 @@ public sealed class Scheduler(BotManager bots, Playlists playlists, RadioBrowser
 		}
 		try { await LeaveEmptyAsync(now); }
 		catch (Exception ex) { log.LogWarning("Leave-when-empty failed: {Error}", ex.Message); }
+		// Automatic updates (when allowed): looked at once a minute; GitHub is asked at most once an hour.
+		if (now - lastUpdateLook >= TimeSpan.FromMinutes(1))
+		{
+			lastUpdateLook = now;
+			try { await updates.AutoUpdateAsync(bots); }
+			catch (Exception ex) { log.LogWarning("Automatic update failed: {Error}", ex.Message); }
+		}
 		// What plays, kept on disk in case Panda doesn't get to stop properly.
 		if (now - lastSessionSave >= TimeSpan.FromSeconds(30))
 		{

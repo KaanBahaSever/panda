@@ -65,7 +65,7 @@ Panda talks to the server directly, so it stays light: the bot itself uses about
   times, statistics, volume, loop, seek, light/dark theme, English/Turkish/French/German.
 - 👥 **Panel users** — admins can do everything; "can only add songs" users watch and add songs.
 - 🩺 **System screen** — CPU, memory and disk, each bot's connection, live logs with search, and
-  updates (one click on Linux installs).
+  updates: one click in the panel (Windows, macOS and Linux), or let Panda install them by itself.
 - 💬 **Chat commands** in English, Turkish, French and German. `!follow` makes the bot follow you between channels.
 - 🍪 **YouTube bot check?** Paste your cookies in the panel and you're done.
 - 🔁 Reconnects by itself, keeps its identity (so permissions stick), shows the song in its description.
@@ -205,6 +205,11 @@ install [ffmpeg](https://ffmpeg.org/download.html), [yt-dlp](https://github.com/
 [deno](https://deno.com/) so they are on your `PATH`, then run `panda` (`panda.exe`). Settings are stored
 in a `data` folder next to where you start it.
 
+To update, click **Update Panda** under **System → Updates**: Panda downloads the new version, checks it,
+replaces its own program and starts again in a new window, and the music picks up where it left off. Turn on
+**Install updates by themselves** there and Panda does it alone, at a moment when no bot is playing. (Keep
+Panda in a folder it can write to, not in `C:\Program Files`.)
+
 ## First steps
 
 1. Open the panel (`http://your-server:8080`) and log in as `admin` with the printed password.
@@ -334,6 +339,7 @@ Everything is editable in the panel; the file is `/var/lib/panda/config.json` (o
     }
   ],
   "panel": { "listen": "0.0.0.0", "port": 8080, "users": [ /* set in the panel */ ],
+             "autoUpdate": false,      // install new versions by itself when nothing plays
              "publicUrl": "",          // e.g. "https://panda.example.com": the address shown in the log and by the installer
              "trustedProxies": [] },   // a proxy on another machine or container: its own address; this machine is always trusted
   "youTube": { "ytDlpPath": "yt-dlp", "ffmpegPath": "ffmpeg", "cookiesFile": "", "maxDurationMinutes": 60,

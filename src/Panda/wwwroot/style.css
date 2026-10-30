@@ -529,3 +529,6 @@ dialog::backdrop { background: rgba(22,22,30,.45); backdrop-filter: blur(2px); }
 .hint.center { text-align: center; margin-top: 8px; }
 .btn.more { display: flex; margin: 8px auto 0; }
 .btn.more[hidden] { display: none; }
+
+.upd-auto { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+.upd-auto .hint { margin: 6px 0 0; }

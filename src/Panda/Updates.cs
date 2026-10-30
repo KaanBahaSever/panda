@@ -8,7 +8,8 @@ namespace Panda;
 /// <summary>Installed and newest versions of Panda and of yt-dlp.</summary>
 /// <param name="Install">
 /// "systemd": installed by install.sh, the panel can update it. "systemd-old": installed before
-/// one-click updates; running the installer once more enables them. "docker" or "manual": only told.
+/// one-click updates; running the installer once more enables them. "self": Panda's own program in a
+/// folder it may write (Windows, macOS, a Linux download), it replaces itself. "docker" or "manual": only told.
 /// </param>
 /// <param name="Error">"unreachable" when GitHub could not be asked; the newest versions are then null.</param>
 /// <param name="Upgrading">Panda's update is running (the panel was maybe reloaded or reopened since).</param>
@@ -16,7 +17,7 @@ namespace Panda;
 public sealed record UpdateInfo(
 	string Current, string? Latest, bool Newer, string? Notes, string? Url, DateTimeOffset? Published,
 	string? YtDlp, string? YtDlpLatest, bool YtDlpNewer,
-	string Install, DateTimeOffset? CheckedAt, string? Error, bool Upgrading, bool YtDlpUpdating);
+	string Install, DateTimeOffset? CheckedAt, string? Error, bool Upgrading, bool YtDlpUpdating, bool Auto = false);
 
 /// <param name="Result">
 /// "updated", "current" (was already the newest), "pending" (systemd hasn't finished yet), "installed"
@@ -25,7 +26,7 @@ public sealed record UpdateInfo(
 public sealed record YtDlpUpdate(string Result, string? From, string? To);
 
 /// <summary>Looks for new Panda releases on GitHub and starts updates of Panda and yt-dlp.</summary>
-public sealed class Updates(PandaConfig config, DataPaths paths, SystemInfo system, ILogger<Updates> log)
+public sealed partial class Updates(PandaConfig config, DataPaths paths, SystemInfo system, IHostApplicationLifetime lifetime, ILogger<Updates> log)
 {
 	const string Repo = "KaanBahaSever/panda";
 	static readonly HttpClient Http = CreateHttp();
@@ -48,8 +49,11 @@ public sealed class Updates(PandaConfig config, DataPaths paths, SystemInfo syst
 		if (File.Exists("/.dockerenv")) return "docker";
 		if (OperatingSystem.IsLinux() && File.Exists("/etc/systemd/system/panda.service"))
 			return File.Exists("/etc/systemd/system/panda-upgrade.path") ? "systemd" : "systemd-old";
-		return "manual";
+		return canReplaceItself.Value ? "self" : "manual";
 	}
+
+	/// <summary>The panel can start an update here (and install them by itself when allowed).</summary>
+	public static bool CanUpdate => InstallKind() is "systemd" or "self";
 
 	/// <summary>
 	/// The newest Panda and yt-dlp releases; GitHub is asked at most once an hour unless
@@ -66,7 +70,7 @@ public sealed class Updates(PandaConfig config, DataPaths paths, SystemInfo syst
 				try
 				{
 					using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(20));
-					var panda = GetJsonAsync($"https://api.github.com/repos/{Repo}/releases/latest", cts.Token);
+					var panda = GetJsonAsync(LatestApi, cts.Token);
 					var yt = GetJsonAsync("https://api.github.com/repos/yt-dlp/yt-dlp/releases/latest", cts.Token);
 					using var p = await panda;
 					using var y = await yt;
@@ -84,13 +88,13 @@ public sealed class Updates(PandaConfig config, DataPaths paths, SystemInfo syst
 				{
 					log.LogWarning("Could not check for updates: {Error}", ex.Message);
 					return new UpdateInfo(PanelApi.Version, null, false, null, null, null,
-						ytDlp, null, false, InstallKind(), null, "unreachable", await UpgradingAsync(), await YtDlpUpdatingAsync());
+						ytDlp, null, false, InstallKind(), null, "unreachable", await UpgradingAsync(), await YtDlpUpdatingAsync(), config.Panel.AutoUpdate);
 				}
 			}
 			var l = latest;
 			return new UpdateInfo(PanelApi.Version, l.Panda, IsNewer(l.Panda, PanelApi.Version), l.Notes, l.Url, l.Published,
 				ytDlp, l.YtDlp, IsNewer(l.YtDlp, ytDlp), InstallKind(), new DateTimeOffset(checkedAt, TimeSpan.Zero), null,
-				await UpgradingAsync(), await YtDlpUpdatingAsync());
+				await UpgradingAsync(), await YtDlpUpdatingAsync(), config.Panel.AutoUpdate);
 		}
 		finally { checking.Release(); }
 	}
@@ -112,6 +116,12 @@ public sealed class Updates(PandaConfig config, DataPaths paths, SystemInfo syst
 	/// </summary>
 	public async Task<bool> StartUpgradeAsync()
 	{
+		if (InstallKind() == "self")
+		{
+			if (await CheckAsync() is not { Newer: true, Latest: { } version }) return false;
+			StartSelfUpdate(version);   // a second click while it runs changes nothing
+			return true;
+		}
 		if (InstallKind() != "systemd") return false;
 		if (await UpgradingAsync()) return true; // already on its way: a second click changes nothing
 		log.LogInformation("Updating Panda: the installer runs now and restarts Panda");
@@ -127,6 +137,7 @@ public sealed class Updates(PandaConfig config, DataPaths paths, SystemInfo syst
 	/// </summary>
 	public async Task<string> UpgradeStateAsync()
 	{
+		if (InstallKind() == "self") lock (selfGate) return selfState;
 		if (await UpgradingAsync()) return "running";
 		if (InstallKind() != "systemd") return "idle";
 		var (_, result) = await RunAsync("systemctl", "show -p Result --value panda-upgrade.service");
@@ -159,8 +170,31 @@ public sealed class Updates(PandaConfig config, DataPaths paths, SystemInfo syst
 	readonly object ytDlpGate = new();
 	Task<YtDlpUpdate>? ytDlpRun;
 
-	async Task<bool> UpgradingAsync() =>
-		InstallKind() == "systemd" && (File.Exists(UpgradeTrigger) || await ServiceRunningAsync("panda-upgrade.service"));
+	async Task<bool> UpgradingAsync()
+	{
+		lock (selfGate) if (selfState == "running") return true;
+		return InstallKind() == "systemd" && (File.Exists(UpgradeTrigger) || await ServiceRunningAsync("panda-upgrade.service"));
+	}
+
+	DateTime autoTriedAt = DateTime.MinValue;
+	string? autoTried;
+
+	/// <summary>
+	/// When the panel allows it (panel.autoUpdate): a newer Panda is installed by itself, at a moment when no
+	/// bot plays anything. A version whose update failed is tried again after six hours.
+	/// </summary>
+	public async Task AutoUpdateAsync(BotManager bots)
+	{
+		if (!config.Panel.AutoUpdate || !CanUpdate || await UpgradingAsync()) return;
+		if (bots.All.Any(b => b.Player.Current != null)) return;
+		var info = await CheckAsync();
+		if (!info.Newer || info.Latest is null) return;
+		if (autoTried == info.Latest && DateTime.UtcNow - autoTriedAt < TimeSpan.FromHours(6)) return;
+		autoTried = info.Latest;
+		autoTriedAt = DateTime.UtcNow;
+		log.LogInformation("Installing Panda {Version} by itself (automatic updates are on, nothing is playing)", info.Latest);
+		await StartUpgradeAsync();
+	}
 
 	async Task<bool> YtDlpUpdatingAsync()
 	{

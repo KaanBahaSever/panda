@@ -60,7 +60,7 @@ programı yok: Panda sunucuyla doğrudan konuşur, bu yüzden hafiftir (bot ~130
 - 👥 **Panel kullanıcıları** — yöneticiler her şeyi yapar; "sadece şarkı ekler" kullanıcıları izler ve
   şarkı ekler.
 - 🩺 **Sistem ekranı** — işlemci, bellek ve disk, her botun bağlantısı, aranabilir canlı kayıtlar ve
-  güncellemeler (Linux kurulumunda tek tık).
+  güncellemeler: panelden tek tık (Windows, macOS ve Linux) ya da Panda kendisi kursun.
 - 💬 Türkçe, İngilizce, Fransızca ve Almanca **sohbet komutları**. `!takip` ile bot seni kanaldan kanala takip eder.
 - 🍪 **YouTube bot kontrolü mü?** Cookies'i panele yapıştır, bitti.
 - 🔁 Kendi kendine yeniden bağlanır, kimliğini korur (yetkiler kalıcı olur), çalan şarkıyı açıklamasında gösterir.
@@ -206,6 +206,11 @@ Güncellemek için: `git pull && docker compose up -d --build`.
 [ffmpeg](https://ffmpeg.org/download.html), [yt-dlp](https://github.com/yt-dlp/yt-dlp#installation) ve
 [deno](https://deno.com/)'yu `PATH`'e kur, sonra `panda`'yı (`panda.exe`) çalıştır. Ayarlar, başlattığın
 yerdeki `data` klasöründe tutulur.
+
+Güncellemek için **Sistem → Güncellemeler** altında **Panda'yı güncelle**'ye tıkla: Panda yeni sürümü indirir,
+doğrular, kendi programını değiştirir ve yeni bir pencerede yeniden açılır; müzik kaldığı yerden sürer.
+Oradaki **Güncellemeleri kendisi kursun** ayarını açarsan Panda bunu hiçbir bot çalmazken kendisi yapar.
+(Panda'yı yazılabilen bir klasörde tut, `C:\Program Files` içinde değil.)
 
 ## İlk adımlar
 

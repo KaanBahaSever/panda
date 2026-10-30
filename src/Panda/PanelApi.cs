@@ -371,6 +371,12 @@ public static class PanelApi
 		admin.MapGet("/update", async (bool? fresh, Updates updates) => await updates.CheckAsync(fresh == true));
 		admin.MapPost("/update", async (Updates updates) =>
 			await updates.StartUpgradeAsync() ? Results.Accepted() : Problem("cannot-update"));
+		admin.MapPut("/update/auto", (AutoUpdateRequest req, PandaConfig config) =>
+		{
+			config.Panel.AutoUpdate = req.On;
+			config.Save();
+			return Results.NoContent();
+		});
 		admin.MapGet("/update/progress", async (Updates updates) => new { version = Version, state = await updates.UpgradeStateAsync() });
 		admin.MapPost("/update/yt-dlp", async (Updates updates) =>
 		{
@@ -661,6 +667,7 @@ public static class PanelApi
 	public sealed record VolumeRequest(int Volume);
 	public sealed record LoopRequest(LoopMode Mode);
 	public sealed record AutoplayRequest(bool On);
+	public sealed record AutoUpdateRequest(bool On);
 	public sealed record ImportRequest(string? Url, string? Name = null);
 	public sealed record SoundRequest(string? Equalizer = null, double[]? Bands = null, string? Effect = null, double? Speed = null, bool? EightD = null, int? Crossfade = null);
 	public sealed record FmRequest(string? Uuid, bool Now = false);
