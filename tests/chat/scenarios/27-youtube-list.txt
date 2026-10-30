@@ -32,3 +32,21 @@ c !play https://www.youtube.com/watch?v=fkList00001&list=RDfkList00001
 e Now playing
 n more songs
 q 0
+# !playnow with a list: the rest comes right after its song, before what was waiting.
+c !stop
+c !play test tone
+c !play test tone
+c !playnow https://www.youtube.com/playlist?list=PLfake
+e List Song 1
+e And 2 more songs
+q 3
+c !skip
+N List Song 2
+# Watch later and Liked videos are the cookie account's own: never opened.
+c !stop
+c !play https://www.youtube.com/playlist?list=WL
+e Nothing found
+c !play https://www.youtube.com/watch?v=fkList00001&list=LL&index=3
+e Now playing
+n more songs
+q 0

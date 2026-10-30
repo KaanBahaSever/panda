@@ -65,8 +65,8 @@ if [ $json = 1 ]; then
 		*list=RD*) echo '{"entries":[]}' ;;
 		*list=PLgone*) echo "ERROR: [youtube:tab] PLgone: The playlist does not exist." >&2; exit 1 ;;
 		*playlist\?list=*)
-			# A YouTube playlist: "Fake List" with three songs.
-			printf '{"title":"Fake List","entries":[{"id":"fkList00001","title":"List Song 1","channel":"Fake","duration":90},{"id":"fkList00002","title":"List Song 2","channel":"Fake","duration":90},{"id":"fkList00003","title":"List Song 3","channel":"Fake","duration":90}]}
+			# A YouTube playlist: "Fake List" with three songs (and a private video, left out).
+			printf '{"title":"Fake List","entries":[{"id":"fkList00001","title":"List Song 1","channel":"Fake","duration":90},{"id":"fkList00002","title":"List Song 2","channel":"Fake","duration":90},{"id":"fkList00003","title":"List Song 3","channel":"Fake","duration":90},{"id":"fkList00004","title":"[Private video]","duration":null,"availability":"private"}]}
 ' ;;
 		*v=*)
 			id=${url##*v=}

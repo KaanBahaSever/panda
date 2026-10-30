@@ -1387,7 +1387,9 @@ $('avatar-file').addEventListener('change', async e => {
   if (!file) return;
   let blob;
   try { blob = await shrinkAvatar(file); } catch { return toast(t('err.bad-image'), 'err'); }
+  e.target.disabled = true;
   const r = await fetch(SB('/avatar'), { method: 'PUT', body: blob, headers: { 'Content-Type': blob.type || 'application/octet-stream' } }).catch(() => null);
+  e.target.disabled = false;
   if (!r || !r.ok) {
     const code = r ? (await r.json().catch(() => ({}))).error : null;
     return toast(code && I18N.en['err.' + code] ? t('err.' + code) : t('netError'), 'err');

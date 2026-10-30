@@ -335,7 +335,7 @@ Everything is editable in the panel; the file is `/var/lib/panda/config.json` (o
   ],
   "panel": { "listen": "0.0.0.0", "port": 8080, "users": [ /* set in the panel */ ],
              "publicUrl": "",          // e.g. "https://panda.example.com": the address shown in the log and by the installer
-             "trustedProxies": [] },   // proxies on other machines (Docker: "172.16.0.0/12"); this machine is always trusted
+             "trustedProxies": [] },   // a proxy on another machine or container: its own address; this machine is always trusted
   "youTube": { "ytDlpPath": "yt-dlp", "ffmpegPath": "ffmpeg", "cookiesFile": "", "maxDurationMinutes": 60,
                 "playAttempts": 3,                                 // tries when YouTube refuses a song
                 "retryPlayerClients": "android_vr,tv,web_safari",  // yt-dlp clients from the third try on
@@ -361,7 +361,9 @@ The panel speaks plain HTTP. If it is reachable from the internet, put it behind
 HTTPS (Caddy, nginx) or a firewall. Behind a proxy on the same machine, set `panel.listen` to `127.0.0.1`
 so only the proxy reaches the panel, and `panel.publicUrl` to the address people open. Panda reads the
 visitor's address from the proxy's `X-Forwarded-For` (only from this machine, or from `panel.trustedProxies`),
-so the login guard locks out one visitor after five wrong passwords, not everyone.
+so the login guard locks out one visitor after five wrong passwords, not everyone. With Docker, publish the
+panel only to the proxy (`"127.0.0.1:8080:8080"`) and name the proxy's own address, not a whole network:
+anyone a trusted address lets through could claim to be someone else.
 
 ## API
 

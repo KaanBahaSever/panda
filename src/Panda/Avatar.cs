@@ -36,7 +36,7 @@ public static class Avatar
 		{
 			if (File.Exists(path) && File.ReadAllBytes(path) is var data && IsValid(data)) return data;
 		}
-		catch (IOException) { }
+		catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
 		return Panda.Value;
 	}
 

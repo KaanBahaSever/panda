@@ -97,7 +97,7 @@ public static class PanelApi
 				if (found.More is { Count: > 0 } more) AddLater(b, sources, more, by, requester, isAdmin);
 				// A YouTube playlist: the songs after it go in at once.
 				var queued = found.Rest is { Count: > 0 } rest
-					? b.Player.EnqueueMany(rest.Select(t => t with { RequesterId = requester }), isAdmin, out _) : 0;
+					? b.Player.EnqueueMany(rest.Select(t => t with { RequesterId = requester }), isAdmin, out _, front: req.Now) : 0;
 				return Added(ctx, track, found.More?.Count ?? 0, found.ListName, queued);
 			}
 			catch (YouTubeException ex) { return Problem(ex.Message); }

@@ -52,6 +52,8 @@ public sealed partial class Sources(PandaConfig config, YouTube youtube, Library
 		}
 		if (YouTube.ParseListId(clean) is { } listId && await YouTubeListAsync(listId, YouTube.ParseVideoId(clean), requestedBy, ct) is { } list)
 			return list;
+		// Watch later, Liked...: only the song in the link, if it names one.
+		if (YouTube.IsPersonalList(clean) && YouTube.ParseVideoId(clean) is null) throw new YouTubeException("not-found");
 		if (YouTube.ParseVideoId(clean) is { } id)
 			return new(library.Find(id, requestedBy) is { } saved ? Checked(saved) : await youtube.ResolveAsync(clean, requestedBy, ct));
 		if (YouTube.IsYouTubeLink(clean))

@@ -63,6 +63,8 @@ public sealed class PandaConfig
 		cfg.Panel.ApiKeys.RemoveAll(k => k.Hash.Length == 0 || !Roles.IsValid(k.Role));
 		// A hand-edited config.json may say null.
 		cfg.Sources ??= new();
+		cfg.Panel.PublicUrl ??= "";
+		cfg.Panel.TrustedProxies ??= [];
 		foreach (var b in cfg.Bots)
 		{
 			b.Bot.SongChannel ??= "";
@@ -497,8 +499,9 @@ public sealed class PanelSettings
 	public string Listen { get; set; } = "0.0.0.0";
 	/// <summary>Where people open the panel when it's behind a proxy (https://panda.example.com); only shown.</summary>
 	public string PublicUrl { get; set; } = "";
-	/// <summary>Proxies in front of the panel whose X-Forwarded-For is believed (IPs or networks like
-	/// 172.16.0.0/12), besides this machine itself (always). Needed when the proxy is elsewhere (Docker).</summary>
+	/// <summary>Proxies in front of the panel whose X-Forwarded-For is believed (an IP, or a network like
+	/// 10.0.0.5/32), besides this machine itself (always). Needed when the proxy is elsewhere (Docker): name
+	/// the proxy, not a whole network, or anyone coming through it could claim another address.</summary>
 	public List<string> TrustedProxies { get; set; } = [];
 	/// <summary>The page /now.html shows anyone what the bots play (no names of who asked).</summary>
 	public bool PublicPage { get; set; }

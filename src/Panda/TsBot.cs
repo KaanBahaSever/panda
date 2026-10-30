@@ -381,14 +381,25 @@ public sealed class TsBot : BackgroundService
 		{
 			var image = Avatar.Read(avatarPath);
 			var hash = Convert.ToHexString(MD5.HashData(image)).ToLowerInvariant();
-			if (c.Book.Self()?.AvatarHash == hash) return null;
-			var r = await c.UploadAvatar(new MemoryStream(image));
-			Note("avatar", r, "i_client_max_avatar_filesize");
-			if (r.Ok) return null;
-			log.LogInformation("Avatar not set: {Error}", r.Error.ErrorFormat());
-			return r.Error.ErrorFormat();
+			if (c.Book.Self()?.AvatarHash == hash)
+			{
+				Note("avatar", (CommandError?)null, "i_client_max_avatar_filesize");
+				return null;
+			}
+			// What TSLib's UploadAvatar does, keeping the server's own error (a missing permission shows as one).
+			var up = await c.UploadFile(new MemoryStream(image), ChannelId.Null, "/avatar", overwrite: true, createMd5: true);
+			CommandError? error = !up.Ok ? up.Error : up.Value.Status != TransferStatus.Done ? CommandError.Custom("the upload didn't finish") : null;
+			if (error is null)
+			{
+				var r = await c.SendVoid(new TSLib.Commands.TsCommand("clientupdate") { { "client_flag_avatar", hash } });
+				error = r.Ok ? null : r.Error;
+			}
+			Note("avatar", error, "i_client_max_avatar_filesize");
+			if (error is null) return null;
+			log.LogInformation("Avatar not set: {Error}", error.ErrorFormat());
+			return error.ErrorFormat();
 		}
-		catch (Exception ex) when (ex is IOException or System.Net.Sockets.SocketException or InvalidOperationException)
+		catch (Exception ex) when (ex is not OperationCanceledException)
 		{
 			log.LogInformation("Avatar not set: {Error}", ex.Message);
 			return ex.Message;
@@ -889,11 +900,12 @@ public sealed class TsBot : BackgroundService
 				if (r.Rest is { Count: > 0 } rest)
 				{
 					var uid = msg.InvokerUid?.Value;
-					var added = player.EnqueueMany(rest.Select(t => t with { RequesterId = uid }), exempt, out var limited);
+					var added = player.EnqueueMany(rest.Select(t => t with { RequesterId = uid }), exempt, out var limited, front: command == "playnow");
 					var note = added > 0 ? Confirm(Strings.Get(Lang, "list-queued", added, Escape(r.ListName ?? "YouTube"))) : null;
-					// What didn't fit is always said.
-					if (added < rest.Count)
-						note = (note is null ? "" : note + " ") + (limited ? Strings.Get(Lang, "user-limit", Bot.MaxSongsPerUser) : Strings.Get(Lang, "queue-full"));
+					// What didn't fit is always said (songs over the length limit are just left out).
+					var cut = limited ? Strings.Get(Lang, "user-limit", Bot.MaxSongsPerUser)
+						: added < rest.Count && player.GetState().Queue.Count >= Bot.MaxQueueLength ? Strings.Get(Lang, "queue-full") : null;
+					if (cut != null) note = (note is null ? "" : note + " ") + cut;
 					if (note != null) reply = (reply is null ? "" : reply + "\n") + note;
 				}
 				return reply;

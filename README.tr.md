@@ -320,8 +320,9 @@ Panel düz HTTP konuşur. İnternetten erişilebiliyorsa önüne HTTPS'li bir te
 (Caddy, nginx) ya da güvenlik duvarı koy. Vekil aynı makinedeyse `panel.listen` ayarını `127.0.0.1` yap
 (panele sadece vekil ulaşsın), `panel.publicUrl` ayarına da insanların açtığı adresi yaz. Panda ziyaretçinin
 adresini vekilin `X-Forwarded-For` başlığından okur (sadece bu makineden ya da `panel.trustedProxies`
-listesindekilerden; Docker'da örneğin `"172.16.0.0/12"`). Böylece giriş koruması beş yanlış şifreden sonra
-herkesi değil, sadece o ziyaretçiyi kilitler.
+listesindekilerden). Böylece giriş koruması beş yanlış şifreden sonra herkesi değil, sadece o ziyaretçiyi
+kilitler. Docker'da paneli sadece vekile aç (`"127.0.0.1:8080:8080"`) ve bütün bir ağı değil, vekilin kendi
+adresini yaz: güvenilen bir adresten geçen herkes kendini başkası gibi gösterebilir.
 
 ## API
 

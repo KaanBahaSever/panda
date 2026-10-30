@@ -126,7 +126,14 @@ public static partial class Backup
 		}
 		var bots = Path.Combine(dataDir, "bots");
 		if (Directory.Exists(bots))
+		{
 			foreach (var f in Directory.EnumerateFiles(bots, "session.json", SearchOption.AllDirectories)) File.Delete(f);
+			// A bot of the backup without its own picture has Panda's (not one chosen after the backup).
+			if (Directory.Exists(Path.Combine(pending, "bots")))
+			foreach (var dir in Directory.EnumerateDirectories(Path.Combine(pending, "bots")))
+				if (!File.Exists(Path.Combine(dir, Avatar.FileName)))
+					File.Delete(Path.Combine(bots, Path.GetFileName(dir), Avatar.FileName));
+		}
 		Directory.Delete(pending, true);
 		return true;
 	}

@@ -74,13 +74,23 @@ public sealed partial class YouTube(PandaConfig config, ILogger<YouTube> log)
 	private static partial Regex ListIdRegex();
 
 	/// <summary>The playlist of a YouTube link (watch?v=...&amp;list=..., playlist?list=...), or null. Mixes
-	/// (RD...) are YouTube's own endless picks, not a list someone made: those links stay one song.</summary>
+	/// (RD...) are YouTube's own endless picks, not a list someone made: those links stay one song (YouTube
+	/// Music's own playlists, RDCLAK..., are lists). Personal lists are left out (<see cref="IsPersonalList"/>).</summary>
 	public static string? ParseListId(string input)
 	{
 		if (!YouTubeHostRegex().IsMatch(input) || ListIdRegex().Match(input) is not { Success: true } m) return null;
 		var id = m.Groups[1].Value;
-		return id.StartsWith("RD", StringComparison.Ordinal) ? null : id;
+		if (IsPersonal(id)) return null;
+		return id.StartsWith("RD", StringComparison.Ordinal) && !id.StartsWith("RDCLAK", StringComparison.Ordinal) ? null : id;
 	}
+
+	// Watch later, Liked videos, Liked music: with cookies set they are that account's own, and anyone in
+	// the channel could show them.
+	static bool IsPersonal(string listId) => listId is "WL" or "LL" or "LM";
+
+	/// <summary>A link to the cookie account's own list (Watch later, Liked...): not opened at all.</summary>
+	public static bool IsPersonalList(string input) =>
+		YouTubeHostRegex().IsMatch(input) && ListIdRegex().Match(input) is { Success: true } m && IsPersonal(m.Groups[1].Value);
 
 	/// <summary>TeamSpeak wraps links in [URL]...[/URL]; strip any BBCode.</summary>
 	[GeneratedRegex(@"\[/?[a-zA-Z]+(?:=[^\]]*)?\]")]
@@ -239,11 +249,16 @@ public sealed partial class YouTube(PandaConfig config, ILogger<YouTube> log)
 		var songs = new List<Track>();
 		if (json.TryGetProperty("entries", out var entries))
 			foreach (var e in entries.EnumerateArray())
-				if (!IsLiveJson(e) && (youtube ? (e.TryGetProperty("id", out var id) && id.GetString() is { Length: 11 } ? FromJson(e, "") : null) : FromSiteJson(e, "", null)) is { Title.Length: > 0 } t)
+				if (!IsLiveJson(e) && !Unavailable(e) && (youtube ? (e.TryGetProperty("id", out var id) && id.GetString() is { Length: 11 } ? FromJson(e, "") : null) : FromSiteJson(e, "", null)) is { Title.Length: > 0 } t)
 					songs.Add(t);
 		var title = json.TryGetProperty("title", out var tt) && tt.ValueKind == JsonValueKind.String ? tt.GetString() : null;
 		return (title, songs);
 	}
+
+	// A list's private or deleted video: "[Private video]", or an availability other than public/unlisted.
+	static bool Unavailable(JsonElement e) =>
+		(e.TryGetProperty("title", out var t) && t.GetString() is "[Private video]" or "[Deleted video]")
+		|| (e.TryGetProperty("availability", out var a) && a.ValueKind == JsonValueKind.String && a.GetString() is not ("public" or "unlisted"));
 
 	public async Task<Track> ResolveSiteAsync(string url, string requestedBy, CancellationToken ct = default)
 	{

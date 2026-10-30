@@ -209,9 +209,11 @@ public sealed class Player : IDisposable
 
 	/// <summary>Adds several tracks (a playlist) until the queue is full. Returns how many were added;
 	/// <paramref name="limited"/> tells that the songs-per-person limit stopped it.</summary>
-	public int EnqueueMany(IEnumerable<Track> tracks, bool exempt, out bool limited)
+	/// <param name="front">At the start of the queue, in order (after a song played now), not at the end.</param>
+	public int EnqueueMany(IEnumerable<Track> tracks, bool exempt, out bool limited, bool front = false)
 	{
 		var added = 0;
+		var at = 0;
 		limited = false;
 		lock (gate)
 		{
@@ -223,6 +225,7 @@ public sealed class Player : IDisposable
 				if (current is null) StartLocked(t, 0);
 				else if (queue.Count >= settings.Bot.MaxQueueLength) break;
 				else if (!exempt && WaitingLocked(t.RequesterId) >= PerUser) { limited = true; break; }
+				else if (front) queue.Insert(at++, t);
 				else queue.Add(t);
 				added++;
 			}
