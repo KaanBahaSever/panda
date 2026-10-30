@@ -26,6 +26,9 @@ echo "== clean"
 [ -x /opt/panda/install.sh ] && bash /opt/panda/install.sh --uninstall --purge >/dev/null
 pkill -f "http.server 8777" || true
 rm -rf $W; mkdir -p $W/serve $W/new
+# However it ends: the installed Panda joins the test TeamSpeak server, and a leftover one answers the next chat test too.
+cleanup() { pkill -f "http.server 8777" || true; [ "${KEEP:-0}" = 1 ] || { [ -x /opt/panda/install.sh ] && bash /opt/panda/install.sh --uninstall --purge >/dev/null; } || true; }
+trap cleanup EXIT
 
 echo "== install $OLD with its own installer"
 URL=https://github.com/KaanBahaSever/panda/releases/latest/download/panda-linux-x64.tar.gz
@@ -113,7 +116,5 @@ check "update watchers" "$(systemctl is-active panda-upgrade.path panda-update.p
 check "upgrade timeout" "$(grep -c '^TimeoutStartSec=15min' /etc/systemd/system/panda-upgrade.service)" 1
 echo "--- installer log:"; journalctl -u panda-upgrade --no-pager -o cat --since "-20 min" | grep -vE 'LANG|locale' | tail -8
 
-pkill -f "http.server 8777" || true
-[ "${KEEP:-0}" = 1 ] || bash /opt/panda/install.sh --uninstall --purge >/dev/null
 echo; echo "upgrade test: $failed failed"
 exit $failed
