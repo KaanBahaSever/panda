@@ -34,15 +34,36 @@ public sealed class BotInstance : IDisposable
 
 	static readonly JsonSerializerOptions SessionJson = new(JsonSerializerDefaults.Web);
 
-	/// <summary>Panda is stopping (an update or a restart): remember the queue and the song.</summary>
-	public void SaveSession()
+	/// <summary>Remembers the queue and the song for the next start: when Panda stops (an update, a restart),
+	/// and every half minute while it plays (<paramref name="stopping"/> false), so a window closed on Windows,
+	/// a crash or a power cut loses at most that much.</summary>
+	public void SaveSession(bool stopping = true)
 	{
-		var s = Player.SaveSession();
-		if (s.Current is null && s.Queue.Count == 0) return;
+		// The copy every half minute and the one at the stop don't write at once; after the stop, no more copies.
+		lock (sessionGate)
+		{
+			if (sessionFinal) return;
+			sessionFinal = stopping;
+			WriteSession(Player.SaveSession(stopping), stopping);
+		}
+	}
+
+	readonly object sessionGate = new();
+	bool sessionFinal;
+
+	void WriteSession(PlayerSession s, bool stopping)
+	{
 		try
 		{
+			if (s.Current is null && s.Queue.Count == 0)
+			{
+				// Nothing to come back to: an older copy must not bring back a song stopped since.
+				File.Delete(sessionPath);
+				return;
+			}
 			SafeFile.Write(sessionPath, JsonSerializer.Serialize(s, SessionJson));
-			log.LogInformation("Saved the queue ({Count} songs) for after the restart", s.Queue.Count + (s.Current is null ? 0 : 1));
+			if (stopping)
+				log.LogInformation("Saved the queue ({Count} songs) for after the restart", s.Queue.Count + (s.Current is null ? 0 : 1));
 		}
 		catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
 		{

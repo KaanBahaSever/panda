@@ -192,6 +192,14 @@ if (config.Panel.PublicUrl.Length > 0)
 else
 	app.Logger.LogInformation("🐼 Panda {Version} — panel on http://{Listen}:{Port}, data in {Data}",
 		PanelApi.Version, config.Panel.Listen, config.Panel.Port, dataDir);
+// A console window closed on Windows (SIGHUP there) or the terminal gone on Linux: stop properly, so the
+// queue is saved for the next start. Windows ends the process ~5 s after the window closes, so this waits.
+using var hangUp = System.Runtime.InteropServices.PosixSignalRegistration.Create(System.Runtime.InteropServices.PosixSignal.SIGHUP, ctx =>
+{
+	ctx.Cancel = true;
+	app.Lifetime.StopApplication();
+	app.Lifetime.ApplicationStopped.WaitHandle.WaitOne(TimeSpan.FromSeconds(4));
+});
 await app.RunAsync();
 // 3 after a restore: the service manager starts Panda again (systemd Restart=on-failure).
 return Environment.ExitCode;

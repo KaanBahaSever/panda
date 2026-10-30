@@ -3,7 +3,8 @@
 #  1. The TeamSpeak server goes away for a minute and comes back: Panda reconnects and plays on.
 #  2. YouTube refuses everything for a while: songs are skipped with a message, Panda stays up and recovers.
 #  3. The library can't be written (a full or read-only disk): songs still play.
-#  4. Long run: a looped playlist plays for SOAK_MIN minutes (default 30); memory, threads, open files
+#  4. Panda is killed without stopping: it comes back with the same song, queue and loop.
+#  5. Long run: a looped playlist plays for SOAK_MIN minutes (default 30); memory, threads, open files
 #     and child processes are sampled every minute and must not keep growing.
 # usage: resilience.sh <linux panda binary>     Exit code = failed checks.
 set -u
@@ -59,7 +60,22 @@ sleep 8
 check "plays with a read-only library" "$(playing)" yes
 chmod 755 $T/data/library
 
-echo "== 4. long run: ${SOAK_MIN:-30} min, with the equalizer, 8D and crossfade on"
+echo "== 4. Panda is killed (a closed window, a crash, a power cut): it comes back where it was"
+title() { api $P/api/bots/1/state | python3 -c "import sys,json; p=json.load(sys.stdin)['player']; print(p['current']['track']['title'] if p['current'] else '-', len(p['queue']), p['loop'])" 2>/dev/null || echo "no answer"; }
+# A new song (90 s long) and a wait: a copy of what plays is kept every 30 s, so it holds this song.
+api -X POST $P/api/bots/1/control/skip -o /dev/null
+sleep 35
+BEFORE=$(title)
+kill -9 "$PID"; sleep 2
+setsid nohup "$T/panda" --data "$T/data" >> "$T/log.txt" 2>&1 < /dev/null &
+wait_for 60 connected connected
+PID=$(pgrep -f "$T/panda --data" | head -1)
+api -d '{"name":"admin","password":"testpass123"}' $P/api/login -o /dev/null
+sleep 5
+check "the same song, queue and loop after a kill" "$(title)" "$BEFORE"
+check "...and it plays" "$(playing)" yes
+
+echo "== 5. long run: ${SOAK_MIN:-30} min, with the equalizer, 8D and crossfade on"
 # The songs are saved after their first play, so later rounds crossfade from file to file.
 check "sound settings" "$(api -X PUT -d '{"equalizer":"rock","eightD":true,"crossfade":4}' $P/api/bots/1/sound -o /dev/null -w '%{http_code}')" 200
 TICKS=$(getconf CLK_TCK)

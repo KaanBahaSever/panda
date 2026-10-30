@@ -1022,14 +1022,20 @@ public sealed class Player : IDisposable
 	/// Only called when Panda stops: playback halts here. The song doesn't go into the history now;
 	/// it does when it really ends.
 	/// </summary>
-	public PlayerSession SaveSession()
+	/// <param name="stopping">Panda is stopping: the song is held where it was saved. Otherwise it's only a
+	/// copy taken now and then, in case Panda doesn't get to stop (a closed window, a crash, a power cut).</param>
+	public PlayerSession SaveSession(bool stopping = true)
 	{
 		lock (gate)
 		{
-			sessionSaved = current != null;
-			// Panda is stopping: hold the song here so it can't end (and move on) after being saved.
-			timePipe.Paused = true;
-			return new PlayerSession(current, PositionLocked(), paused, startedAt,
+			if (stopping)
+			{
+				sessionSaved = current != null;
+				// Hold the song here so it can't end (and move on) after being saved.
+				timePipe.Paused = true;
+			}
+			// Still waiting for the bot to connect after a restart isn't a pause someone chose.
+			return new PlayerSession(current, PositionLocked(), paused && !resumeOnConnect, startedAt,
 				heardBefore + SourceSecondsLocked(), queue.ToArray(), Loop);
 		}
 	}

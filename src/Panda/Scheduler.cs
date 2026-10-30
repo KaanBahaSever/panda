@@ -24,6 +24,8 @@ public sealed class Scheduler(BotManager bots, Playlists playlists, RadioBrowser
 	readonly HashSet<string> done = [];
 	DateOnly today;
 	DateTime lastTick = DateTime.Now;
+	// The first copy comes after a while: a session that breaks the start isn't written again at once.
+	DateTime lastSessionSave = DateTime.Now;
 	// A tick that came late (a pause, a slow radio lookup, the clock jumping) still runs what it passed; not older.
 	static readonly TimeSpan CatchUp = TimeSpan.FromMinutes(5);
 
@@ -64,6 +66,13 @@ public sealed class Scheduler(BotManager bots, Playlists playlists, RadioBrowser
 		}
 		try { await LeaveEmptyAsync(now); }
 		catch (Exception ex) { log.LogWarning("Leave-when-empty failed: {Error}", ex.Message); }
+		// What plays, kept on disk in case Panda doesn't get to stop properly.
+		if (now - lastSessionSave >= TimeSpan.FromSeconds(30))
+		{
+			lastSessionSave = now;
+			if (!ct.IsCancellationRequested)
+				foreach (var b in bots.All) b.SaveSession(stopping: false);
+		}
 	}
 
 	// Bots set to leave when nobody listens: alone in their channel with nothing playing for that long.
