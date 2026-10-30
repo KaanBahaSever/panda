@@ -109,6 +109,7 @@ public sealed class TsBot : BackgroundService
 		this.playlists = playlists;
 		this.log = log;
 		identityPath = Path.Combine(dir, "identity.json");
+		avatarPath = Path.Combine(dir, Avatar.FileName);
 
 		player.TrackStarted += t => _ = scheduler.InvokeAsync(() => OnTrackStarted(t));
 		player.TrackFailed += (t, reason) => _ = scheduler.InvokeAsync(() => OnTrackFailed(t, reason));
@@ -351,13 +352,14 @@ public sealed class TsBot : BackgroundService
 				var have = self?.TalkPower ?? 0;
 				list.Add(new PermissionCheck("talk", need <= 0 || have >= need || self?.TalkPowerGranted == true, "i_client_talk_power", $"{have}/{need}"));
 				lock (checks)
-					foreach (var key in new[] { "chat", "description", "move", "groups", "channelname" })
+					foreach (var key in new[] { "chat", "description", "move", "groups", "channelname", "avatar" })
 						list.Add(checks.TryGetValue(key, out var ch) ? ch : new PermissionCheck(key, null, key switch
 						{
 							"chat" => "b_client_channel_textmessage_send",
 							"description" => "b_client_modify_own_description",
 							"move" => "i_channel_join_power",
 							"channelname" => "b_channel_modify_name",
+							"avatar" => "i_client_max_avatar_filesize",
 							_ => "b_virtualserver_servergroup_list",
 						}, null));
 				return list;
@@ -369,23 +371,42 @@ public sealed class TsBot : BackgroundService
 		}
 	}
 
-	async Task UploadAvatarIfNeeded(TsFullClient c)
+	readonly string avatarPath;
+
+	/// <summary>The bot's picture on the server: the one chosen in the panel, else Panda's. Sent only when the
+	/// server has another one. Null when it's there, else why not.</summary>
+	async Task<string?> UploadAvatarIfNeeded(TsFullClient c)
 	{
 		try
 		{
-			var file = new ManifestEmbeddedFileProvider(typeof(TsBot).Assembly, "wwwroot").GetFileInfo("img/avatar.png");
-			if (!file.Exists) return;
-			using var ms = new MemoryStream();
-			using (var s = file.CreateReadStream()) await s.CopyToAsync(ms);
-			var hash = Convert.ToHexString(MD5.HashData(ms.ToArray())).ToLowerInvariant();
-			if (c.Book.Self()?.AvatarHash == hash) return;
-			ms.Position = 0;
-			var r = await c.UploadAvatar(ms);
-			if (!r.Ok) log.LogInformation("Avatar not set: {Error}", r.Error.ErrorFormat());
+			var image = Avatar.Read(avatarPath);
+			var hash = Convert.ToHexString(MD5.HashData(image)).ToLowerInvariant();
+			if (c.Book.Self()?.AvatarHash == hash) return null;
+			var r = await c.UploadAvatar(new MemoryStream(image));
+			Note("avatar", r, "i_client_max_avatar_filesize");
+			if (r.Ok) return null;
+			log.LogInformation("Avatar not set: {Error}", r.Error.ErrorFormat());
+			return r.Error.ErrorFormat();
 		}
-		catch (Exception ex)
+		catch (Exception ex) when (ex is IOException or System.Net.Sockets.SocketException or InvalidOperationException)
 		{
 			log.LogInformation("Avatar not set: {Error}", ex.Message);
+			return ex.Message;
+		}
+	}
+
+	/// <summary>The panel chose a new picture (or Panda's again): it goes to the server now, when connected.
+	/// "offline" when it waits for the next connection.</summary>
+	public async Task<string?> AvatarChangedAsync()
+	{
+		try
+		{
+			return await scheduler.InvokeAsync(async () =>
+				client is { Connected: true } c ? await UploadAvatarIfNeeded(c) : "offline").WaitAsync(TimeSpan.FromSeconds(30));
+		}
+		catch (Exception ex) when (ex is TimeoutException or InvalidOperationException or ObjectDisposedException)
+		{
+			return "offline";
 		}
 	}
 
@@ -863,6 +884,17 @@ public sealed class TsBot : BackgroundService
 				{
 					AddListLater(msg, r, exempt);
 					reply = (reply is null ? "" : reply + "\n") + Strings.Get(Lang, "list-adding", more.Count, Escape(r.ListName ?? ""));
+				}
+				// A YouTube playlist: the songs after it go in at once.
+				if (r.Rest is { Count: > 0 } rest)
+				{
+					var uid = msg.InvokerUid?.Value;
+					var added = player.EnqueueMany(rest.Select(t => t with { RequesterId = uid }), exempt, out var limited);
+					var note = added > 0 ? Confirm(Strings.Get(Lang, "list-queued", added, Escape(r.ListName ?? "YouTube"))) : null;
+					// What didn't fit is always said.
+					if (added < rest.Count)
+						note = (note is null ? "" : note + " ") + (limited ? Strings.Get(Lang, "user-limit", Bot.MaxSongsPerUser) : Strings.Get(Lang, "queue-full"));
+					if (note != null) reply = (reply is null ? "" : reply + "\n") + note;
 				}
 				return reply;
 			}

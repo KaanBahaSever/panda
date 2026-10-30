@@ -133,6 +133,43 @@ check "but not with a link that isn't a web page" "$(post /api/playlists '{"name
 check "nor a station" "$(post /api/playlists '{"name":"Sites","songs":[{"id":"radio:x","title":"FM","channel":"x","duration":0,"source":"radio","link":"http://x.y/"}]}' | json "len(d['songs'])")" 1
 check "the library deletes songs only by their id" "$(code -b $J -X DELETE "$P/api/library/..%2F..%2Fconfig")" 409
 
+echo "== the bot's picture"
+Q() { curl -s -H "x-api-key: testkey-local-only" "http://127.0.0.1:10080/1/$1"; }
+# The flag (md5 of the picture) the TeamSpeak server has for bot 1.
+server_avatar() {
+	local nick clid
+	nick=$(curl -s -b $J $P/api/bots/1/settings | json "d['nickname']")
+	clid=$(Q clientlist | NICK="$nick" python3 -c "import sys,json,os; print([c['clid'] for c in json.load(sys.stdin)['body'] if c['client_nickname']==os.environ['NICK']][0])")
+	Q "clientinfo?clid=$clid" | python3 -c "import sys,json; print(json.load(sys.stdin)['body'][0].get('client_flag_avatar',''))"
+}
+avatar_kind() { curl -s -b $J -D - -o /dev/null $P/api/bots/1/avatar | tr -d '\r' | sed -n 's/^X-Avatar: //Ip'; }
+check "Panda's picture to begin with" "$(avatar_kind)" panda
+check "...and the server has it" "$(server_avatar)" "$(curl -s -b $J $P/api/bots/1/avatar | md5sum | cut -c1-32)"
+python3 -c "
+import struct, zlib
+def chunk(t, d): return struct.pack('>I', len(d)) + t + d + struct.pack('>I', zlib.crc32(t + d) & 0xffffffff)
+raw = b''.join(b'\x00' + bytes([200, 40, 90]) * 64 for _ in range(64))
+open('/tmp/panda-avatar.png', 'wb').write(b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR', struct.pack('>IIBBBBB', 64, 64, 8, 2, 0, 0, 0)) + chunk(b'IDAT', zlib.compress(raw)) + chunk(b'IEND', b''))"
+MINE=$(md5sum < /tmp/panda-avatar.png | cut -c1-32)
+check "a new picture goes to TeamSpeak" "$(curl -s -b $J -X PUT -H 'Content-Type: image/png' --data-binary @/tmp/panda-avatar.png $P/api/bots/1/avatar | json "d['applied']")" True
+check "...the panel shows it" "$(avatar_kind) $(curl -s -b $J $P/api/bots/1/avatar | md5sum | cut -c1-32)" "custom $MINE"
+check "...and the server has it" "$(server_avatar)" "$MINE"
+check "not a picture" "$(code -b $J -X PUT -H 'Content-Type: image/png' --data-binary 'hello' $P/api/bots/1/avatar)" 400
+check "too large" "$(head -c 1100000 /dev/zero | code -b $J -X PUT -H 'Content-Type: image/png' --data-binary @- $P/api/bots/1/avatar)" 400
+check "a dj key can't change it" "$(code -X PUT -H "Authorization: Bearer $DJ" -H 'Content-Type: image/png' --data-binary @/tmp/panda-avatar.png $P/api/bots/1/avatar)" 401
+check "not from another site" "$(code -b $J -X PUT -H 'Sec-Fetch-Site: cross-site' -H 'Content-Type: image/png' --data-binary @/tmp/panda-avatar.png $P/api/bots/1/avatar)" 403
+curl -s -b $J $P/api/backup -o /tmp/panda-backup.zip
+check "the picture is in the backup" "$(python3 -c "import zipfile; print('bots/1/avatar' in zipfile.ZipFile('/tmp/panda-backup.zip').namelist())")" True
+check "back to Panda's" "$(curl -s -b $J -X DELETE $P/api/bots/1/avatar | json "d['applied']") $(avatar_kind)" "True panda"
+check "...on the server too" "$(server_avatar)" "$(curl -s -b $J $P/api/bots/1/avatar | md5sum | cut -c1-32)"
+# The custom one again, for the backup below.
+curl -s -b $J -X PUT -H 'Content-Type: image/png' --data-binary @/tmp/panda-avatar.png $P/api/bots/1/avatar -o /dev/null
+
+echo "== login behind a proxy (X-Forwarded-For from this machine is believed)"
+for i in 1 2 3 4 5; do code -H 'X-Forwarded-For: 203.0.113.7' -H 'Content-Type: application/json' -d '{"name":"admin","password":"wrong"}' $P/api/login >/dev/null; done
+check "5 wrong passwords lock that visitor out" "$(code -H 'X-Forwarded-For: 203.0.113.7' -H 'Content-Type: application/json' -d '{"name":"admin","password":"testpass123"}' $P/api/login)" 429
+check "...not the others behind the same proxy" "$(code -H 'X-Forwarded-For: 203.0.113.8' -H 'Content-Type: application/json' -d '{"name":"admin","password":"testpass123"}' $P/api/login)" 204
+
 echo "== backup (last: restoring one stops Panda)"
 curl -s -b $J $P/api/backup -o /tmp/panda-backup.zip
 check "a backup holds the settings and the identity" "$(python3 -c "import zipfile; n=zipfile.ZipFile('/tmp/panda-backup.zip').namelist(); print('config.json' in n, 'bots/1/identity.json' in n)")" "True True"

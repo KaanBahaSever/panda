@@ -1,0 +1,34 @@
+# A YouTube playlist link: its song plays and the songs after it follow in the queue, like on YouTube.
+s announce=false
+c !play https://www.youtube.com/watch?v=fkList00002&list=PLfake
+e Now playing
+e List Song 2
+e And 1 more songs from [b]Fake List[/b]
+q 1
+N List Song 2
+# A link to the list itself: all of it, from the first song.
+c !stop
+c !play https://www.youtube.com/playlist?list=PLfake
+e List Song 1
+e And 2 more songs
+q 2
+# The queue's limit holds: what doesn't fit is said.
+c !stop
+s maxQueueLength=1
+c !play https://www.youtube.com/playlist?list=PLfake
+e List Song 1
+e The queue is full
+q 1
+s maxQueueLength=100
+# A list that can't be read (private, gone): the song in the link plays alone, as before.
+c !stop
+c !play https://www.youtube.com/watch?v=abcdefghijk&list=PLgone
+e Now playing
+n more songs
+q 0
+# A mix (list=RD...) is YouTube's endless picks, not a list: one song.
+c !stop
+c !play https://www.youtube.com/watch?v=fkList00001&list=RDfkList00001
+e Now playing
+n more songs
+q 0

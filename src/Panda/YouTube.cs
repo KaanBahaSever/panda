@@ -70,6 +70,18 @@ public sealed partial class YouTube(PandaConfig config, ILogger<YouTube> log)
 	[GeneratedRegex(@"youtube\.com/playlist\?|[?&]list=")]
 	private static partial Regex PlaylistRegex();
 
+	[GeneratedRegex(@"[?&]list=([\w-]{2,64})")]
+	private static partial Regex ListIdRegex();
+
+	/// <summary>The playlist of a YouTube link (watch?v=...&amp;list=..., playlist?list=...), or null. Mixes
+	/// (RD...) are YouTube's own endless picks, not a list someone made: those links stay one song.</summary>
+	public static string? ParseListId(string input)
+	{
+		if (!YouTubeHostRegex().IsMatch(input) || ListIdRegex().Match(input) is not { Success: true } m) return null;
+		var id = m.Groups[1].Value;
+		return id.StartsWith("RD", StringComparison.Ordinal) ? null : id;
+	}
+
 	/// <summary>TeamSpeak wraps links in [URL]...[/URL]; strip any BBCode.</summary>
 	[GeneratedRegex(@"\[/?[a-zA-Z]+(?:=[^\]]*)?\]")]
 	private static partial Regex BbCodeRegex();

@@ -370,7 +370,10 @@ public static class SafeFile
 	/// power cut leaves either the old or the new file, never an empty or half-written one.
 	/// </summary>
 	/// <param name="ownerOnly">Only the owner may read it (passwords, keys). The file never exists with wider rights.</param>
-	public static void Write(string path, string text, bool ownerOnly = false)
+	public static void Write(string path, string text, bool ownerOnly = false) =>
+		Write(path, Encoding.UTF8.GetBytes(text), ownerOnly);
+
+	public static void Write(string path, byte[] data, bool ownerOnly = false)
 	{
 		var tmp = path + ".tmp";
 		var options = new FileStreamOptions { Mode = FileMode.Create, Access = FileAccess.Write };
@@ -378,7 +381,7 @@ public static class SafeFile
 			options.UnixCreateMode = OwnerOnly;
 		using (var fs = new FileStream(tmp, options))
 		{
-			fs.Write(Encoding.UTF8.GetBytes(text));
+			fs.Write(data);
 			fs.Flush(flushToDisk: true);
 		}
 		// UnixCreateMode only applies to new files; a leftover temp file keeps its old rights.
@@ -492,6 +495,11 @@ public sealed class BotSettings
 public sealed class PanelSettings
 {
 	public string Listen { get; set; } = "0.0.0.0";
+	/// <summary>Where people open the panel when it's behind a proxy (https://panda.example.com); only shown.</summary>
+	public string PublicUrl { get; set; } = "";
+	/// <summary>Proxies in front of the panel whose X-Forwarded-For is believed (IPs or networks like
+	/// 172.16.0.0/12), besides this machine itself (always). Needed when the proxy is elsewhere (Docker).</summary>
+	public List<string> TrustedProxies { get; set; } = [];
 	/// <summary>The page /now.html shows anyone what the bots play (no names of who asked).</summary>
 	public bool PublicPage { get; set; }
 	/// <summary>How many bots there may be (!create bot stops there).</summary>

@@ -95,7 +95,10 @@ public static class PanelApi
 				else b.Player.Enqueue(track, exempt: isAdmin);
 				// An album or a playlist of a music service: the rest comes in the background.
 				if (found.More is { Count: > 0 } more) AddLater(b, sources, more, by, requester, isAdmin);
-				return Added(ctx, track, found.More?.Count ?? 0, found.ListName);
+				// A YouTube playlist: the songs after it go in at once.
+				var queued = found.Rest is { Count: > 0 } rest
+					? b.Player.EnqueueMany(rest.Select(t => t with { RequesterId = requester }), isAdmin, out _) : 0;
+				return Added(ctx, track, found.More?.Count ?? 0, found.ListName, queued);
 			}
 			catch (YouTubeException ex) { return Problem(ex.Message); }
 			catch (QueueFullException) { return Problem("queue-full"); }
@@ -174,6 +177,40 @@ public static class PanelApi
 		botAdmin.MapPost("/reconnect", (BotInstance b) => Done(Run(b.Ts.Reconnect)));
 		botAdmin.MapGet("/ts/people", async (BotInstance b) => await b.Ts.GetPeopleAsync());
 		botAdmin.MapGet("/ts/permissions", async (BotInstance b) => await b.Ts.GetPermissionsAsync());
+
+		// The bot's picture on TeamSpeak: the panel's own choice, else Panda's.
+		bot.MapGet("/avatar", (BotInstance b, DataPaths paths, HttpContext ctx) =>
+		{
+			var path = Path.Combine(paths.BotDir(b.Id), Avatar.FileName);
+			var image = Avatar.Read(path);
+			ctx.Response.Headers.CacheControl = "no-cache";
+			ctx.Response.Headers["X-Content-Type-Options"] = "nosniff";
+			ctx.Response.Headers["X-Avatar"] = Avatar.IsCustom(path) ? "custom" : "panda";
+			return Results.File(image, Avatar.TypeOf(image) ?? "application/octet-stream");
+		});
+		botAdmin.MapPut("/avatar", async (HttpContext ctx, BotInstance b, DataPaths paths) =>
+		{
+			if (ctx.Request.Headers["Sec-Fetch-Site"].FirstOrDefault() is { } site && site != "same-origin")
+				return Results.StatusCode(StatusCodes.Status403Forbidden);
+			if (ctx.Request.ContentLength > Avatar.MaxBytes) return Problem("too-large");
+			var body = new MemoryStream();
+			var buffer = new byte[16 * 1024];
+			int n;
+			while ((n = await ctx.Request.Body.ReadAsync(buffer, ctx.RequestAborted)) > 0)
+			{
+				if (body.Length + n > Avatar.MaxBytes) return Problem("too-large");
+				body.Write(buffer, 0, n);
+			}
+			var image = body.ToArray();
+			if (!Avatar.IsValid(image)) return Problem("bad-image");
+			SafeFile.Write(Path.Combine(paths.BotDir(b.Id), Avatar.FileName), image);
+			return AvatarResult(await b.Ts.AvatarChangedAsync());
+		}).DisableAntiforgery();
+		botAdmin.MapDelete("/avatar", async (BotInstance b, DataPaths paths) =>
+		{
+			File.Delete(Path.Combine(paths.BotDir(b.Id), Avatar.FileName));
+			return AvatarResult(await b.Ts.AvatarChangedAsync());
+		});
 
 		// --- shared by all bots ---
 
@@ -412,7 +449,7 @@ public static class PanelApi
 	static IResult Problem(string code) => Results.BadRequest(new { error = code });
 
 	// The song as before, plus for a list how many more are on the way ("more") and its name ("list").
-	static IResult Added(HttpContext ctx, Track track, int more, string? list)
+	static IResult Added(HttpContext ctx, Track track, int more, string? list, int queued = 0)
 	{
 		var opts = ctx.RequestServices.GetRequiredService<Microsoft.Extensions.Options.IOptions<Microsoft.AspNetCore.Http.Json.JsonOptions>>().Value.SerializerOptions;
 		var json = JsonSerializer.SerializeToNode(track, opts)!.AsObject();
@@ -421,8 +458,17 @@ public static class PanelApi
 			json["more"] = more;
 			json["list"] = list;
 		}
+		if (queued > 0)
+		{
+			json["queued"] = queued;
+			json["list"] = list ?? "YouTube";
+		}
 		return Results.Json(json, opts);
 	}
+
+	// Saved either way; it's on the server now (applied), on the next connection (offline), or the server said no.
+	static IResult AvatarResult(string? error) =>
+		Results.Ok(new { applied = error is null, offline = error == "offline", error = error is null or "offline" ? null : error });
 
 	static string? Cut(string? s, int max) => s?.Trim() is { } t && t.Length > max ? t[..max] : s?.Trim();
 

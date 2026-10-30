@@ -11,12 +11,12 @@ namespace Panda;
 /// </summary>
 public static partial class Backup
 {
-	[GeneratedRegex(@"^(config\.json|playlists\.json|radios\.json|cookies\.txt|bots/[A-Za-z0-9_-]{1,32}/(identity\.json|history\.jsonl))$")]
+	[GeneratedRegex(@"^(config\.json|playlists\.json|radios\.json|cookies\.txt|bots/[A-Za-z0-9_-]{1,32}/(identity\.json|history\.jsonl|avatar))$")]
 	private static partial Regex AllowedName();
 
 	const long MaxFile = 20 * 1024 * 1024;
 	const long MaxTotal = 200 * 1024 * 1024;
-	const int MaxEntries = 4 + 2 * 100;
+	const int MaxEntries = 4 + 3 * 100;
 	public const long MaxZip = 50 * 1024 * 1024;
 	const string Pending = ".restore";
 
@@ -44,6 +44,7 @@ public static partial class Backup
 					if (!BotConfig.IsValidId(id)) continue;
 					Add($"bots/{id}/identity.json");
 					Add($"bots/{id}/history.jsonl");
+					Add($"bots/{id}/{Avatar.FileName}");
 				}
 		}
 		return ms.ToArray();
@@ -121,7 +122,7 @@ public static partial class Backup
 			var to = Path.Combine(dataDir, rel);
 			Directory.CreateDirectory(Path.GetDirectoryName(to)!);
 			var secret = rel is "config.json" or "cookies.txt" || rel.EndsWith("identity.json");
-			SafeFile.Write(to, File.ReadAllText(file), ownerOnly: secret);
+			SafeFile.Write(to, File.ReadAllBytes(file), ownerOnly: secret);
 		}
 		var bots = Path.Combine(dataDir, "bots");
 		if (Directory.Exists(bots))

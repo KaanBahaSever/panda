@@ -28,8 +28,8 @@ Panda talks to the server directly, so it stays light: the bot itself uses about
 ## Features
 
 - 🎵 **YouTube first** — search by name or paste any link: `youtube.com`, `youtu.be`,
-  **YouTube Music**, Shorts. YouTube playlist links add just one song (the one in the link,
-  or the first one of the list) instead of loading the whole list.
+  **YouTube Music**, Shorts. A **YouTube playlist** link plays its song and puts the rest of the list
+  in the queue (up to 200 songs).
 - 🔗 **Links from anywhere** — SoundCloud, Bandcamp, Mixcloud, Vimeo, Twitch and audio files play from
   there; **Spotify, Apple Music, Deezer and Tidal** links are looked up on YouTube (a Spotify album or
   playlist comes song by song); any other page: its title is looked up. Each source can be turned off.
@@ -98,6 +98,7 @@ whether the others are tried when it finds nothing. In the chat, `sc:` and `ytm:
 |---|---|
 | Words | The best saved song that matches, else the first search result |
 | A YouTube or YouTube Music link | That video |
+| A YouTube playlist or album link | Its song (or the list's first), then the songs after it in the queue; a Mix (`list=RD…`) stays one song |
 | SoundCloud, Bandcamp, Mixcloud, Vimeo, Twitch… (anything [yt-dlp](https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md) knows) | The song from there |
 | An audio file (`.mp3`, `.ogg`…) | The file itself |
 | Spotify, Apple Music, Deezer, Tidal | The same song from YouTube (their audio is protected); albums and playlists of Spotify and Deezer come song by song |
@@ -147,6 +148,8 @@ The 🎛️ button next to the volume (admins) opens the sound settings of the b
   `panel.maxBots` (10) caps the number of bots.
 - **Channel named after the song**: pick a channel (its path or `/id`); its name becomes "🎵 Song" while
   something plays. The bot needs `b_channel_modify_name` there.
+- **The bot's picture**: choose one in a bot's settings (PNG, JPG or GIF; the panel makes it small), or go
+  back to Panda's. The bot needs `i_client_max_avatar_filesize` on the server.
 - **Public "now playing" page**: `http://your-server:8080/now.html` shows the bots' songs and what comes
   next, without names and without controls. Off until you turn it on in the settings.
 - **On your phone**: open the panel and "Add to Home Screen". Browsers only install it over HTTPS.
@@ -330,7 +333,9 @@ Everything is editable in the panel; the file is `/var/lib/panda/config.json` (o
       }
     }
   ],
-  "panel": { "listen": "0.0.0.0", "port": 8080, "users": [ /* set in the panel */ ] },
+  "panel": { "listen": "0.0.0.0", "port": 8080, "users": [ /* set in the panel */ ],
+             "publicUrl": "",          // e.g. "https://panda.example.com": the address shown in the log and by the installer
+             "trustedProxies": [] },   // proxies on other machines (Docker: "172.16.0.0/12"); this machine is always trusted
   "youTube": { "ytDlpPath": "yt-dlp", "ffmpegPath": "ffmpeg", "cookiesFile": "", "maxDurationMinutes": 60,
                 "playAttempts": 3,                                 // tries when YouTube refuses a song
                 "retryPlayerClients": "android_vr,tv,web_safari",  // yt-dlp clients from the third try on
@@ -353,7 +358,10 @@ Reset a panel password (or create an admin when every password is lost):
 `sudo -u panda /opt/panda/panda --data /var/lib/panda set-password <new> [user]`.
 
 The panel speaks plain HTTP. If it is reachable from the internet, put it behind a reverse proxy with
-HTTPS (Caddy, nginx) or a firewall.
+HTTPS (Caddy, nginx) or a firewall. Behind a proxy on the same machine, set `panel.listen` to `127.0.0.1`
+so only the proxy reaches the panel, and `panel.publicUrl` to the address people open. Panda reads the
+visitor's address from the proxy's `X-Forwarded-For` (only from this machine, or from `panel.trustedProxies`),
+so the login guard locks out one visitor after five wrong passwords, not everyone.
 
 ## API
 

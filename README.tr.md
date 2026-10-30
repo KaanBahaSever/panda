@@ -23,8 +23,8 @@ programı yok: Panda sunucuyla doğrudan konuşur, bu yüzden hafiftir (bot ~130
 ## Özellikler
 
 - 🎵 **Önce YouTube** — adıyla ara ya da link yapıştır: `youtube.com`, `youtu.be`,
-  **YouTube Music**, Shorts. YouTube çalma listesi linkleri tüm listeyi açmak yerine tek şarkı ekler
-  (linkteki şarkıyı ya da listenin ilk şarkısını).
+  **YouTube Music**, Shorts. **YouTube çalma listesi** linki o şarkıyı çalar, listenin gerisini sıraya
+  ekler (en fazla 200 şarkı).
 - 🔗 **Her yerden link** — SoundCloud, Bandcamp, Mixcloud, Vimeo, Twitch ve ses dosyaları oradan çalar;
   **Spotify, Apple Music, Deezer ve Tidal** linkleri YouTube'da aranır (Spotify albümü ya da listesi
   şarkı şarkı gelir); başka her sayfanın başlığı aranır. Her kaynak ayrı kapatılabilir.
@@ -93,6 +93,7 @@ seçer: `!çal sc:lofi`, `!ara ytm:blinding lights`.
 |---|---|
 | Kelimeler | Uyan en iyi kayıtlı şarkı, yoksa ilk arama sonucu |
 | YouTube ya da YouTube Music linki | O video |
+| YouTube çalma listesi ya da albüm linki | Linkteki şarkı (ya da listenin ilki), sonra ondan sonrakiler sırada; Mix (`list=RD…`) tek şarkı kalır |
 | SoundCloud, Bandcamp, Mixcloud, Vimeo, Twitch… ([yt-dlp](https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md)'nin bildiği her yer) | Oradaki şarkı |
 | Ses dosyası (`.mp3`, `.ogg`…) | Dosyanın kendisi |
 | Spotify, Apple Music, Deezer, Tidal | Aynı şarkı YouTube'dan (bu servislerin sesi korumalı); Spotify ve Deezer albüm ve listeleri şarkı şarkı gelir |
@@ -142,6 +143,8 @@ Ses düzeyinin yanındaki 🎛️ düğmesi (yöneticiler) botun ses ayarların�
   (dk)**, bot yalnız ve sessiz kaldığında onu kaldırır; son bot hiç gitmez. `panel.maxBots` (10) üst sınırdır.
 - **Adı şarkı olan kanal**: bir kanal seç (yolu ya da `/numarası`); bir şey çalarken adı "🎵 Şarkı" olur.
   Botun orada `b_channel_modify_name` izni olmalı.
+- **Botun resmi**: botun ayarlarından bir resim seç (PNG, JPG ya da GIF; panel küçültür) ya da Panda'nınkine
+  dön. Botun sunucuda `i_client_max_avatar_filesize` izni olmalı.
 - **Herkese açık "şimdi çalıyor" sayfası**: `http://sunucun:8080/now.html` botların şarkısını ve sıradakileri
   isimsiz ve kontrolsüz gösterir. Ayarlardan açana kadar kapalıdır.
 - **Telefonda**: paneli aç ve "Ana ekrana ekle". Tarayıcılar sadece HTTPS üzerinden uygulama olarak kurar.
@@ -314,7 +317,11 @@ Bir panel şifresini sıfırlamak (ya da bütün şifreler unutulduysa yeni bir 
 `sudo -u panda /opt/panda/panda --data /var/lib/panda set-password <yeni> [kullanıcı]`.
 
 Panel düz HTTP konuşur. İnternetten erişilebiliyorsa önüne HTTPS'li bir ters vekil sunucu
-(Caddy, nginx) ya da güvenlik duvarı koy.
+(Caddy, nginx) ya da güvenlik duvarı koy. Vekil aynı makinedeyse `panel.listen` ayarını `127.0.0.1` yap
+(panele sadece vekil ulaşsın), `panel.publicUrl` ayarına da insanların açtığı adresi yaz. Panda ziyaretçinin
+adresini vekilin `X-Forwarded-For` başlığından okur (sadece bu makineden ya da `panel.trustedProxies`
+listesindekilerden; Docker'da örneğin `"172.16.0.0/12"`). Böylece giriş koruması beş yanlış şifreden sonra
+herkesi değil, sadece o ziyaretçiyi kilitler.
 
 ## API
 

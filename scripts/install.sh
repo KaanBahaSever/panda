@@ -259,9 +259,14 @@ systemctl restart panda.service
 
 PORT=$(grep -o '"port": *[0-9]*' "$DATA_DIR/config.json" | grep -o '[0-9]*$' || echo 8080)
 IP=$(hostname -I 2>/dev/null | awk '{print $1}')
+PUBLIC_URL=$(grep -o '"publicUrl": *"[^"]*"' "$DATA_DIR/config.json" | sed 's/.*"\([^"]*\)"$/\1/' || true)
 echo
 green "🐼 Panda is running!"
-info "Panel:     http://${IP:-your-server-ip}:${PORT}"
+if [ -n "$PUBLIC_URL" ]; then
+	info "Panel:     $PUBLIC_URL"
+else
+	info "Panel:     http://${IP:-your-server-ip}:${PORT}"
+fi
 if [ -n "$PANEL_PASSWORD" ]; then
 	info "Login:     admin / $PANEL_PASSWORD   (change it in Settings)"
 fi

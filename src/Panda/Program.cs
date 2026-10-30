@@ -2,6 +2,7 @@
 // Licensed under the Open Software License version 3.0.
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.FileProviders;
 using Panda;
 
@@ -140,6 +141,22 @@ builder.Services.AddAuthorizationBuilder()
 
 var app = builder.Build();
 
+// Behind a proxy (Caddy, nginx) every request comes from it: the visitor's own address is in X-Forwarded-For,
+// believed only from the proxy (this machine, or one named in panel.trustedProxies). The login guard counts
+// wrong passwords per visitor, and the session cookie is Secure on HTTPS.
+var forwarded = new ForwardedHeadersOptions { ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto };
+foreach (var proxy in config.Panel.TrustedProxies)
+{
+	var parts = proxy.Trim().Split('/');
+	if (!System.Net.IPAddress.TryParse(parts[0], out var address))
+		app.Logger.LogWarning("panel.trustedProxies: {Proxy} is not an address", proxy);
+	else if (parts.Length == 1) forwarded.KnownProxies.Add(address);
+	else if (parts.Length == 2 && int.TryParse(parts[1], out var bits) && bits >= 0 && bits <= (address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork ? 32 : 128))
+		forwarded.KnownNetworks.Add(new Microsoft.AspNetCore.HttpOverrides.IPNetwork(address, bits));
+	else app.Logger.LogWarning("panel.trustedProxies: {Proxy} is not an address", proxy);
+}
+app.UseForwardedHeaders(forwarded);
+
 var panelFiles = new ManifestEmbeddedFileProvider(typeof(PanelApi).Assembly, "wwwroot");
 // The page asks for its script and styles by version, so a browser holding an older panel gets the
 // new one right after an update.
@@ -169,8 +186,12 @@ app.UseAuthentication();
 app.UseAuthorization();
 PanelApi.Map(app);
 
-app.Logger.LogInformation("🐼 Panda {Version} — panel on http://{Listen}:{Port}, data in {Data}",
-	PanelApi.Version, config.Panel.Listen, config.Panel.Port, dataDir);
+if (config.Panel.PublicUrl.Length > 0)
+	app.Logger.LogInformation("🐼 Panda {Version} — panel on {Url} (http://{Listen}:{Port}), data in {Data}",
+		PanelApi.Version, config.Panel.PublicUrl, config.Panel.Listen, config.Panel.Port, dataDir);
+else
+	app.Logger.LogInformation("🐼 Panda {Version} — panel on http://{Listen}:{Port}, data in {Data}",
+		PanelApi.Version, config.Panel.Listen, config.Panel.Port, dataDir);
 await app.RunAsync();
 // 3 after a restore: the service manager starts Panda again (systemd Restart=on-failure).
 return Environment.ExitCode;

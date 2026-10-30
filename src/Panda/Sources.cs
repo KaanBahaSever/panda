@@ -8,7 +8,9 @@ namespace Panda;
 /// service, the rest as "artist - title" to look up one by one after the first one started.
 /// </summary>
 /// <param name="SearchedFor">The words looked up for a link that can't be played itself (a Spotify song, a page).</param>
-public sealed record Resolved(Track Track, IReadOnlyList<string>? More = null, string? ListName = null, string? SearchedFor = null);
+/// <param name="Rest">The songs after it of a YouTube playlist, known at once: they go in the queue together.</param>
+public sealed record Resolved(Track Track, IReadOnlyList<string>? More = null, string? ListName = null, string? SearchedFor = null,
+	IReadOnlyList<Track>? Rest = null);
 
 /// <summary>
 /// Turns what people type into songs, from wherever it is: YouTube (the main source), the library, other
@@ -48,6 +50,8 @@ public sealed partial class Sources(PandaConfig config, YouTube youtube, Library
 			var found = await SearchInAsync(only, words, 1, requestedBy, ct);
 			return new(Checked(found.FirstOrDefault() ?? throw new YouTubeException("not-found")));
 		}
+		if (YouTube.ParseListId(clean) is { } listId && await YouTubeListAsync(listId, YouTube.ParseVideoId(clean), requestedBy, ct) is { } list)
+			return list;
 		if (YouTube.ParseVideoId(clean) is { } id)
 			return new(library.Find(id, requestedBy) is { } saved ? Checked(saved) : await youtube.ResolveAsync(clean, requestedBy, ct));
 		if (YouTube.IsYouTubeLink(clean))
@@ -104,6 +108,36 @@ public sealed partial class Sources(PandaConfig config, YouTube youtube, Library
 		"soundcloud" => youtube.SiteSearchAsync("scsearch", query, count, requestedBy, ct),
 		_ => youtube.SearchAsync(query, count, requestedBy, ct),
 	};
+
+	/// <summary>
+	/// A YouTube playlist link: its song (or the list's first) plays, the songs after it follow in the queue,
+	/// like on YouTube. Null when the list can't be read (private, Watch later, gone) and the link names a
+	/// song: then that song alone plays, as before.
+	/// </summary>
+	async Task<Resolved?> YouTubeListAsync(string listId, string? videoId, string requestedBy, CancellationToken ct)
+	{
+		string? title;
+		List<Track> songs;
+		try { (title, songs) = await youtube.ReadListAsync($"https://www.youtube.com/playlist?list={listId}", MaxListSongs, youtube: true, ct); }
+		catch (YouTubeException ex) when (videoId != null && ex.Message is not ("timeout" or "bot-check"))
+		{
+			log.LogInformation("Could not read the playlist {List}, playing its song: {Error}", listId, ex.Message);
+			return null;
+		}
+		songs = songs.Where(t => !youtube.TooLong(t)).Select(t => t with { RequestedBy = requestedBy }).ToList();
+		Track Saved(Track t) => library.Find(t.Id, requestedBy) ?? t;
+		if (videoId is null && songs.Count == 0) throw new YouTubeException("playlist-empty");
+		var at = videoId is null ? 0 : songs.FindIndex(t => t.Id == videoId);
+		if (at < 0)
+		{
+			// The song isn't among the list's first ones (or the list is empty): it plays, then the list from its start.
+			var first = library.Find(videoId!, requestedBy) is { } saved ? Checked(saved) : await youtube.ResolveAsync($"https://www.youtube.com/watch?v={videoId}", requestedBy, ct);
+			return new(first, ListName: title, Rest: songs.Count > 0 ? songs.Take(MaxListSongs - 1).Select(Saved).ToList() : null);
+		}
+		var track = Saved(songs[at]);
+		var rest = songs.Skip(at + 1).Select(Saved).ToList();
+		return new(track, ListName: title, Rest: rest.Count > 0 ? rest : null);
+	}
 
 	Track Checked(Track t)
 	{

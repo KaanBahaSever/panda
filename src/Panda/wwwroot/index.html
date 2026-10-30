@@ -273,6 +273,17 @@
 
       <fieldset class="group">
         <legend>🤖 <span data-i18n="sBot">Bot</span></legend>
+        <div class="avatar-row">
+          <img id="avatar-img" alt="" width="72" height="72">
+          <div>
+            <span class="avatar-label" data-i18n="sAvatar">Picture on TeamSpeak</span>
+            <div class="avatar-acts">
+              <label class="btn ghost sm file-btn"><svg class="ic"><use href="#i-upload"/></svg><span data-i18n="avatarPick">Choose a picture</span><input id="avatar-file" type="file" accept="image/png,image/jpeg,image/gif,image/webp"></label>
+              <button type="button" class="btn ghost sm" id="avatar-reset" hidden data-i18n="avatarReset">Use Panda's</button>
+            </div>
+          </div>
+        </div>
+        <p class="hint" data-i18n="sAvatarHint">PNG, JPG or GIF; it's made small before it's sent. Saved right away. The bot needs i_client_max_avatar_filesize on the server.</p>
         <div class="row2">
           <label class="field"><span data-i18n="sLang">Chat language</span>
             <select name="language"><option value="en">English</option><option value="tr">Türkçe</option><option value="fr">Français</option><option value="de">Deutsch</option></select></label>
