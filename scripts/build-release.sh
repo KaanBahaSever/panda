@@ -46,11 +46,18 @@ pack() {
 }
 
 if command -v wsl.exe >/dev/null; then
-	# Copied to WSL's own disk to pack: files on /mnt/c have no Unix permissions of their own.
-	MSYS_NO_PATHCONV=1 wsl.exe bash -c "$(declare -f pack); set -euo pipefail
-		src=\$(wslpath '$(pwd -W)'); w=\$(mktemp -d); mkdir -p \$w/build \$w/dist
-		for rid in ${RIDS[*]}; do cp -r \"\$src/build/\$rid\" \$w/build/; done
-		cd \$w && pack ${RIDS[*]} && cp dist/* \"\$src/dist/\" && rm -rf \$w"
+	# Packed on WSL's own disk: files on /mnt/c have no Unix permissions of their own.
+	script=build/pack.sh
+	{
+		declare -f pack
+		echo 'set -euo pipefail; src=$1; shift'
+		echo 'w=$(mktemp -d); mkdir -p "$w/build" "$w/dist"'
+		echo 'for rid in "$@"; do cp -r "$src/build/$rid" "$w/build/"; done'
+		echo 'cd "$w" && pack "$@" && cp dist/* "$src/dist/" && rm -rf "$w"'
+	} > "$script"
+	linux=$(pwd -W | sed -E 's#^([A-Za-z]):#/mnt/\L\1#')
+	MSYS_NO_PATHCONV=1 wsl.exe -e bash "$linux/$script" "$linux" "${RIDS[@]}"
+	rm -f "$script"
 else
 	pack "${RIDS[@]}"
 fi
