@@ -97,7 +97,9 @@ public sealed partial class Updates(PandaConfig config, DataPaths paths, SystemI
 						ytDlp, null, false, InstallKind(), null, "unreachable", await UpgradingAsync(), await YtDlpUpdatingAsync(), config.Panel.AutoUpdate);
 				}
 			}
-			var l = latest;
+			if (latest is not { } l)
+				return new UpdateInfo(PanelApi.Version, null, false, null, null, null,
+					ytDlp, null, false, InstallKind(), null, "unreachable", await UpgradingAsync(), await YtDlpUpdatingAsync(), config.Panel.AutoUpdate);
 			return new UpdateInfo(PanelApi.Version, l.Panda, IsNewer(l.Panda, PanelApi.Version), l.Notes, l.Url, l.Published,
 				ytDlp, l.YtDlp, IsNewer(l.YtDlp, ytDlp), InstallKind(), new DateTimeOffset(checkedAt, TimeSpan.Zero), null,
 				await UpgradingAsync(), await YtDlpUpdatingAsync(), config.Panel.AutoUpdate);
