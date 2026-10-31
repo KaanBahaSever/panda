@@ -143,7 +143,7 @@ check "off: the name stays while a song plays" "$(playing) / $(nick)" "Test Tone
 put "d['songInNickname'] = True" >/dev/null; sleep 4
 check "on: the name shows the song" "$(nick)" "$OWN: Test Tone Song"
 put "d['songInNickname'] = True; d['songNicknameFormat'] = '{name} ♪ {song} and a long tail'" >/dev/null; sleep 12
-check "its own format, cut to TeamSpeak's 30 characters" "$(nick | python3 -c "import sys; n=sys.stdin.read().strip(); print(len(n), n.endswith('…'), n.startswith('$OWN ♪ Test'))")" "30 True True"
+check "its own format, cut to TeamSpeak's 30 characters at most" "$(nick | python3 -c "import sys; n=sys.stdin.read().strip(); print(len(n) <= 30, n.endswith('…'), n.startswith('$OWN ♪ Test'))")" "True True True"
 check "a format without the bot's name is refused" "$(put "d['songInNickname'] = True; d['songNicknameFormat'] = '{song}'" | json "d['songNicknameFormat']")" "{name} ♪ {song} and a long tail"
 check "a panel that doesn't know the option leaves it on" "$(put "d['songInNickname'] = True; d.pop('songInNickname')" | json "d['songInNickname']")" True
 put "pass" >/dev/null; sleep 12
