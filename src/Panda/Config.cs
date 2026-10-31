@@ -69,6 +69,7 @@ public sealed class PandaConfig
 		{
 			b.Bot.SongChannel ??= "";
 			b.Bot.SongChannelFormat ??= "🎵 {song}";
+			b.Bot.SongNicknameFormat ??= "{name}: {song}";
 			b.Bot.SongChannelIdle ??= "🎵 Panda";
 		}
 		foreach (var b in cfg.Bots)
@@ -430,6 +431,11 @@ public sealed class BotSettings
 	public bool ConfirmCommands { get; set; } = true;
 	/// <summary>Show the current song in the bot's description.</summary>
 	public bool ShowSongInDescription { get; set; } = true;
+	/// <summary>The bot's own name shows the song playing (bot.songNicknameFormat); off by default: everyone
+	/// near the bot sees each rename in their chat.</summary>
+	public bool SongInNickname { get; set; }
+	/// <summary>The bot's name while a song plays: {name} is its nickname, {song} the song (30 characters at most).</summary>
+	public string SongNicknameFormat { get; set; } = "{name}: {song}";
 	/// <summary>Up to 0.4: only these unique ids / server groups could use the bot. Load turns them into DJs.</summary>
 	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
 	public List<string>? AllowedUsers { get; set; }

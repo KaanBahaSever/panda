@@ -701,6 +701,8 @@ public sealed class SettingsDto
 	public bool Announce { get; set; }
 	public bool ConfirmCommands { get; set; } = true;
 	public bool ShowSongInDescription { get; set; }
+	public bool SongInNickname { get; set; }
+	public string SongNicknameFormat { get; set; } = "{name}: {song}";
 	public bool EveryoneCanUse { get; set; } = true;
 	public List<ChatPerson> Members { get; set; } = [];
 	public List<ulong> MemberGroups { get; set; } = [];
@@ -777,6 +779,8 @@ public sealed class SettingsDto
 		Announce = b.Bot.Announce,
 		ConfirmCommands = b.Bot.ConfirmCommands,
 		ShowSongInDescription = b.Bot.ShowSongInDescription,
+		SongInNickname = b.Bot.SongInNickname,
+		SongNicknameFormat = b.Bot.SongNicknameFormat,
 		EveryoneCanUse = b.Bot.EveryoneCanUse,
 		Members = b.Bot.Members,
 		LeaveWhenEmpty = b.Bot.LeaveWhenEmpty,
@@ -846,6 +850,8 @@ public sealed class SettingsDto
 		b.Bot.Announce = Announce;
 		b.Bot.ConfirmCommands = ConfirmCommands;
 		b.Bot.ShowSongInDescription = ShowSongInDescription;
+		b.Bot.SongInNickname = SongInNickname;
+		if ((SongNicknameFormat ?? "").Trim() is { Length: > 0 and <= 60 } nf && nf.Contains("{song}")) b.Bot.SongNicknameFormat = nf;
 		b.Bot.EveryoneCanUse = EveryoneCanUse;
 		b.Bot.Members = People(Members);
 		b.Bot.MemberGroups = (MemberGroups ?? []).Distinct().Take(100).ToList();

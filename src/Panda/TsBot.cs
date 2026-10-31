@@ -113,11 +113,11 @@ public sealed class TsBot : BackgroundService
 
 		player.TrackStarted += t => _ = scheduler.InvokeAsync(() => OnTrackStarted(t));
 		player.TrackFailed += (t, reason) => _ = scheduler.InvokeAsync(() => OnTrackFailed(t, reason));
-		player.StreamTitleChanged += (t, song) => _ = scheduler.InvokeAsync(async () => { await SetDescription(Describe(t)); await SetSongChannel(t); });
+		player.StreamTitleChanged += (t, song) => _ = scheduler.InvokeAsync(() => ShowSong(t));
 		player.Changed += () =>
 		{
 			if (player.Current is null)
-				_ = scheduler.InvokeAsync(async () => { await SetDescription(""); await SetSongChannel(null); });
+				_ = scheduler.InvokeAsync(() => ShowSong(null));
 		};
 	}
 
@@ -261,12 +261,13 @@ public sealed class TsBot : BackgroundService
 		descriptionWarned = false;
 		description = null;
 		await UploadAvatarIfNeeded(c);
-		var now = player.Current;
-		await SetDescription(now is null ? "" : Describe(now));
 		songChannelName = null;
 		songChannelId = null;
 		songChannelDenied = false;
-		await SetSongChannel(now);
+		// It connected with its own name (or the one the server gave it when that was taken).
+		nicknameShown = nicknameOwn = c.Book.Self()?.Name;
+		nicknameWarned = false;
+		await ShowSong(player.Current);
 		return null;
 	}
 
@@ -479,6 +480,44 @@ public sealed class TsBot : BackgroundService
 		return found.FirstOrDefault()?.Id;
 	}
 
+	/// <summary>The song playing (or none) in the bot's description, the song channel's name and the bot's own name.</summary>
+	async Task ShowSong(Track? t)
+	{
+		await SetDescription(t is null ? "" : Describe(t));
+		await SetSongChannel(t);
+		await SetNickname(t);
+	}
+
+	string? nicknameShown;   // the name the bot has now on this connection (scheduler thread)
+	string? nicknameOwn;     // the one it connected with: back to it when nothing plays
+	bool nicknameWarned;
+
+	/// <summary>
+	/// With bot.songInNickname the bot's name shows the song ("Panda: Song", bot.songNicknameFormat), else it
+	/// is its own name. TeamSpeak takes 3 to 30 characters, and names are unique on a server.
+	/// </summary>
+	async Task SetNickname(Track? t)
+	{
+		if (client is not { Connected: true } c) return;
+		var name = nicknameOwn ?? Bot.Nickname;
+		if (Bot.SongInNickname && t != null)
+		{
+			var song = Describe(t).TrimStart('♪', ' ');
+			name = Bot.SongNicknameFormat.Replace("{name}", Bot.Nickname).Replace("{song}", song);
+			name = new string(name.Where(ch => !char.IsControl(ch)).ToArray()).Trim();
+			if (name.EnumerateRunes().Count() > 30) name = string.Concat(name.EnumerateRunes().Take(29).Select(r => r.ToString())) + "…";
+			if (name.EnumerateRunes().Count() < 3) name = nicknameOwn ?? Bot.Nickname;
+		}
+		if (name == nicknameShown) return;
+		var r = await c.ChangeName(name);
+		if (r.Ok) { nicknameShown = name; return; }
+		if (!nicknameWarned)
+		{
+			nicknameWarned = true;
+			log.LogWarning("Could not show the song in the bot's name ({Name}): {Error}", name, r.Error.ErrorFormat());
+		}
+	}
+
 	async Task SetDescription(string text)
 	{
 		if (client is not { Connected: true } c) return;
@@ -514,8 +553,7 @@ public sealed class TsBot : BackgroundService
 		{
 			songChannelDenied = false;
 			songChannelId = null;
-			await SetDescription(player.Current is { } t ? Describe(t) : "");
-			await SetSongChannel(player.Current);
+			await ShowSong(player.Current);
 		});
 
 	// A radio station with the song it plays, when it says.
@@ -526,8 +564,7 @@ public sealed class TsBot : BackgroundService
 	{
 		lock (votes) { voteTrack = null; votes.Clear(); }
 		if (client is not { Connected: true } c) return;
-		await SetDescription(Describe(t));
-		await SetSongChannel(t);
+		await ShowSong(t);
 		if (Bot.Announce)
 			Note("chat", await c.SendChannelMessage(Strings.Get(Lang, "now-playing-by", Link(t), Strings.Duration(Lang, t), t.RequestedBy)), "b_client_channel_textmessage_send");
 	}

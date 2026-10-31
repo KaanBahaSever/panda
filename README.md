@@ -148,6 +148,9 @@ The 🎛️ button next to the volume (admins) opens the sound settings of the b
   `panel.maxBots` (10) caps the number of bots.
 - **Channel named after the song**: pick a channel (its path or `/id`); its name becomes "🎵 Song" while
   something plays. The bot needs `b_channel_modify_name` there.
+- **The song in the bot's name** (off by default): "Panda: Song" while something plays, its own name
+  otherwise. The format is yours (`{name}`, `{song}`); TeamSpeak allows 30 characters, longer songs are cut.
+  People who see the bot may get a line in their chat at each rename.
 - **The bot's picture**: choose one in a bot's settings (PNG, JPG or GIF; the panel makes it small), or go
   back to Panda's. The bot needs `i_client_max_avatar_filesize` on the server.
 - **Public "now playing" page**: `http://your-server:8080/now.html` shows the bots' songs and what comes

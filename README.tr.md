@@ -143,6 +143,9 @@ Ses düzeyinin yanındaki 🎛️ düğmesi (yöneticiler) botun ses ayarların�
   (dk)**, bot yalnız ve sessiz kaldığında onu kaldırır; son bot hiç gitmez. `panel.maxBots` (10) üst sınırdır.
 - **Adı şarkı olan kanal**: bir kanal seç (yolu ya da `/numarası`); bir şey çalarken adı "🎵 Şarkı" olur.
   Botun orada `b_channel_modify_name` izni olmalı.
+- **Şarkı botun adında** (varsayılan kapalı): bir şey çalarken "Panda: Şarkı", yoksa kendi adı. Biçimi
+  sen seçersin (`{name}`, `{song}`); TeamSpeak en fazla 30 karaktere izin verir, uzun şarkı kısaltılır.
+  Botu görenlerin sohbetine her ad değişikliğinde bir satır düşebilir.
 - **Botun resmi**: botun ayarlarından bir resim seç (PNG, JPG ya da GIF; panel küçültür) ya da Panda'nınkine
   dön. Botun sunucuda `i_client_max_avatar_filesize` izni olmalı.
 - **Herkese açık "şimdi çalıyor" sayfası**: `http://sunucun:8080/now.html` botların şarkısını ve sıradakileri

@@ -133,6 +133,19 @@ check "but not with a link that isn't a web page" "$(post /api/playlists '{"name
 check "nor a station" "$(post /api/playlists '{"name":"Sites","songs":[{"id":"radio:x","title":"FM","channel":"x","duration":0,"source":"radio","link":"http://x.y/"}]}' | json "len(d['songs'])")" 1
 check "the library deletes songs only by their id" "$(code -b $J -X DELETE "$P/api/library/..%2F..%2Fconfig")" 409
 
+echo "== the song in the bot's name"
+nick() { Q clientlist | python3 -c "import sys,json; print(next(c['client_nickname'] for c in json.load(sys.stdin)['body'] if c['client_nickname'].startswith('Panda')))"; }
+OWN=$(nick)
+post /api/bots/1/play '{"query":"test tone"}' >/dev/null; sleep 2
+check "off: the name stays" "$(nick)" "$OWN"
+put "d['songInNickname'] = True" >/dev/null; sleep 2
+check "on: the name shows the song" "$(nick)" "$OWN: Test Tone Song"
+put "d['songInNickname'] = True; d['songNicknameFormat'] = '{name} ♪ {song} and a long tail'" >/dev/null; sleep 2
+check "its own format, cut to TeamSpeak's 30 characters" "$(nick | python3 -c "import sys; n=sys.stdin.read().strip(); print(len(n), n.endswith('…'), n.startswith('$OWN ♪ Test'))")" "30 True True"
+curl -s -b $J -X POST $P/api/bots/1/control/stop -o /dev/null; sleep 2
+check "nothing plays: its own name again" "$(nick)" "$OWN"
+put "pass" >/dev/null
+
 echo "== the bot's picture"
 Q() { curl -s -H "x-api-key: testkey-local-only" "http://127.0.0.1:10080/1/$1"; }
 # The flag (md5 of the picture) the TeamSpeak server has for bot 1.
