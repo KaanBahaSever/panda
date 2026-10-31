@@ -701,8 +701,9 @@ public sealed class SettingsDto
 	public bool Announce { get; set; }
 	public bool ConfirmCommands { get; set; } = true;
 	public bool ShowSongInDescription { get; set; }
-	public bool SongInNickname { get; set; }
-	public string SongNicknameFormat { get; set; } = "{name}: {song}";
+	// Null (an older panel or a script that doesn't know them): left as they are.
+	public bool? SongInNickname { get; set; }
+	public string? SongNicknameFormat { get; set; }
 	public bool EveryoneCanUse { get; set; } = true;
 	public List<ChatPerson> Members { get; set; } = [];
 	public List<ulong> MemberGroups { get; set; } = [];
@@ -843,15 +844,16 @@ public sealed class SettingsDto
 		b.Server.Channel = Channel.Trim();
 		if (ChannelPassword != null) { Set(ref reconnect, b.Server.ChannelPassword, ChannelPassword); b.Server.ChannelPassword = ChannelPassword; }
 		var nick = Nickname.Trim();
-		if (nick.Length is >= 3 and <= 30) { Set(ref reconnect, b.Bot.Nickname, nick); b.Bot.Nickname = nick; }
+		if (nick.EnumerateRunes().Count() is >= 3 and <= 30) { Set(ref reconnect, b.Bot.Nickname, nick); b.Bot.Nickname = nick; }
 
 		if (CommandPrefix.Trim().Length is > 0 and <= 3) b.Bot.CommandPrefix = CommandPrefix.Trim();
 		if (Strings.Languages.Contains(Language)) b.Bot.Language = Language;
 		b.Bot.Announce = Announce;
 		b.Bot.ConfirmCommands = ConfirmCommands;
 		b.Bot.ShowSongInDescription = ShowSongInDescription;
-		b.Bot.SongInNickname = SongInNickname;
-		if ((SongNicknameFormat ?? "").Trim() is { Length: > 0 and <= 60 } nf && nf.Contains("{song}")) b.Bot.SongNicknameFormat = nf;
+		if (SongInNickname is { } sn) b.Bot.SongInNickname = sn;
+		// The bot's own name stays in it: a format of only {song} would let a song's title be the bot's whole name.
+		if ((SongNicknameFormat ?? "").Trim() is { Length: > 0 and <= 60 } nf && nf.Contains("{song}") && nf.Contains("{name}")) b.Bot.SongNicknameFormat = nf;
 		b.Bot.EveryoneCanUse = EveryoneCanUse;
 		b.Bot.Members = People(Members);
 		b.Bot.MemberGroups = (MemberGroups ?? []).Distinct().Take(100).ToList();

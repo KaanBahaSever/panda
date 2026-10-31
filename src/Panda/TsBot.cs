@@ -113,11 +113,11 @@ public sealed class TsBot : BackgroundService
 
 		player.TrackStarted += t => _ = scheduler.InvokeAsync(() => OnTrackStarted(t));
 		player.TrackFailed += (t, reason) => _ = scheduler.InvokeAsync(() => OnTrackFailed(t, reason));
-		player.StreamTitleChanged += (t, song) => _ = scheduler.InvokeAsync(() => ShowSong(t));
+		player.StreamTitleChanged += (t, song) => _ = scheduler.InvokeAsync(() => ShowSong());
 		player.Changed += () =>
 		{
 			if (player.Current is null)
-				_ = scheduler.InvokeAsync(() => ShowSong(null));
+				_ = scheduler.InvokeAsync(() => ShowSong());
 		};
 	}
 
@@ -267,7 +267,8 @@ public sealed class TsBot : BackgroundService
 		// It connected with its own name (or the one the server gave it when that was taken).
 		nicknameShown = nicknameOwn = c.Book.Self()?.Name;
 		nicknameWarned = false;
-		await ShowSong(player.Current);
+		nicknamesTaken.Clear();
+		await ShowSong();
 		return null;
 	}
 
@@ -480,42 +481,114 @@ public sealed class TsBot : BackgroundService
 		return found.FirstOrDefault()?.Id;
 	}
 
-	/// <summary>The song playing (or none) in the bot's description, the song channel's name and the bot's own name.</summary>
-	async Task ShowSong(Track? t)
+	/// <summary>The song playing (or none) in the bot's description, the song channel's name and the bot's own
+	/// name. What plays is read now, not when this was asked for: calls may come out of order.</summary>
+	async Task ShowSong()
 	{
+		var t = player.Current;
 		await SetDescription(t is null ? "" : Describe(t));
 		await SetSongChannel(t);
-		await SetNickname(t);
+		QueueNickname();
 	}
 
 	string? nicknameShown;   // the name the bot has now on this connection (scheduler thread)
-	string? nicknameOwn;     // the one it connected with: back to it when nothing plays
+	string? nicknameOwn;     // the one the server gave it at connect (its own, or "…1" when that was taken)
 	bool nicknameWarned;
+	int nicknameRound;
+	DateTime nicknameAt = DateTime.MinValue;
+	readonly Dictionary<string, DateTime> nicknamesTaken = [];
+
+	/// <summary>Renames come together: the latest state, 2 s after the last change and 10 s after the last rename
+	/// at the soonest (each one is a line in the chat of everyone who sees the bot; servers count them as flood).</summary>
+	void QueueNickname()
+	{
+		var round = ++nicknameRound;
+		var wait = TimeSpan.FromSeconds(Math.Max(2, (nicknameAt + TimeSpan.FromSeconds(10) - DateTime.UtcNow).TotalSeconds));
+		_ = Task.Delay(wait).ContinueWith(_ => scheduler.InvokeAsync(async () =>
+		{
+			if (round == nicknameRound) await SetNickname();
+		}));
+	}
 
 	/// <summary>
-	/// With bot.songInNickname the bot's name shows the song ("Panda: Song", bot.songNicknameFormat), else it
-	/// is its own name. TeamSpeak takes 3 to 30 characters, and names are unique on a server.
+	/// With bot.songInNickname the bot's name shows the song ("Panda: Song", bot.songNicknameFormat), else it is
+	/// its own name. Names are unique on a server: while the bot plays someone may take its own one, so the names
+	/// it may have are tried in turn (its own, the one it connected with, a numbered one).
 	/// </summary>
-	async Task SetNickname(Track? t)
+	async Task SetNickname()
 	{
 		if (client is not { Connected: true } c) return;
-		var name = nicknameOwn ?? Bot.Nickname;
-		if (Bot.SongInNickname && t != null)
+		var plain = new List<string> { Bot.Nickname };
+		if (nicknameOwn is { } own && own != Bot.Nickname) plain.Add(own);
+		for (var i = 1; i <= 3; i++) plain.Add(CleanName(Bot.Nickname + i, 30));
+		var names = new List<string>();
+		if (Bot.SongInNickname && player.Current is { } t && SongName(t) is { } song) names.Add(song);
+		names.AddRange(plain);
+		foreach (var name in names.Distinct())
 		{
-			var song = Describe(t).TrimStart('♪', ' ');
-			name = Bot.SongNicknameFormat.Replace("{name}", Bot.Nickname).Replace("{song}", song);
-			name = new string(name.Where(ch => !char.IsControl(ch)).ToArray()).Trim();
-			if (name.EnumerateRunes().Count() > 30) name = string.Concat(name.EnumerateRunes().Take(29).Select(r => r.ToString())) + "…";
-			if (name.EnumerateRunes().Count() < 3) name = nicknameOwn ?? Bot.Nickname;
+			if (name == nicknameShown) return;
+			if (nicknamesTaken.TryGetValue(name, out var until) && until > DateTime.UtcNow) continue;
+			var r = await c.ChangeName(name);
+			nicknameAt = DateTime.UtcNow;
+			if (r.Ok) { nicknameShown = name; return; }
+			if (r.Error.Id == TsErrorCode.client_nickname_inuse)
+			{
+				nicknamesTaken[name] = DateTime.UtcNow + TimeSpan.FromMinutes(2);
+				continue;
+			}
+			if (!nicknameWarned)
+			{
+				nicknameWarned = true;
+				log.LogWarning("Could not rename the bot to {Name}: {Error}", name, r.Error.ErrorFormat());
+			}
+			return;
 		}
-		if (name == nicknameShown) return;
-		var r = await c.ChangeName(name);
-		if (r.Ok) { nicknameShown = name; return; }
-		if (!nicknameWarned)
+	}
+
+	/// <summary>The bot's name with the song, or null when it can't be one (TeamSpeak: 3 to 30 characters).</summary>
+	string? SongName(Track t)
+	{
+		// A radio station: the song on air, without the station's name (30 characters go fast).
+		var song = t.Source == Media.Radio && player.StreamTitle is { Length: > 0 } onAir && player.Current == t ? onAir : t.Title;
+		var name = CleanName(Bot.SongNicknameFormat.Replace("{name}", Bot.Nickname).Replace("{song}", song), 30);
+		return name.EnumerateRunes().Count() >= 3 ? name : null;
+	}
+
+	/// <summary>
+	/// Text fit for a TeamSpeak name: no control, format (bidi overrides, zero-width) or private characters (a
+	/// joiner inside an emoji stays), one space at a time, cut at <paramref name="max"/> characters on a whole
+	/// letter or emoji, with "…".
+	/// </summary>
+	internal static string CleanName(string text, int max)
+	{
+		var sb = new System.Text.StringBuilder();
+		var space = false;
+		foreach (var r in text.EnumerateRunes())
 		{
-			nicknameWarned = true;
-			log.LogWarning("Could not show the song in the bot's name ({Name}): {Error}", name, r.Error.ErrorFormat());
+			var cat = System.Text.Rune.GetUnicodeCategory(r);
+			if (cat is System.Globalization.UnicodeCategory.Control or System.Globalization.UnicodeCategory.LineSeparator
+				or System.Globalization.UnicodeCategory.ParagraphSeparator or System.Globalization.UnicodeCategory.PrivateUse
+				or System.Globalization.UnicodeCategory.OtherNotAssigned or System.Globalization.UnicodeCategory.Surrogate
+				|| (cat == System.Globalization.UnicodeCategory.Format && r.Value != 0x200D))
+				continue;
+			if (System.Text.Rune.IsWhiteSpace(r)) { space = sb.Length > 0; continue; }
+			if (space) { sb.Append(' '); space = false; }
+			sb.Append(r.ToString());
 		}
+		var clean = sb.ToString();
+		if (clean.EnumerateRunes().Count() <= max) return clean;
+		var cut = new System.Text.StringBuilder();
+		var count = 0;
+		var e = System.Globalization.StringInfo.GetTextElementEnumerator(clean);
+		while (e.MoveNext())
+		{
+			var element = e.GetTextElement();
+			var runes = element.EnumerateRunes().Count();
+			if (count + runes > max - 1) break;
+			cut.Append(element);
+			count += runes;
+		}
+		return cut.ToString().TrimEnd() + "…";
 	}
 
 	async Task SetDescription(string text)
@@ -553,7 +626,7 @@ public sealed class TsBot : BackgroundService
 		{
 			songChannelDenied = false;
 			songChannelId = null;
-			await ShowSong(player.Current);
+			await ShowSong();
 		});
 
 	// A radio station with the song it plays, when it says.
@@ -564,7 +637,7 @@ public sealed class TsBot : BackgroundService
 	{
 		lock (votes) { voteTrack = null; votes.Clear(); }
 		if (client is not { Connected: true } c) return;
-		await ShowSong(t);
+		await ShowSong();
 		if (Bot.Announce)
 			Note("chat", await c.SendChannelMessage(Strings.Get(Lang, "now-playing-by", Link(t), Strings.Duration(Lang, t), t.RequestedBy)), "b_client_channel_textmessage_send");
 	}

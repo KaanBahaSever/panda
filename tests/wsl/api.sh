@@ -135,14 +135,21 @@ check "the library deletes songs only by their id" "$(code -b $J -X DELETE "$P/a
 
 echo "== the song in the bot's name"
 nick() { Q clientlist | python3 -c "import sys,json; print(next(c['client_nickname'] for c in json.load(sys.stdin)['body'] if c['client_nickname'].startswith('Panda')))"; }
+playing() { curl -s -b $J $P/api/bots/1/state | json "(d['player']['current'] or {}).get('track', {}).get('title', '-')"; }
 OWN=$(nick)
-post /api/bots/1/play '{"query":"test tone"}' >/dev/null; sleep 2
-check "off: the name stays" "$(nick)" "$OWN"
-put "d['songInNickname'] = True" >/dev/null; sleep 2
+post /api/bots/1/play '{"query":"test tone"}' >/dev/null; sleep 4
+check "off: the name stays while a song plays" "$(playing) / $(nick)" "Test Tone Song / $OWN"
+# Renames come together, 10 s apart at the most often.
+put "d['songInNickname'] = True" >/dev/null; sleep 4
 check "on: the name shows the song" "$(nick)" "$OWN: Test Tone Song"
-put "d['songInNickname'] = True; d['songNicknameFormat'] = '{name} ♪ {song} and a long tail'" >/dev/null; sleep 2
+put "d['songInNickname'] = True; d['songNicknameFormat'] = '{name} ♪ {song} and a long tail'" >/dev/null; sleep 12
 check "its own format, cut to TeamSpeak's 30 characters" "$(nick | python3 -c "import sys; n=sys.stdin.read().strip(); print(len(n), n.endswith('…'), n.startswith('$OWN ♪ Test'))")" "30 True True"
-curl -s -b $J -X POST $P/api/bots/1/control/stop -o /dev/null; sleep 2
+check "a format without the bot's name is refused" "$(put "d['songInNickname'] = True; d['songNicknameFormat'] = '{song}'" | json "d['songNicknameFormat']")" "{name} ♪ {song} and a long tail"
+check "a panel that doesn't know the option leaves it on" "$(put "d['songInNickname'] = True; d.pop('songInNickname')" | json "d['songInNickname']")" True
+put "pass" >/dev/null; sleep 12
+check "turned off while playing: its own name again" "$(playing) / $(nick)" "Test Tone Song / $OWN"
+put "d['songInNickname'] = True" >/dev/null; sleep 12
+curl -s -b $J -X POST $P/api/bots/1/control/stop -o /dev/null; sleep 12
 check "nothing plays: its own name again" "$(nick)" "$OWN"
 put "pass" >/dev/null
 
