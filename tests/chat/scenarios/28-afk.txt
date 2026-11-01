@@ -15,6 +15,19 @@ Z on
 w 15
 I panda
 Z off
+# Sound off counts too (when chosen).
+s afk.enabled=true afk.channel=Lounge afk.minutes=0 afk.idle=false afk.away=false afk.muted=true afk.exemptGroups=[]
+M on
+w 15
+I Lounge
+M off
+w 15
+I panda
+# Away isn't chosen here: being away alone moves nobody.
+Z on
+w 15
+I panda
+Z off
 # Back off: nobody is moved any more.
 s afk.enabled=false
 Z on

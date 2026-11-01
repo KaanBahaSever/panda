@@ -298,20 +298,22 @@ public sealed class OnAir(ILogger<OnAir> log)
 	{
 		if (s.Hls) return Task.FromResult<string?>(null);
 		if (seen.TryGetValue(s.Url, out var c) && DateTime.UtcNow - c.At < Fresh) return Task.FromResult(c.Title);
-		return looking.GetOrAdd(s.Url, url => Task.Run(async () =>
-		{
-			try
-			{
-				await slots.WaitAsync();
-				string? title = null;
-				try { title = await ReadAsync(url); }
-				catch (Exception ex) when (ex is not OutOfMemoryException) { log.LogDebug("No title from {Station}: {Error}", s.Name, ex.Message); }
-				finally { slots.Release(); }
-				seen[url] = (DateTime.UtcNow, title);
-				return title;
-			}
-			finally { looking.TryRemove(url, out _); }
-		}));
+		// One look per station at a time; a finished one left behind (it ended before it was stored) is replaced.
+		if (looking.TryGetValue(s.Url, out var running) && !running.IsCompleted) return running;
+		var look = new Lazy<Task<string?>>(() => LookAsync(s));
+		var task = looking.AddOrUpdate(s.Url, _ => look.Value, (_, old) => old.IsCompleted ? look.Value : old);
+		return task;
+	}
+
+	async Task<string?> LookAsync(Station s)
+	{
+		await slots.WaitAsync();
+		string? title = null;
+		try { title = await ReadAsync(s.Url); }
+		catch (Exception ex) when (ex is not OutOfMemoryException) { log.LogDebug("No title from {Station}: {Error}", s.Name, ex.Message); }
+		finally { slots.Release(); }
+		seen[s.Url] = (DateTime.UtcNow, title);
+		return title;
 	}
 
 	static async Task<string?> ReadAsync(string url)

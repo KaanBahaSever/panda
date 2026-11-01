@@ -245,7 +245,9 @@ public static class PanelApi
 		{
 			var looks = favorites.All().Take(RadioFavorites.Max).Select(s => (s.Uuid, Task: onAir.TitleAsync(s))).ToList();
 			await Task.WhenAny(Task.WhenAll(looks.Select(l => l.Task)), Task.Delay(TimeSpan.FromSeconds(9)));
-			return looks.Where(l => l.Task.IsCompletedSuccessfully).ToDictionary(l => l.Uuid, l => l.Task.Result);
+			var on = new Dictionary<string, string?>();
+			foreach (var l in looks.Where(l => l.Task.IsCompletedSuccessfully)) on.TryAdd(l.Uuid, l.Task.Result);
+			return on;
 		});
 		// A station from Radio Browser (by its id), or what a bot is playing.
 		admin.MapPost("/radio/favorites", async (FavoriteRequest req, RadioBrowser radios, RadioFavorites favorites, BotManager bots, HttpContext ctx) =>

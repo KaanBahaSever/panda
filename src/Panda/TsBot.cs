@@ -268,7 +268,7 @@ public sealed partial class TsBot : BackgroundService
 		nicknameShown = nicknameOwn = c.Book.Self()?.Name;
 		nicknameWarned = false;
 		nicknamesTaken.Clear();
-		afkSubscribed = false;
+		afkSubscribedAt = DateTime.MinValue;
 		await ShowSong();
 		return null;
 	}
@@ -681,6 +681,8 @@ public sealed partial class TsBot : BackgroundService
 	async Task FollowAsync(TsFullClient c, ChannelId target)
 	{
 		if (!c.Connected || c.Book.Self()?.Channel == target) return;
+		// Someone moved to the AFK channel isn't followed there: the music stays with the others.
+		if (IsAfkChannel(target)) return;
 		var r = await c.ClientMove(c.ClientId, target);
 		NoteMove(r);
 		if (r.Ok) StatusChanged?.Invoke();

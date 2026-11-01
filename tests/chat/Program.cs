@@ -27,6 +27,7 @@
 //   C <text>          a channel on the server is named <text> (from the server's HTTP query)
 //   S key=value ...   change bot 1's sound (equalizer, effect, speed, eightD, crossfade) through the panel
 //   Z on|off          the test client sets itself away in TeamSpeak (or back)
+//   M on|off          the test client turns its sound (speakers) off (or on)
 //   I <channel>       the test client is in that channel (by name), or "panda": in Panda's channel
 // Exit code: the number of failed checks.
 using System.Globalization;
@@ -194,6 +195,11 @@ await scheduler.InvokeAsync(async () =>
 				case 'Z':
 					Console.WriteLine($"-> (sets itself {(arg == "on" ? "away" : "back")})");
 					await c.SendVoid(new TSLib.Commands.TsCommand("clientupdate") { { "client_away", arg == "on" ? 1 : 0 } });
+					await Task.Delay(500);
+					break;
+				case 'M':
+					Console.WriteLine($"-> (turns its sound {(arg == "on" ? "off" : "on")})");
+					await c.SendVoid(new TSLib.Commands.TsCommand("clientupdate") { { "client_output_muted", arg == "on" ? 1 : 0 } });
 					await Task.Delay(500);
 					break;
 				case 'I':
