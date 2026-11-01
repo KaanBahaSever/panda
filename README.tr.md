@@ -107,7 +107,9 @@ otomatik devam son YouTube şarkısından devam eder. Kendi ağındaki linkler (
 **İnternet radyosu**: aramanın yanındaki 📻 düğmesi radyo listesini açar (radyolar
 [Radio Browser](https://www.radio-browser.info/)'dan gelir, ücretsiz ve açık bir liste; Panda her radyonun
 kendi yayınını çalar). Yıldızladığın radyolar favorilerde kalır; `!fm` favorileri listeler,
-`!fm <ad ya da numara>` birini çalar, radyo çalarken `!fav` onu favorilere ekler.
+`!fm <ad ya da numara>` birini çalar, radyo çalarken `!fav` onu favorilere ekler. Favorilerde her radyonun
+şu an ne çaldığı görünür ("Yayında: Sanatçı - Şarkı"); duyuru açıksa çalan radyodaki her yeni şarkı sohbete
+yazılır, böylece neler çalındığının bir kaydı olur.
 
 **YouTube ayarları** (Ayarlar → YouTube): en uzun şarkı süresi, `!ara` sonuç sayısı, canlı yayınları ya da
 bir dakikadan kısa videoları aramalardan çıkarma, ses kalitesi (en iyi ya da veri tasarrufu için yaklaşık
@@ -155,6 +157,17 @@ Ses düzeyinin yanındaki 🎛️ düğmesi (yöneticiler) botun ses ayarların�
   geçmişi, listeler, favori radyolar ve çerezlerle bir zip (kayıtlı şarkılar hariç). Yüklemek Panda'yı yeniden
   başlatır (systemd ve Docker kendisi açar; Windows'ta elle açın). Yedekleri güvenli saklayın: şifre ve
   kimlik içerir.
+
+## Sunucu araçları
+
+Müzik dışındaki şeyler, botun ayarlarında **Sunucu araçları** altında. Hepsi sen açana kadar kapalıdır; her
+birini sunucu başına tek bir botta aç.
+
+- **AFK taşıma**: TeamSpeak'te uzakta olan, sesini (hoparlörünü) kapatan ya da bir süredir hiçbir şey
+  söylemeyen ve yazmayan kişiler, belirlediğin dakika sonra seçtiğin AFK kanalına taşınır, döndüklerinde de
+  kendi kanallarına geri alınır. İşaretlediğin sunucu grupları hiç taşınmaz. Botun sunucuda
+  `i_client_move_power` izni olmalı (taşıdığı kişilerin gerektirdiği kadar). Herkesi görebilmek için bot o
+  zaman bütün kanallara abone olur.
 
 ## İstatistikler ve Sistem ekranı
 

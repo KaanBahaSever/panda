@@ -26,6 +26,8 @@ fi
 Q "serveredit?virtualserver_antiflood_points_tick_reduce=1000&virtualserver_antiflood_points_needed_command_block=100000&virtualserver_antiflood_points_needed_ip_block=100000" >/dev/null
 GUEST=$(Q serverinfo | python3 -c "import sys,json; print(json.load(sys.stdin)['body'][0]['virtualserver_default_server_group'])")
 Q "servergroupaddperm?sgid=$GUEST&permsid=b_client_modify_own_description&permvalue=1&permskip=0&permnegated=0" >/dev/null
+# ...move people (the AFK move test)...
+Q "servergroupaddperm?sgid=$GUEST&permsid=i_client_move_power&permvalue=100&permskip=0&permnegated=0" >/dev/null
 # ...and rename channels (the song channel test).
 Q "servergroupaddperm?sgid=$GUEST&permsid=b_channel_modify_name&permvalue=1&permskip=0&permnegated=0" >/dev/null
 # A second channel, for "only people in the bot's channel" (an error when it's already there).

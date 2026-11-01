@@ -7,6 +7,7 @@ public static class Strings
 	{
 		["searching"] = ("Looking for [i]{0}[/i]…", "[i]{0}[/i] aranıyor…", "Recherche de [i]{0}[/i]…", "Suche nach [i]{0}[/i]…"),
 		["now-playing"] = ("🐼 Now playing: [b]{0}[/b] ({1})", "🐼 Şimdi çalıyor: [b]{0}[/b] ({1})", "🐼 En cours : [b]{0}[/b] ({1})", "🐼 Läuft gerade: [b]{0}[/b] ({1})"),
+		["on-air"] = ("📻 Now on air on [b]{0}[/b]: {1}", "📻 [b]{0}[/b] yayınında şimdi: {1}", "📻 En ce moment sur [b]{0}[/b] : {1}", "📻 Jetzt auf [b]{0}[/b]: {1}"),
 		["now-playing-by"] = ("🐼 Now playing: [b]{0}[/b] ({1}) · requested by {2}", "🐼 Şimdi çalıyor: [b]{0}[/b] ({1}) · isteyen: {2}", "🐼 En cours : [b]{0}[/b] ({1}) · demandé par {2}", "🐼 Läuft gerade: [b]{0}[/b] ({1}) · gewünscht von {2}"),
 		["added"] = ("Added to the queue (#{1}): [b]{0}[/b] ({2})", "Sıraya eklendi (#{1}): [b]{0}[/b] ({2})", "Ajouté à la file (#{1}) : [b]{0}[/b] ({2})", "Zur Warteschlange hinzugefügt (#{1}): [b]{0}[/b] ({2})"),
 		["playing-next"] = ("Playing next: [b]{0}[/b]", "Sıradaki: [b]{0}[/b]", "À suivre : [b]{0}[/b]", "Als Nächstes: [b]{0}[/b]"),

@@ -26,6 +26,8 @@
 //   R                 remove every bot but bot 1 (made by !create bot)
 //   C <text>          a channel on the server is named <text> (from the server's HTTP query)
 //   S key=value ...   change bot 1's sound (equalizer, effect, speed, eightD, crossfade) through the panel
+//   Z on|off          the test client sets itself away in TeamSpeak (or back)
+//   I <channel>       the test client is in that channel (by name), or "panda": in Panda's channel
 // Exit code: the number of failed checks.
 using System.Globalization;
 using System.Net;
@@ -45,6 +47,7 @@ if (args.Length < 3)
 var defaults = new Dictionary<string, string>
 {
 	["announce"] = "true", ["confirmCommands"] = "true", ["showSongInDescription"] = "true", ["language"] = "en",
+	["afk.enabled"] = "false", ["afk.exemptGroups"] = "[]",
 	["maxQueueLength"] = "100", ["maxDurationMinutes"] = "60", ["maxSongsPerUser"] = "0", ["voteSkip"] = "false",
 	["everyoneCanUse"] = "true", ["members"] = "[]", ["memberGroups"] = "[]", ["admins"] = "[]", ["adminGroups"] = "[]", ["djs"] = "[]", ["djGroups"] = "[]", ["blocked"] = "[]",
 	["commandLevels"] = "{}", ["othersSongs"] = "everyone", ["onlyFromChannel"] = "false",
@@ -186,6 +189,18 @@ await scheduler.InvokeAsync(async () =>
 				{
 					var names = await Query.ChannelNamesAsync();
 					Check(names.Contains(arg), $"a channel is named \"{arg}\" ({string.Join(", ", names)})");
+					break;
+				}
+				case 'Z':
+					Console.WriteLine($"-> (sets itself {(arg == "on" ? "away" : "back")})");
+					await c.SendVoid(new TSLib.Commands.TsCommand("clientupdate") { { "client_away", arg == "on" ? 1 : 0 } });
+					await Task.Delay(500);
+					break;
+				case 'I':
+				{
+					var where = c.Book.Self()!.Channel;
+					var name = c.Book.Channels.GetValueOrDefault(where)?.Name ?? "?";
+					Check(arg == "panda" ? where == panda.Channel : name == arg, $"in channel {arg} (in {name})");
 					break;
 				}
 				case 'S':

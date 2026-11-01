@@ -1,0 +1,12 @@
+# Announcing on: each new song on a radio station is said in the chat (a record of what was played).
+c !play http://127.0.0.1:8096/radio2
+e Now playing
+w 60
+e Now on air on [b]Test FM[/b]: Test Artist - Song A
+e Now on air on [b]Test FM[/b]: Test Artist - Song B
+c !stop
+# Off: nothing is said.
+s announce=false
+c !play http://127.0.0.1:8096/radio2
+w 30
+n Now on air

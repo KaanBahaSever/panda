@@ -70,6 +70,8 @@ public sealed class PandaConfig
 			b.Bot.SongChannel ??= "";
 			b.Bot.SongChannelFormat ??= "🎵 {song}";
 			b.Bot.SongNicknameFormat ??= "{name}: {song}";
+			b.Bot.Afk ??= new();
+			b.Bot.Afk.Clean();
 			b.Bot.SongChannelIdle ??= "🎵 Panda";
 		}
 		foreach (var b in cfg.Bots)
@@ -493,6 +495,8 @@ public sealed class BotSettings
 	public int LeaveWhenEmpty { get; set; }
 	/// <summary>Things the bot does at set times (see Scheduler).</summary>
 	public List<ScheduleEntry> Schedule { get; set; } = [];
+	/// <summary>Server tools: moving people who are away to an AFK channel (off by default).</summary>
+	public AfkSettings Afk { get; set; } = new();
 	/// <summary>The Panda version (minor) whose settings these are, for one-time changes on update.</summary>
 	public int SettingsVersion { get; set; }
 	/// <summary>Autoplay up to 0.5, when it was called radio; Load moves it.</summary>

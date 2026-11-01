@@ -101,6 +101,12 @@ namespace TSLib.Full.Book
 
 		partial void PostClientEnterView(ClientEnterView msg) => SetOwnChannelSubscribed(msg.ClientId);
 		partial void PostClientMoved(ClientMoved msg) => SetOwnChannelSubscribed(msg.ClientId);
+		// The generated update only sets the away message when it has one: coming back cleared nothing.
+		partial void PostClientUpdated(ClientUpdated msg)
+		{
+			if (msg.IsAway == false && GetClient(msg.ClientId) is { } client)
+				client.AwayMessage = null;
+		}
 		private void SetOwnChannelSubscribed(ClientId clientId)
 		{
 			if (clientId == OwnClient)

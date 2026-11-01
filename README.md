@@ -112,7 +112,8 @@ unless **Links into the local network** is on, so nobody can make Panda open the
 **Internet radio**: the 📻 button next to the search opens the radio list (stations from
 [Radio Browser](https://www.radio-browser.info/), a free, open list; Panda plays each station's own stream).
 Star stations to keep them; `!fm` lists the favorites, `!fm <name or number>` plays one, `!fav` while a
-station plays adds it.
+station plays adds it. The favorites show what each station plays right now ("On air: Artist - Song"), and
+with announcing on, every new song on the station playing is said in the chat: a record of what was played.
 
 **YouTube settings** (Settings → YouTube): max song length, the number of `!search` results, leaving live
 streams or videos under a minute out of searches, audio quality (best, or about 70 kbps to save data),
@@ -160,6 +161,16 @@ The 🎛️ button next to the volume (admins) opens the sound settings of the b
   and history, the playlists, favorite stations and cookies (not the saved songs). Restoring one restarts
   Panda (systemd and Docker start it again; on Windows, start it yourself). Keep backups safe: they hold
   passwords and identities.
+
+## Server tools
+
+Things beyond music, in a bot's settings under **Server tools**. Every one is off until you turn it on; turn
+each on for one bot per server.
+
+- **AFK move**: people who are away in TeamSpeak, have their sound (speakers) off, or said and typed nothing
+  for a while are moved to the AFK channel you pick, after the minutes you set, and back to their channel when
+  they return. Server groups you tick are never moved. The bot needs `i_client_move_power` on the server (as
+  much as the people it moves need). To see everyone, the bot then subscribes to every channel.
 
 ## Statistics and the System screen
 

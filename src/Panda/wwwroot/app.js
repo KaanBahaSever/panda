@@ -15,6 +15,7 @@ const I18N = {
     sLeave: 'Leave when nobody listens for (min)', sLeaveHint: 'Alone in its channel with nothing playing for that long, the bot removes itself (its identity and history go too). 0 = never; the last bot never leaves. Handy for bots made with !create bot.', 'cmd.create': 'Make a new bot (!create bot)',
     sAvatar: 'Picture on TeamSpeak', avatarPick: 'Choose a picture', avatarReset: "Use Panda's", sAvatarHint: "PNG, JPG or GIF; it's made small before it's sent. Saved right away. The bot needs i_client_max_avatar_filesize on the server.", avatarSaved: 'The new picture is on TeamSpeak.', avatarOffline: "Saved; the bot isn't connected, it's sent when it connects.", avatarFailed: 'Saved, but the server refused it: ', avatarBack: "The bot has Panda's picture again.", 'err.bad-image': 'That is not a PNG, JPG or GIF picture.', 'pc.avatar': 'Set its picture',
     sNickSong: "Show song in the bot's name", sNickFormat: "The bot's name while playing", sNickSongHint: "{name} is the bot's name (it has to be there), {song} the song, e.g. Panda: Song. TeamSpeak allows 30 characters (longer songs are cut). Everyone who sees the bot may get a line in their chat at each rename.",
+    sTools: 'Server tools', sToolsHint: 'Things beyond music. All of them are off until you turn them on; turn each on for one bot per server.', sAfk: 'Move people who are away to an AFK channel', sAfkChannel: 'AFK channel', sAfkMinutes: 'After (min)', sAfkWhen: 'Who counts as away:', sAfkAway: 'Set as away in TeamSpeak', sAfkMuted: 'Sound (speakers) turned off', sAfkIdle: 'Nothing said or typed for that long', sAfkBack: 'Back to their channel when they return', sAfkExempt: 'Never moved (server groups):', sAfkHint: 'The channel: its path or /id. 0 minutes = right away. The bot needs i_client_move_power on the server (as much as the people it moves need).', 'pc.afk': 'Move people (AFK)',
     sSongChannel: 'Channel named after the song', sSongFormat: 'Its name while playing', sSongIdle: 'When nothing plays', sSongChannelHint: 'A channel (its path or /id) whose name shows the song playing; {song} is the song. TeamSpeak allows 40 characters. The bot needs b_channel_modify_name there. Empty = off.', 'pc.channelname': 'Rename the song channel',
     sPublic: 'Public "now playing" page', sPublicHint: 'Anyone with the link sees what the bots play and what comes next (no names of who asked, no controls). Shared by all bots:',
     sBackup: 'Backup', sBackupHint: "The settings (bots, users, keys), each bot's TeamSpeak identity and history, the playlists, favorite stations and cookies; not the saved songs. Keep it safe: it holds passwords and identities. Restoring replaces them and restarts Panda (on Windows, start it again).", backupDl: 'Download a backup', backupRestore: 'Restore a backup', backupConfirm: 'Replace the settings, identities and lists with this backup and restart Panda?', backupDone: 'Restored — Panda is restarting…', 'err.bad-backup': "That isn't a Panda backup.",
@@ -24,6 +25,7 @@ const I18N = {
     'err.bad-sound': 'That sound setting is out of range.', 'err.bad-equalizer': 'Unknown equalizer setting.', 'err.bad-effect': 'Unknown effect.', 'cmd.eq': 'Equalizer', 'cmd.fx': 'Effects (nightcore, slowed, 8D)', 'cmd.speed': 'Speed',
     autoplayOn: 'Autoplay: on — similar songs follow when the queue ends', autoplayOff: 'Autoplay: off', autoplayToast: '✨ Autoplay on: similar songs follow when the queue ends',
     radio: 'Radio', radioTitle: 'Internet radio', radioFavs: 'Favorite stations', radioFavsEmpty: 'No favorite stations yet. Find one below and star it.', radioFind: 'Find a station', radioName: 'Name', radioCountry: 'Country', radioTag: 'Genre', radioAny: 'Any', radioSearch: 'Search', radioHint: "Stations come from Radio Browser (radio-browser.info), a free, open list. Panda plays each station's own stream and saves nothing.", radioNone: 'No stations found 🐾', radioFav: 'Add to favorite stations', radioUnfav: 'Remove from favorite stations', radioFaved: 'Added to favorite stations', radioUnfaved: 'Removed from favorite stations',
+    onAir: x => `On air: ${x}`,
     fromSearch: 'Search results', listAdding: (n, x) => `${n} more songs from "${x}" are on the way`, listQueued: (n, x) => `${n} more songs from "${x}" are in the queue`,
     sSources: 'Sources', sSearchIn: 'Search on', sFallback: 'When nothing is found there, try the others', sSearchWarn: "Songs from SoundCloud aren't saved to the library, and autoplay only follows YouTube songs.", sPrefixes: 'In the chat, “sc:” searches SoundCloud and “ytm:” YouTube Music, whatever is chosen here (!play sc:lofi).', srcSites: 'Other sites (Bandcamp, Mixcloud, Vimeo, Twitch…) and audio files', srcServices: 'Spotify, Apple Music, Deezer and Tidal links (looked up on YouTube)', srcPages: "Any other link: look up the page's title on YouTube", srcRadio: 'Internet radio (stream links, !fm, the radio list)', srcLocal: 'Links into the local network (a radio or a NAS at home)', sSourcesHint: "YouTube is always on. Songs from other sites play straight from there; only YouTube songs are saved to the library. Links into the local network are refused unless allowed, so nobody can make Panda open a router's page.",
     sSearchCount: 'Results of !search', ytHideLive: 'Leave live streams out of searches', ytHideShort: 'Leave videos under a minute out of searches', sQuality: 'Audio quality', qBest: 'Best', qSaver: 'Save data (about 70 kbps; saved songs are smaller too)', ytSponsorBlock: "Skip the parts that aren't music (SponsorBlock)", sSponsorHint: "Parts people marked on SponsorBlock (sponsor.ajay.app). Panda only sends the first characters of a code made from the video's id, not which video plays.", 'sb.music_offtopic': 'Talk in music videos', 'sb.sponsor': 'Sponsors', 'sb.selfpromo': 'Self-promotion', 'sb.intro': 'Intros', 'sb.outro': 'Endings',
@@ -121,6 +123,7 @@ const I18N = {
     sLeave: 'Kimse dinlemezse ayrıl (dk)', sLeaveHint: 'Bot bu kadar süre kanalında yalnız kalır ve bir şey çalmazsa kendini kaldırır (kimliği ve geçmişi de silinir). 0 = hiçbir zaman; son bot hiç ayrılmaz. !create bot ile açılan botlar için kullanışlı.', 'cmd.create': 'Yeni bot oluştur (!create bot)',
     sAvatar: 'TeamSpeak resmi', avatarPick: 'Resim seç', avatarReset: "Panda'nınkini kullan", sAvatarHint: 'PNG, JPG ya da GIF; gönderilmeden önce küçültülür. Hemen kaydedilir. Botun sunucuda i_client_max_avatar_filesize izni olmalı.', avatarSaved: 'Yeni resim TeamSpeak\'te.', avatarOffline: 'Kaydedildi; bot bağlı değil, bağlanınca gönderilir.', avatarFailed: 'Kaydedildi ama sunucu kabul etmedi: ', avatarBack: 'Botta yine Panda\'nın resmi var.', 'err.bad-image': 'Bu bir PNG, JPG ya da GIF resmi değil.', 'pc.avatar': 'Resmini değiştirmek',
     sNickSong: 'Şarkıyı botun adında göster', sNickFormat: 'Çalarken botun adı', sNickSongHint: '{name} botun adı (olmalı), {song} şarkıdır; örn. Panda: Şarkı. TeamSpeak en fazla 30 karaktere izin verir (uzun şarkı kısaltılır). Botu gören herkesin sohbetine her ad değişikliğinde bir satır düşebilir.',
+    sTools: 'Sunucu araçları', sToolsHint: 'Müzik dışındaki şeyler. Hepsi sen açana kadar kapalı; her birini sunucu başına tek bir botta aç.', sAfk: 'Uzaktakileri AFK kanalına taşı', sAfkChannel: 'AFK kanalı', sAfkMinutes: 'Kaç dakika sonra', sAfkWhen: 'Kim uzakta sayılır:', sAfkAway: 'TeamSpeak\'te uzakta olan', sAfkMuted: 'Sesi (hoparlörü) kapalı olan', sAfkIdle: 'O kadar süre hiçbir şey söylemeyen ya da yazmayan', sAfkBack: 'Dönünce kendi kanalına geri al', sAfkExempt: 'Hiç taşınmayanlar (sunucu grupları):', sAfkHint: 'Kanal: yolu ya da /numarası. 0 dakika = hemen. Botun sunucuda i_client_move_power izni olmalı (taşıdığı kişilerin gerektirdiği kadar).', 'pc.afk': 'Kişileri taşımak (AFK)',
     sSongChannel: 'Adı şarkı olan kanal', sSongFormat: 'Çalarkenki adı', sSongIdle: 'Bir şey çalmazken', sSongChannelHint: 'Adında çalan şarkının göründüğü kanal (yolu ya da /numarası); {song} şarkıdır. TeamSpeak en fazla 40 karaktere izin verir. Botun orada b_channel_modify_name izni olmalı. Boş = kapalı.', 'pc.channelname': 'Şarkı kanalının adını değiştirmek',
     sPublic: 'Herkese açık "şimdi çalıyor" sayfası', sPublicHint: 'Linki olan herkes botların ne çaldığını ve sırada ne olduğunu görür (isteyenlerin adı yok, kontrol yok). Tüm botlar için:',
     sBackup: 'Yedek', sBackupHint: 'Ayarlar (botlar, kullanıcılar, anahtarlar), her botun TeamSpeak kimliği ve geçmişi, listeler, favori radyolar ve çerezler; kayıtlı şarkılar hariç. Güvenli bir yerde saklayın: şifreler ve kimlikler içerir. Yüklemek bunların yerine geçer ve Panda yeniden başlar (Windows\'ta elle açın).', backupDl: 'Yedek indir', backupRestore: 'Yedekten yükle', backupConfirm: 'Ayarlar, kimlikler ve listeler bu yedekle değiştirilip Panda yeniden başlatılsın mı?', backupDone: 'Yüklendi — Panda yeniden başlıyor…', 'err.bad-backup': 'Bu bir Panda yedeği değil.',
@@ -130,6 +133,7 @@ const I18N = {
     'err.bad-sound': 'Bu ses ayarı izin verilen aralığın dışında.', 'err.bad-equalizer': 'Bilinmeyen ekolayzer ayarı.', 'err.bad-effect': 'Bilinmeyen efekt.', 'cmd.eq': 'Ekolayzer', 'cmd.fx': 'Efektler (nightcore, yavaş, 8D)', 'cmd.speed': 'Hız',
     autoplayOn: 'Otomatik devam: açık — sıra bitince benzer şarkılar gelir', autoplayOff: 'Otomatik devam: kapalı', autoplayToast: '✨ Otomatik devam açık: sıra bitince benzer şarkılar gelir',
     radio: 'Radyo', radioTitle: 'İnternet radyosu', radioFavs: 'Favori radyolar', radioFavsEmpty: 'Henüz favori radyo yok. Aşağıdan bulup yıldızlayın.', radioFind: 'Radyo bul', radioName: 'Ad', radioCountry: 'Ülke', radioTag: 'Tür', radioAny: 'Hepsi', radioSearch: 'Ara', radioHint: "Radyolar Radio Browser'dan (radio-browser.info) gelir; ücretsiz ve açık bir liste. Panda her radyonun kendi yayınını çalar, hiçbir şey kaydetmez.", radioNone: 'Radyo bulunamadı 🐾', radioFav: 'Favori radyolara ekle', radioUnfav: 'Favori radyolardan çıkar', radioFaved: 'Favori radyolara eklendi', radioUnfaved: 'Favori radyolardan çıkarıldı',
+    onAir: x => `Yayında: ${x}`,
     fromSearch: 'Arama sonuçları', listAdding: (n, x) => `"${x}" listesindeki ${n} şarkı daha ekleniyor`, listQueued: (n, x) => `"${x}" listesinden ${n} şarkı daha sırada`,
     sSources: 'Kaynaklar', sSearchIn: 'Arama yeri', sFallback: 'Orada bulamazsa diğerlerinde ara', sSearchWarn: 'SoundCloud şarkıları kütüphaneye kaydedilmez; otomatik devam sadece YouTube şarkılarından devam eder.', sPrefixes: "Sohbette “sc:” SoundCloud'da, “ytm:” YouTube Music'te arar; buradaki seçim ne olursa olsun (!çal sc:lofi).", srcSites: 'Diğer siteler (Bandcamp, Mixcloud, Vimeo, Twitch…) ve ses dosyaları', srcServices: "Spotify, Apple Music, Deezer ve Tidal linkleri (YouTube'da aranır)", srcPages: "Diğer her link: sayfanın başlığını YouTube'da ara", srcRadio: 'İnternet radyosu (yayın linkleri, !fm, radyo listesi)', srcLocal: 'Yerel ağdaki linkler (evdeki bir radyo ya da NAS)', sSourcesHint: "YouTube hep açık. Diğer sitelerin şarkıları doğrudan oradan çalınır; sadece YouTube şarkıları kütüphaneye kaydedilir. Yerel ağdaki linkler izin verilmedikçe reddedilir; böylece kimse Panda'ya modemin sayfasını açtıramaz.",
     sSearchCount: '!ara sonuç sayısı', ytHideLive: 'Canlı yayınları aramalardan çıkar', ytHideShort: 'Bir dakikadan kısa videoları aramalardan çıkar', sQuality: 'Ses kalitesi', qBest: 'En iyi', qSaver: 'Veri tasarrufu (yaklaşık 70 kbps; kaydedilen şarkılar da küçülür)', ytSponsorBlock: 'Müzik olmayan kısımları atla (SponsorBlock)', sSponsorHint: "İnsanların SponsorBlock'ta (sponsor.ajay.app) işaretlediği kısımlar. Panda hangi videonun çaldığını değil, video kimliğinden üretilen bir kodun ilk karakterlerini gönderir.", 'sb.music_offtopic': 'Klipteki konuşmalar', 'sb.sponsor': 'Sponsorlar', 'sb.selfpromo': 'Kendi tanıtımı', 'sb.intro': 'Girişler', 'sb.outro': 'Kapanışlar',
@@ -227,6 +231,7 @@ const I18N = {
     sLeave: 'Partir si personne n’écoute pendant (min)', sLeaveHint: "Seul dans son canal sans rien jouer pendant ce temps, le bot se retire (son identité et son historique aussi). 0 = jamais ; le dernier bot ne part jamais. Pratique pour les bots créés avec !create bot.", 'cmd.create': 'Créer un bot (!create bot)',
     sAvatar: 'Image sur TeamSpeak', avatarPick: 'Choisir une image', avatarReset: 'Reprendre celle de Panda', sAvatarHint: "PNG, JPG ou GIF ; elle est réduite avant l'envoi. Enregistrée tout de suite. Le bot a besoin de i_client_max_avatar_filesize sur le serveur.", avatarSaved: 'La nouvelle image est sur TeamSpeak.', avatarOffline: "Enregistrée ; le bot n'est pas connecté, elle sera envoyée à la connexion.", avatarFailed: 'Enregistrée, mais le serveur l’a refusée : ', avatarBack: "Le bot a de nouveau l'image de Panda.", 'err.bad-image': "Ce n'est pas une image PNG, JPG ou GIF.", 'pc.avatar': 'Changer son image',
     sNickSong: 'Afficher le morceau dans le nom du bot', sNickFormat: 'Nom du bot pendant la lecture', sNickSongHint: "{name} est le nom du bot (obligatoire), {song} le morceau, p. ex. Panda : Morceau. TeamSpeak permet 30 caractères (les morceaux plus longs sont coupés). Chaque personne qui voit le bot peut recevoir une ligne dans son chat à chaque changement de nom.",
+    sTools: 'Outils du serveur', sToolsHint: "Ce qui va au-delà de la musique. Tout est désactivé tant que vous ne l'activez pas ; activez chaque outil sur un seul bot par serveur.", sAfk: 'Déplacer les absents vers un canal AFK', sAfkChannel: 'Canal AFK', sAfkMinutes: 'Après (min)', sAfkWhen: 'Qui compte comme absent :', sAfkAway: 'Absent dans TeamSpeak', sAfkMuted: 'Son (haut-parleurs) coupé', sAfkIdle: "Rien dit ni écrit pendant ce temps", sAfkBack: 'Le remettre dans son canal à son retour', sAfkExempt: 'Jamais déplacés (groupes du serveur) :', sAfkHint: "Le canal : son chemin ou /id. 0 minute = tout de suite. Le bot a besoin de i_client_move_power sur le serveur (autant que les personnes qu'il déplace).", 'pc.afk': 'Déplacer des personnes (AFK)',
     sSongChannel: 'Canal nommé d’après le morceau', sSongFormat: 'Son nom pendant la lecture', sSongIdle: 'Quand rien ne joue', sSongChannelHint: "Un canal (son chemin ou /id) dont le nom montre le morceau en cours ; {song} est le morceau. TeamSpeak permet 40 caractères. Le bot y a besoin de b_channel_modify_name. Vide = désactivé.", 'pc.channelname': 'Renommer le canal du morceau',
     sPublic: 'Page publique « en cours »', sPublicHint: "Quiconque a le lien voit ce que jouent les bots et ce qui suit (sans noms, sans contrôles). Commune à tous les bots :",
     sBackup: 'Sauvegarde', sBackupHint: "Les paramètres (bots, utilisateurs, clés), l'identité TeamSpeak et l'historique de chaque bot, les playlists, les radios favorites et les cookies ; pas les morceaux enregistrés. Gardez-la en lieu sûr : elle contient des mots de passe et des identités. La restaurer les remplace et redémarre Panda (sous Windows, relancez-le).", backupDl: 'Télécharger une sauvegarde', backupRestore: 'Restaurer une sauvegarde', backupConfirm: 'Remplacer les paramètres, identités et listes par cette sauvegarde et redémarrer Panda ?', backupDone: 'Restauré — Panda redémarre…', 'err.bad-backup': "Ce n'est pas une sauvegarde de Panda.",
@@ -236,6 +241,7 @@ const I18N = {
     'err.bad-sound': 'Ce réglage du son est hors limites.', 'err.bad-equalizer': "Réglage d'égaliseur inconnu.", 'err.bad-effect': 'Effet inconnu.', 'cmd.eq': 'Égaliseur', 'cmd.fx': 'Effets (nightcore, ralenti, 8D)', 'cmd.speed': 'Vitesse',
     autoplayOn: 'Lecture auto : activée — des morceaux similaires suivent quand la file est finie', autoplayOff: 'Lecture auto : désactivée', autoplayToast: '✨ Lecture auto activée : des morceaux similaires suivent quand la file est finie',
     radio: 'Radio', radioTitle: 'Radio sur Internet', radioFavs: 'Radios favorites', radioFavsEmpty: 'Pas encore de radios favorites. Trouvez-en une ci-dessous et ajoutez une étoile.', radioFind: 'Trouver une radio', radioName: 'Nom', radioCountry: 'Pays', radioTag: 'Genre', radioAny: 'Tous', radioSearch: 'Chercher', radioHint: "Les radios viennent de Radio Browser (radio-browser.info), une liste libre et gratuite. Panda lit le flux de chaque radio et n'enregistre rien.", radioNone: 'Aucune radio trouvée 🐾', radioFav: 'Ajouter aux radios favorites', radioUnfav: 'Retirer des radios favorites', radioFaved: 'Ajoutée aux radios favorites', radioUnfaved: 'Retirée des radios favorites',
+    onAir: x => `À l'antenne : ${x}`,
     fromSearch: 'Résultats de la recherche', listAdding: (n, x) => `${n} autres morceaux de « ${x} » arrivent`, listQueued: (n, x) => `${n} autres morceaux de « ${x} » sont dans la file`,
     sSources: 'Sources', sSearchIn: 'Chercher sur', sFallback: "Si rien n'est trouvé, essayer les autres", sSearchWarn: 'Les morceaux de SoundCloud ne sont pas enregistrés dans la bibliothèque, et la lecture auto ne suit que les morceaux YouTube.', sPrefixes: 'Dans le chat, « sc: » cherche sur SoundCloud et « ytm: » sur YouTube Music, quel que soit le choix ici (!jouer sc:lofi).', srcSites: 'Autres sites (Bandcamp, Mixcloud, Vimeo, Twitch…) et fichiers audio', srcServices: 'Liens Spotify, Apple Music, Deezer et Tidal (cherchés sur YouTube)', srcPages: 'Tout autre lien : chercher le titre de la page sur YouTube', srcRadio: 'Radio sur Internet (liens de flux, !fm, la liste des radios)', srcLocal: 'Liens vers le réseau local (une radio ou un NAS à la maison)', sSourcesHint: "YouTube est toujours activé. Les morceaux des autres sites sont lus directement depuis là-bas ; seuls les morceaux YouTube sont enregistrés dans la bibliothèque. Les liens vers le réseau local sont refusés sauf autorisation, pour que personne ne fasse ouvrir à Panda la page d'un routeur.",
     sSearchCount: 'Résultats de !chercher', ytHideLive: 'Exclure les directs des recherches', ytHideShort: "Exclure les vidéos de moins d'une minute des recherches", sQuality: 'Qualité audio', qBest: 'La meilleure', qSaver: 'Économie de données (environ 70 kbps ; les morceaux enregistrés sont plus petits aussi)', ytSponsorBlock: 'Passer les parties qui ne sont pas de la musique (SponsorBlock)', sSponsorHint: "Parties marquées par des gens sur SponsorBlock (sponsor.ajay.app). Panda n'envoie que les premiers caractères d'un code tiré de l'identifiant de la vidéo, pas la vidéo qui joue.", 'sb.music_offtopic': 'Paroles dans les clips', 'sb.sponsor': 'Sponsors', 'sb.selfpromo': 'Autopromotion', 'sb.intro': 'Intros', 'sb.outro': 'Fins',
@@ -333,6 +339,7 @@ const I18N = {
     sLeave: 'Gehen, wenn niemand zuhört, nach (Min.)', sLeaveHint: 'Ist der Bot so lange allein in seinem Channel und spielt nichts, entfernt er sich selbst (Identität und Verlauf auch). 0 = nie; der letzte Bot geht nie. Praktisch für Bots aus !create bot.', 'cmd.create': 'Neuen Bot erstellen (!create bot)',
     sAvatar: 'Bild auf TeamSpeak', avatarPick: 'Bild wählen', avatarReset: 'Das von Panda nehmen', sAvatarHint: 'PNG, JPG oder GIF; es wird vor dem Senden verkleinert. Sofort gespeichert. Der Bot braucht auf dem Server i_client_max_avatar_filesize.', avatarSaved: 'Das neue Bild ist auf TeamSpeak.', avatarOffline: 'Gespeichert; der Bot ist nicht verbunden, es wird beim Verbinden gesendet.', avatarFailed: 'Gespeichert, aber der Server hat es abgelehnt: ', avatarBack: 'Der Bot hat wieder das Bild von Panda.', 'err.bad-image': 'Das ist kein PNG-, JPG- oder GIF-Bild.', 'pc.avatar': 'Sein Bild ändern',
     sNickSong: 'Song im Namen des Bots zeigen', sNickFormat: 'Name des Bots beim Abspielen', sNickSongHint: '{name} ist der Name des Bots (muss drin sein), {song} der Song, z. B. Panda: Song. TeamSpeak erlaubt 30 Zeichen (längere Songs werden gekürzt). Alle, die den Bot sehen, können bei jeder Umbenennung eine Zeile im Chat bekommen.',
+    sTools: 'Server-Werkzeuge', sToolsHint: 'Dinge über Musik hinaus. Alles ist aus, bis du es einschaltest; schalte jedes nur bei einem Bot pro Server ein.', sAfk: 'Abwesende in einen AFK-Channel verschieben', sAfkChannel: 'AFK-Channel', sAfkMinutes: 'Nach (Min.)', sAfkWhen: 'Wer als abwesend gilt:', sAfkAway: 'In TeamSpeak abwesend', sAfkMuted: 'Ton (Lautsprecher) aus', sAfkIdle: 'So lange nichts gesagt oder geschrieben', sAfkBack: 'Bei Rückkehr in den eigenen Channel zurück', sAfkExempt: 'Nie verschoben (Servergruppen):', sAfkHint: 'Der Channel: Pfad oder /ID. 0 Minuten = sofort. Der Bot braucht auf dem Server i_client_move_power (so viel, wie die Verschobenen brauchen).', 'pc.afk': 'Leute verschieben (AFK)',
     sSongChannel: 'Channel mit dem Song im Namen', sSongFormat: 'Sein Name beim Abspielen', sSongIdle: 'Wenn nichts läuft', sSongChannelHint: 'Ein Channel (Pfad oder /ID), dessen Name den laufenden Song zeigt; {song} ist der Song. TeamSpeak erlaubt 40 Zeichen. Der Bot braucht dort b_channel_modify_name. Leer = aus.', 'pc.channelname': 'Den Song-Channel umbenennen',
     sPublic: 'Öffentliche „Läuft gerade“-Seite', sPublicHint: 'Wer den Link hat, sieht, was die Bots spielen und was als Nächstes kommt (keine Namen, keine Steuerung). Für alle Bots:',
     sBackup: 'Sicherung', sBackupHint: 'Die Einstellungen (Bots, Nutzer, Schlüssel), die TeamSpeak-Identität und der Verlauf jedes Bots, die Playlists, Lieblingssender und Cookies; nicht die gespeicherten Songs. Sicher aufbewahren: sie enthält Passwörter und Identitäten. Wiederherstellen ersetzt sie und startet Panda neu (unter Windows von Hand starten).', backupDl: 'Sicherung herunterladen', backupRestore: 'Sicherung wiederherstellen', backupConfirm: 'Einstellungen, Identitäten und Listen durch diese Sicherung ersetzen und Panda neu starten?', backupDone: 'Wiederhergestellt — Panda startet neu…', 'err.bad-backup': 'Das ist keine Panda-Sicherung.',
@@ -342,6 +349,7 @@ const I18N = {
     'err.bad-sound': 'Diese Klangeinstellung liegt außerhalb des Bereichs.', 'err.bad-equalizer': 'Unbekannte Equalizer-Einstellung.', 'err.bad-effect': 'Unbekannter Effekt.', 'cmd.eq': 'Equalizer', 'cmd.fx': 'Effekte (Nightcore, langsam, 8D)', 'cmd.speed': 'Tempo',
     autoplayOn: 'Autoplay: an — ähnliche Songs folgen, wenn die Warteschlange leer ist', autoplayOff: 'Autoplay: aus', autoplayToast: '✨ Autoplay an: ähnliche Songs folgen, wenn die Warteschlange leer ist',
     radio: 'Radio', radioTitle: 'Internetradio', radioFavs: 'Lieblingssender', radioFavsEmpty: 'Noch keine Lieblingssender. Such unten einen und gib ihm einen Stern.', radioFind: 'Sender finden', radioName: 'Name', radioCountry: 'Land', radioTag: 'Genre', radioAny: 'Alle', radioSearch: 'Suchen', radioHint: 'Die Sender kommen von Radio Browser (radio-browser.info), einer freien, offenen Liste. Panda spielt den eigenen Stream jedes Senders und speichert nichts.', radioNone: 'Keine Sender gefunden 🐾', radioFav: 'Zu den Lieblingssendern', radioUnfav: 'Aus den Lieblingssendern entfernen', radioFaved: 'Zu den Lieblingssendern hinzugefügt', radioUnfaved: 'Aus den Lieblingssendern entfernt',
+    onAir: x => `Läuft gerade: ${x}`,
     fromSearch: 'Suchergebnisse', listAdding: (n, x) => `${n} weitere Songs aus „${x}“ kommen`, listQueued: (n, x) => `${n} weitere Songs aus „${x}“ sind in der Warteschlange`,
     sSources: 'Quellen', sSearchIn: 'Suchen auf', sFallback: 'Wenn dort nichts gefunden wird, die anderen versuchen', sSearchWarn: 'Songs von SoundCloud werden nicht in der Bibliothek gespeichert, und Autoplay folgt nur YouTube-Songs.', sPrefixes: 'Im Chat sucht „sc:“ bei SoundCloud und „ytm:“ bei YouTube Music, egal was hier gewählt ist (!spielen sc:lofi).', srcSites: 'Andere Seiten (Bandcamp, Mixcloud, Vimeo, Twitch…) und Audiodateien', srcServices: 'Links von Spotify, Apple Music, Deezer und Tidal (auf YouTube gesucht)', srcPages: 'Jeder andere Link: den Titel der Seite auf YouTube suchen', srcRadio: 'Internetradio (Stream-Links, !fm, die Senderliste)', srcLocal: 'Links ins lokale Netzwerk (ein Radio oder NAS zu Hause)', sSourcesHint: 'YouTube ist immer an. Songs von anderen Seiten werden direkt von dort gespielt; nur YouTube-Songs werden in der Bibliothek gespeichert. Links ins lokale Netzwerk werden abgelehnt, außer es ist erlaubt – so kann niemand Panda die Seite eines Routers öffnen lassen.',
     sSearchCount: 'Ergebnisse von !suchen', ytHideLive: 'Livestreams aus Suchen weglassen', ytHideShort: 'Videos unter einer Minute aus Suchen weglassen', sQuality: 'Audioqualität', qBest: 'Beste', qSaver: 'Daten sparen (etwa 70 kbps; gespeicherte Songs werden auch kleiner)', ytSponsorBlock: 'Teile ohne Musik überspringen (SponsorBlock)', sSponsorHint: 'Teile, die Leute bei SponsorBlock (sponsor.ajay.app) markiert haben. Panda schickt nur die ersten Zeichen eines Codes aus der Video-ID, nicht welches Video läuft.', 'sb.music_offtopic': 'Gerede in Musikvideos', 'sb.sponsor': 'Sponsoren', 'sb.selfpromo': 'Eigenwerbung', 'sb.intro': 'Intros', 'sb.outro': 'Abspänne',
@@ -1257,6 +1265,28 @@ function showNickSong() {
   for (const e of document.querySelectorAll('.js-nick-song')) e.hidden = !on;
 }
 
+// Server tools: AFK move. The exempt groups are picked from the server's groups (when the bot is connected).
+let afkExempt = [];
+function fillAfk(s) {
+  const a = s.afk || {}, f = F();
+  f.afkEnabled.checked = !!a.enabled; f.afkChannel.value = a.channel || ''; f.afkMinutes.value = a.minutes ?? 15;
+  f.afkAway.checked = a.away !== false; f.afkMuted.checked = a.muted !== false; f.afkIdle.checked = a.idle !== false; f.afkMoveBack.checked = a.moveBack !== false;
+  afkExempt = [...(a.exemptGroups || [])];
+  showAfk(); renderAfkGroups();
+}
+function showAfk() { document.querySelector('.js-afk').hidden = !F().afkEnabled.checked; }
+function renderAfkGroups() {
+  const groups = tsPeople?.groups || [];
+  // Groups picked before but not on the server (now): still listed, by number.
+  const all = [...groups, ...afkExempt.filter(id => !groups.some(g => g.id === id)).map(id => ({ id, name: `#${id}` }))];
+  $('afk-groups').replaceChildren(...(all.length ? all.map(g => {
+    const box = el('input', { type: 'checkbox' });
+    box.checked = afkExempt.includes(g.id);
+    box.addEventListener('change', () => { afkExempt = box.checked ? [...afkExempt, g.id] : afkExempt.filter(x => x !== g.id); });
+    return el('label', { class: 'check' }, box, el('span', { text: g.name }));
+  }) : [el('p', { class: 'empty', text: t('pickOffline') })]));
+}
+
 function fillSettings(s) {
   settings = s; pwTouched = {};
   $('set-bot').textContent = s.nickname;
@@ -1266,6 +1296,7 @@ function fillSettings(s) {
   f.announce.checked = !!s.announce; f.confirmCommands.checked = s.confirmCommands !== false; f.voteSkip.checked = !!s.voteSkip;
   f.showSongInDescription.checked = !!s.showSongInDescription;
   f.songInNickname.checked = !!s.songInNickname;
+  fillAfk(s);
   showNickSong();
   f.everyoneCanUse.checked = s.everyoneCanUse !== false; f.onlyFromChannel.checked = !!s.onlyFromChannel;
   f.othersSongs.value = s.othersSongs || 'everyone';
@@ -1311,6 +1342,7 @@ function renderSbCats(on) {
 function sbEnable() { for (const i of $('sb-cats').querySelectorAll('input')) i.disabled = !F().ytSponsorBlock.checked; }
 F().ytSponsorBlock.addEventListener('change', sbEnable);
 F().songInNickname.addEventListener('change', showNickSong);
+F().afkEnabled.addEventListener('change', showAfk);
 F().normalizeVolume.addEventListener('change', e => { F().targetLufs.disabled = !e.target.checked; });
 // Searching SoundCloud first: its songs aren't saved and autoplay can't follow them.
 function srcWarn() { $('src-warn').hidden = F().srcSearch.value !== 'soundcloud'; }
@@ -1342,6 +1374,8 @@ $('set-form').addEventListener('submit', async e => {
     members: perm.members, memberGroups: perm.memberGroups, admins: perm.admins, adminGroups: perm.adminGroups, djs: perm.djs, djGroups: perm.djGroups, blocked: perm.blocked,
     commandLevels: perm.commandLevels,
     schedule: sched, publicPage: f.publicPage.checked,
+    afk: { enabled: f.afkEnabled.checked, channel: f.afkChannel.value.trim(), minutes: +f.afkMinutes.value, away: f.afkAway.checked,
+      muted: f.afkMuted.checked, idle: f.afkIdle.checked, moveBack: f.afkMoveBack.checked, exemptGroups: [...afkExempt] },
     libraryEnabled: f.libraryEnabled.checked, libraryMaxSizeMb: Math.round(gb * 1024), normalizeVolume: f.normalizeVolume.checked, targetLufs: +f.targetLufs.value,
     sources: {
       search: f.srcSearch.value, fallback: f.srcFallback.checked, youTubeMusic: f.srcYouTubeMusic.checked, soundCloud: f.srcSoundCloud.checked,
@@ -1518,6 +1552,7 @@ async function loadPeople() {
   if (bot !== settingsBot) return;
   tsPeople = p;
   renderPerm();
+  renderAfkGroups();
 }
 const groupName = id => tsPeople?.groups?.find(g => g.id === id)?.name || `#${id}`;
 
@@ -1864,7 +1899,9 @@ async function loadFavs() {
   const r = await act(() => api('GET', '/api/radio/favorites'));
   if (!r) return;
   radioFavs = r;
-  $('radio-favs').replaceChildren(...radioFavs.map(stationRow));
+  $('radio-favs').replaceChildren(...radioFavs.map(s => stationRow(s, true)));
+  showOnAir();
+  loadOnAir();
   $('radio-favs-empty').hidden = radioFavs.length > 0;
   for (const b of document.querySelectorAll('#radio-results .js-fav')) favState(b, b.dataset.uuid);
 }
@@ -1878,7 +1915,25 @@ async function loadRadioMeta() {
   if (!countries.length && !tags.length) radioMeta = false;   // ask again next time
 }
 
-function stationRow(s) {
+// What the saved stations play right now, asked every 30 s while the list is open.
+let onAir = {}, onAirTimer = 0;
+async function loadOnAir() {
+  clearTimeout(onAirTimer);
+  if (!$('radio').open || !radioFavs.length) return;
+  const r = await api('GET', '/api/radio/onair').catch(() => null);
+  if (r) { Object.assign(onAir, r); showOnAir(); }
+  if ($('radio').open) onAirTimer = setTimeout(loadOnAir, 30000);
+}
+function showOnAir() {
+  for (const e of document.querySelectorAll('#radio-favs .onair')) {
+    const song = onAir[e.dataset.uuid];
+    e.hidden = !song;
+    e.textContent = song ? '🎵 ' + t('onAir', song) : '';
+  }
+}
+$('radio').addEventListener('close', () => clearTimeout(onAirTimer));
+
+function stationRow(s, saved) {
   const tags = (s.tags || '').split(',').map(x => x.trim()).filter(Boolean).slice(0, 3).join(', ');
   const tr = { title: s.name, channel: [s.country, tags].filter(Boolean).join(' · '), isLive: true, thumbnail: s.favicon, url: s.homepage || '' };
   const add = el('button', { class: 'btn soft sm', type: 'button', title: t('add'), 'aria-label': `${t('add')}: ${s.name}` }, icon('plus'), el('span', { class: 'lbl', text: t('add') }));
@@ -1889,7 +1944,9 @@ function stationRow(s) {
   favState(fav, s.uuid);
   fav.addEventListener('click', () => toggleFav(fav, s));
   const extra = s.bitrate ? [el('span', { text: `${s.bitrate} kbps` })] : [];
-  return el('li', { class: 'track' }, thumb(tr), trackText(tr, { req: false, extra }), el('div', { class: 'acts' }, add, now, fav));
+  const text = trackText(tr, { req: false, extra });
+  if (saved) text.append(el('div', { class: 'onair', 'data-uuid': s.uuid, hidden: '' }));
+  return el('li', { class: 'track' }, thumb(tr), text, el('div', { class: 'acts' }, add, now, fav));
 }
 function favState(b, uuid) {
   const on = radioFavs.some(f => f.uuid === uuid);
@@ -1914,7 +1971,7 @@ $('radio-form').addEventListener('submit', async e => {
   await busy($('radio-go'), async () => {
     const r = await act(() => api('GET', '/api/radio/search?' + new URLSearchParams(q)));
     if (!r || seq !== radioSeq) return;
-    $('radio-results').replaceChildren(...(r.length ? r.map(stationRow) : [el('li', { class: 'empty muted', text: t('radioNone') })]));
+    $('radio-results').replaceChildren(...(r.length ? r.map(s => stationRow(s)) : [el('li', { class: 'empty muted', text: t('radioNone') })]));
   });
 });
 

@@ -280,3 +280,85 @@ public sealed class RadioFavorites
 		catch (IOException ex) { log.LogWarning("Could not save {Path}: {Error}", path, ex.Message); }
 	}
 }
+
+/// <summary>
+/// What saved stations play right now, for the panel's list: a short look at each stream (connect, read up to
+/// its first song title, hang up: a few KB), at most every 30 s per station, a few at a time. HLS stations and
+/// those that don't name their songs give nothing. The links go through the same checks as songs (Web.cs).
+/// </summary>
+public sealed class OnAir(ILogger<OnAir> log)
+{
+	readonly System.Collections.Concurrent.ConcurrentDictionary<string, (DateTime At, string? Title)> seen = new();
+	readonly System.Collections.Concurrent.ConcurrentDictionary<string, Task<string?>> looking = new();
+	readonly SemaphoreSlim slots = new(4);
+	static readonly TimeSpan Fresh = TimeSpan.FromSeconds(30);
+
+	/// <summary>The song on air, or null; a look already on its way is shared.</summary>
+	public Task<string?> TitleAsync(Station s)
+	{
+		if (s.Hls) return Task.FromResult<string?>(null);
+		if (seen.TryGetValue(s.Url, out var c) && DateTime.UtcNow - c.At < Fresh) return Task.FromResult(c.Title);
+		return looking.GetOrAdd(s.Url, url => Task.Run(async () =>
+		{
+			try
+			{
+				await slots.WaitAsync();
+				string? title = null;
+				try { title = await ReadAsync(url); }
+				catch (Exception ex) when (ex is not OutOfMemoryException) { log.LogDebug("No title from {Station}: {Error}", s.Name, ex.Message); }
+				finally { slots.Release(); }
+				seen[url] = (DateTime.UtcNow, title);
+				return title;
+			}
+			finally { looking.TryRemove(url, out _); }
+		}));
+	}
+
+	static async Task<string?> ReadAsync(string url)
+	{
+		using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(8));
+		var ct = cts.Token;
+		await Web.CheckAsync(new Uri(url), ct);
+		var http = await HttpStream.OpenAsync(url, ct);
+		if (RadioLinks.IsPlaylist(http.Type, http.Url))
+		{
+			string text;
+			try { text = await http.ReadTextAsync(64 * 1024, ct); }
+			finally { http.Dispose(); }
+			if (RadioLinks.IsHls(text) || RadioLinks.FirstStream(text) is not { } inner) return null;
+			await Web.CheckAsync(new Uri(inner), ct);
+			http = await HttpStream.OpenAsync(inner, ct);
+		}
+		using (http)
+		{
+			var metaint = http.MetaInterval;
+			if (metaint == 0) return null;
+			// The first block may be empty (no change yet): one more is read.
+			for (var block = 0; block < 2; block++)
+			{
+				await Skip(http.Body, metaint, ct);
+				var length = (await Exact(http.Body, 1, ct))[0] * 16;
+				if (length > 0 && RadioLinks.StreamTitle(await Exact(http.Body, length, ct)) is { } t) return t;
+			}
+			return null;
+		}
+	}
+
+	static async Task Skip(Stream s, int count, CancellationToken ct)
+	{
+		var buffer = new byte[Math.Min(count, 16 * 1024)];
+		while (count > 0)
+		{
+			var n = await s.ReadAsync(buffer.AsMemory(0, Math.Min(buffer.Length, count)), ct);
+			if (n == 0) throw new IOException("the stream ended");
+			count -= n;
+		}
+	}
+
+	static async Task<byte[]> Exact(Stream s, int count, CancellationToken ct)
+	{
+		var b = new byte[count];
+		await s.ReadExactlyAsync(b, ct);
+		return b;
+	}
+}

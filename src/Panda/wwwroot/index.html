@@ -320,6 +320,28 @@
       </fieldset>
 
       <fieldset class="group">
+        <legend>🛡️ <span data-i18n="sTools">Server tools</span></legend>
+        <p class="hint" data-i18n="sToolsHint">Things beyond music. All of them are off until you turn them on; turn each on for one bot per server.</p>
+        <label class="switch"><input type="checkbox" name="afkEnabled"><span class="track" aria-hidden="true"></span><span data-i18n="sAfk">Move people who are away to an AFK channel</span></label>
+        <div class="js-afk">
+          <div class="row2">
+            <label class="field"><span data-i18n="sAfkChannel">AFK channel</span>
+              <input name="afkChannel" type="text" maxlength="200" placeholder="Lobby/AFK  ·  /7" autocomplete="off" spellcheck="false"></label>
+            <label class="field"><span data-i18n="sAfkMinutes">After (min)</span>
+              <input name="afkMinutes" type="number" min="0" max="1440" required></label>
+          </div>
+          <p class="hint" data-i18n="sAfkWhen">Who counts as away:</p>
+          <label class="check"><input type="checkbox" name="afkAway"><span data-i18n="sAfkAway">Set as away in TeamSpeak</span></label>
+          <label class="check"><input type="checkbox" name="afkMuted"><span data-i18n="sAfkMuted">Sound (speakers) turned off</span></label>
+          <label class="check"><input type="checkbox" name="afkIdle"><span data-i18n="sAfkIdle">Nothing said or typed for that long</span></label>
+          <label class="switch"><input type="checkbox" name="afkMoveBack"><span class="track" aria-hidden="true"></span><span data-i18n="sAfkBack">Back to their channel when they return</span></label>
+          <p class="hint" data-i18n="sAfkExempt">Never moved (server groups):</p>
+          <div class="afk-groups" id="afk-groups"></div>
+          <p class="hint" data-i18n="sAfkHint"></p>
+        </div>
+      </fieldset>
+
+      <fieldset class="group">
         <legend>⏰ <span data-i18n="sSchedule">Schedule</span></legend>
         <p id="sch-hint" class="hint"></p>
         <ul id="sch-list" class="users"></ul>

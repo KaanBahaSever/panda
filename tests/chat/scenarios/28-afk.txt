@@ -1,0 +1,24 @@
+# AFK move (a server tool, off by default): someone away goes to the AFK channel, and back when they return.
+s announce=false
+Z on
+w 12
+I panda
+s afk.enabled=true afk.channel=Lounge afk.minutes=0 afk.idle=false afk.muted=false
+w 15
+I Lounge
+Z off
+w 15
+I panda
+# Their server group is left out: not moved.
+s afk.enabled=true afk.channel=Lounge afk.minutes=0 afk.idle=false afk.muted=false afk.exemptGroups=[$GROUP]
+Z on
+w 15
+I panda
+Z off
+# Back off: nobody is moved any more.
+s afk.enabled=false
+Z on
+w 15
+I panda
+Z off
+B

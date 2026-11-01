@@ -118,6 +118,7 @@ builder.Services.AddSingleton<Playlists>();
 builder.Services.AddSingleton<SponsorBlock>();
 builder.Services.AddSingleton<RadioBrowser>();
 builder.Services.AddSingleton<RadioFavorites>();
+builder.Services.AddSingleton<OnAir>();
 builder.Services.AddSingleton<Sources>();
 builder.Services.AddSingleton<BotShared>();
 builder.Services.AddSingleton(logBuffer);

@@ -239,6 +239,14 @@ public static class PanelApi
 			catch (RadioException) { return Problem("radio-list-down"); }
 		});
 		authed.MapGet("/radio/favorites", (RadioFavorites favorites) => favorites.All());
+		// What the saved stations play right now: the ones that answer within a few seconds; the rest come
+		// with the next ask (the panel asks every 30 s while the list is open).
+		authed.MapGet("/radio/onair", async (RadioFavorites favorites, OnAir onAir) =>
+		{
+			var looks = favorites.All().Take(RadioFavorites.Max).Select(s => (s.Uuid, Task: onAir.TitleAsync(s))).ToList();
+			await Task.WhenAny(Task.WhenAll(looks.Select(l => l.Task)), Task.Delay(TimeSpan.FromSeconds(9)));
+			return looks.Where(l => l.Task.IsCompletedSuccessfully).ToDictionary(l => l.Uuid, l => l.Task.Result);
+		});
 		// A station from Radio Browser (by its id), or what a bot is playing.
 		admin.MapPost("/radio/favorites", async (FavoriteRequest req, RadioBrowser radios, RadioFavorites favorites, BotManager bots, HttpContext ctx) =>
 		{
@@ -723,6 +731,8 @@ public sealed class SettingsDto
 	public string SongChannelFormat { get; set; } = "🎵 {song}";
 	public string SongChannelIdle { get; set; } = "🎵 Panda";
 	public List<ScheduleEntry>? Schedule { get; set; }
+	/// <summary>Server tools: AFK move. Null (an older panel): left as it is.</summary>
+	public AfkSettings? Afk { get; set; }
 	/// <summary>The server's time, for the schedule (it runs on it); ignored when saving.</summary>
 	public string? ServerTime { get; set; }
 	public int MaxQueueLength { get; set; }
@@ -790,6 +800,7 @@ public sealed class SettingsDto
 		SongChannelFormat = b.Bot.SongChannelFormat,
 		SongChannelIdle = b.Bot.SongChannelIdle,
 		Schedule = b.Bot.Schedule,
+		Afk = b.Bot.Afk,
 		ServerTime = DateTime.Now.ToString("HH:mm"),
 		MemberGroups = b.Bot.MemberGroups,
 		RecommendedLevels = ChatPermissions.Recommended,
@@ -872,6 +883,11 @@ public sealed class SettingsDto
 		if ((SongChannelFormat ?? "").Trim() is { Length: > 0 and <= 60 } sf && sf.Contains("{song}")) b.Bot.SongChannelFormat = sf;
 		if ((SongChannelIdle ?? "").Trim() is { Length: > 0 and <= 40 } si) b.Bot.SongChannelIdle = si;
 		// Left out (a script, an older panel): the schedule stays.
+		if (Afk != null)
+		{
+			Afk.Clean();
+			b.Bot.Afk = Afk;
+		}
 		if (Schedule != null) b.Bot.Schedule = Schedule.Where(e => e is { IsValid: true }).Take(50)
 			.Select(e => e with { Days = (e.Days ?? []).Distinct().Order().ToList(), Target = e.Action == "stop" ? "" : e.Target.Trim() }).ToList();
 		if (ChatPermissions.IsLevel(OthersSongs)) b.Bot.OthersSongs = OthersSongs;

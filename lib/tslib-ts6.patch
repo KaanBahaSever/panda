@@ -120,3 +120,20 @@ index 8def056..1626bd4 100644
    </ItemGroup>
    <ItemGroup>
      <None Include="ReSpeak.png" Pack="true" PackagePath="\" />
+diff --git a/TSLib/Full/Book/Book.cs b/TSLib/Full/Book/Book.cs
+index 78c77fd..5b90283 100644
+--- a/TSLib/Full/Book/Book.cs
++++ b/TSLib/Full/Book/Book.cs
+@@ -101,6 +101,12 @@ namespace TSLib.Full.Book
+ 
+ 		partial void PostClientEnterView(ClientEnterView msg) => SetOwnChannelSubscribed(msg.ClientId);
+ 		partial void PostClientMoved(ClientMoved msg) => SetOwnChannelSubscribed(msg.ClientId);
++		// The generated update only sets the away message when it has one: coming back cleared nothing.
++		partial void PostClientUpdated(ClientUpdated msg)
++		{
++			if (msg.IsAway == false && GetClient(msg.ClientId) is { } client)
++				client.AwayMessage = null;
++		}
+ 		private void SetOwnChannelSubscribed(ClientId clientId)
+ 		{
+ 			if (clientId == OwnClient)

@@ -50,6 +50,7 @@ public sealed class Scheduler(BotManager bots, Playlists playlists, RadioBrowser
 		lastTick = now;
 		foreach (var b in bots.All)
 		{
+			b.Ts.LookForAfk();
 			if (b.Player.TryFireSleep(now))
 				log.LogInformation("Sleep timer: stopped bot {Bot}", b.Id);
 			foreach (var e in b.Config.Bot.Schedule.ToArray())

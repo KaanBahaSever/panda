@@ -67,6 +67,7 @@ check "a search needs something to look for" "$(curl -s -b $J "$P/api/radio/sear
 check "countries" "$(curl -s -b $J $P/api/radio/countries | json "d[0]['code']")" TL
 check "favorite a station" "$(code -b $J -H 'Content-Type: application/json' -d "{\"uuid\":\"$UUID\"}" $P/api/radio/favorites)" 200
 check "favorites" "$(curl -s -b $J $P/api/radio/favorites | json "[s['name'] for s in d]")" "['Test Station']"
+check "what the saved stations play right now" "$(curl -s -b $J $P/api/radio/onair | json "d.get('$UUID')")" "Test Artist - Song A"
 check "play a station" "$(post /api/bots/1/fm "{\"uuid\":\"$UUID\"}" | json "d['source']")" radio
 # Stations are played by their id only: an address in the request is never used.
 check "no station for an unknown id (an address is ignored)" "$(code -b $J -H 'Content-Type: application/json' -d '{"uuid":"nope","url":"http://10.0.0.1/"}' $P/api/bots/1/fm)" 404

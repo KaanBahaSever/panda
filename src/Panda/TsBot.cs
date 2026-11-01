@@ -37,7 +37,7 @@ public sealed record BotStatus(
 /// Keeps the bot connected to TeamSpeak (reconnecting when needed) and handles chat commands.
 /// Every TSLib call runs on the client's own scheduler thread.
 /// </summary>
-public sealed class TsBot : BackgroundService
+public sealed partial class TsBot : BackgroundService
 {
 	readonly BotConfig settings;
 	readonly Player player;
@@ -113,7 +113,7 @@ public sealed class TsBot : BackgroundService
 
 		player.TrackStarted += t => _ = scheduler.InvokeAsync(() => OnTrackStarted(t));
 		player.TrackFailed += (t, reason) => _ = scheduler.InvokeAsync(() => OnTrackFailed(t, reason));
-		player.StreamTitleChanged += (t, song) => _ = scheduler.InvokeAsync(() => ShowSong());
+		player.StreamTitleChanged += (t, song) => _ = scheduler.InvokeAsync(async () => { await ShowSong(); await AnnounceOnAir(t, song); });
 		player.Changed += () =>
 		{
 			if (player.Current is null)
@@ -268,6 +268,7 @@ public sealed class TsBot : BackgroundService
 		nicknameShown = nicknameOwn = c.Book.Self()?.Name;
 		nicknameWarned = false;
 		nicknamesTaken.Clear();
+		afkSubscribed = false;
 		await ShowSong();
 		return null;
 	}
@@ -354,7 +355,7 @@ public sealed class TsBot : BackgroundService
 				var have = self?.TalkPower ?? 0;
 				list.Add(new PermissionCheck("talk", need <= 0 || have >= need || self?.TalkPowerGranted == true, "i_client_talk_power", $"{have}/{need}"));
 				lock (checks)
-					foreach (var key in new[] { "chat", "description", "move", "groups", "channelname", "avatar" })
+					foreach (var key in new[] { "chat", "description", "move", "groups", "channelname", "avatar", "afk" })
 						list.Add(checks.TryGetValue(key, out var ch) ? ch : new PermissionCheck(key, null, key switch
 						{
 							"chat" => "b_client_channel_textmessage_send",
@@ -362,6 +363,7 @@ public sealed class TsBot : BackgroundService
 							"move" => "i_channel_join_power",
 							"channelname" => "b_channel_modify_name",
 							"avatar" => "i_client_max_avatar_filesize",
+							"afk" => "i_client_move_power",
 							_ => "b_virtualserver_servergroup_list",
 						}, null));
 				return list;
@@ -626,6 +628,7 @@ public sealed class TsBot : BackgroundService
 		{
 			songChannelDenied = false;
 			songChannelId = null;
+			AfkSettingsChanged();
 			await ShowSong();
 		});
 
@@ -633,8 +636,32 @@ public sealed class TsBot : BackgroundService
 	string Describe(Track t) =>
 		t.Source == Media.Radio && player.StreamTitle is { } song && player.Current == t ? $"📻 {t.Title}: {song}" : "♪ " + t.Title;
 
+	string? onAirSaid;
+	DateTime onAirAt = DateTime.MinValue;
+
+	/// <summary>A radio station's new song in the chat (when announcing is on): a record of what was played.
+	/// The same title isn't said twice, and not more often than every 20 s (some stations change it a lot): one
+	/// that comes sooner waits, and is said then if it's still the one on air.</summary>
+	async Task AnnounceOnAir(Track t, string song)
+	{
+		if (!Bot.Announce || client is not { Connected: true } c || player.Current != t || song == onAirSaid) return;
+		var wait = onAirAt + TimeSpan.FromSeconds(20) - DateTime.UtcNow;
+		if (wait > TimeSpan.Zero)
+		{
+			_ = Task.Delay(wait).ContinueWith(_ => scheduler.InvokeAsync(async () =>
+			{
+				if (player.Current == t && player.StreamTitle == song) await AnnounceOnAir(t, song);
+			}));
+			return;
+		}
+		onAirSaid = song;
+		onAirAt = DateTime.UtcNow;
+		Note("chat", await c.SendChannelMessage(Strings.Get(Lang, "on-air", Escape(t.Title), Escape(song))), "b_client_channel_textmessage_send");
+	}
+
 	async Task OnTrackStarted(Track t)
 	{
+		onAirSaid = null;   // a new station (or song): its first title is said
 		lock (votes) { voteTrack = null; votes.Clear(); }
 		if (client is not { Connected: true } c) return;
 		await ShowSong();

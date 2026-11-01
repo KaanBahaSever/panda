@@ -532,3 +532,5 @@ dialog::backdrop { background: rgba(22,22,30,.45); backdrop-filter: blur(2px); }
 
 .upd-auto { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
 .upd-auto .hint { margin: 6px 0 0; }
+.onair { font-size: 12.5px; color: var(--green-d); margin-top: 2px; overflow-wrap: anywhere; }
+.afk-groups { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 4px 0 8px; }
