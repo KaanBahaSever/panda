@@ -50,7 +50,9 @@ public static class RadioLinks
 		return null;
 	}
 
-	/// <summary>"StreamTitle='Artist - Song';" from a metadata block; null when it has none (or it's empty).</summary>
+	/// <summary>"StreamTitle='Artist - Song';" from a metadata block; null when it has none (or it's empty).
+	/// A title without a single letter is none too: the NRJ group's stations (Nostalgie…) send their own
+	/// track numbers, "2044 - 2044".</summary>
 	public static string? StreamTitle(byte[] block)
 	{
 		var end = Array.IndexOf(block, (byte)0);
@@ -64,7 +66,7 @@ public static class RadioLinks
 		var stop = text.IndexOf("';", start, StringComparison.Ordinal);
 		var title = (stop < 0 ? text[start..] : text[start..stop]).Trim();
 		title = new string(title.Where(c => !char.IsControl(c)).ToArray());
-		return title.Length is > 0 and <= 300 && title != "-" ? title : null;
+		return title.Length <= 300 && title.Any(char.IsLetter) ? title : null;
 	}
 }
 

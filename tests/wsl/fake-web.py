@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # Test stand-in for the web Panda reaches besides YouTube, on 127.0.0.1:8096 (the tests never leave the machine):
 #   /radio2             the same, its song changes every 25 s of audio (Song A, Song B)
+#   /radio3             the same, its titles are track numbers ("2044 - 2044", as Nostalgie's)
 #   /radio              an old Shoutcast station ("ICY 200 OK") sending the test tone with the song title in between
 #   /radio.m3u, .pls    playlist files that name /radio            /song.mp3   an audio file with title tags
 #   /page.html          a page titled "test tone"                  /rb/...     Radio Browser (one "Test Station")
@@ -45,6 +46,8 @@ class Handler(BaseHTTPRequestHandler):
         path = url.path
         if path == "/radio2":
             return self.radio(changing=True)
+        if path == "/radio3":
+            return self.radio(numbers=True)
         if path == "/radio":
             return self.radio()
         if path == "/radio.m3u":
@@ -80,7 +83,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send('{"error":"not found"}', status=404)
 
     # The test tone over and over, with "StreamTitle='Test Artist - Song A';" every METAINT bytes when asked for.
-    def radio(self, changing=False):
+    def radio(self, changing=False, numbers=False):
         meta = self.headers.get("Icy-MetaData") == "1"
         head = "ICY 200 OK\r\nicy-name: Test FM\r\nicy-genre: Testing\r\ncontent-type: audio/mpeg\r\n"
         if meta:
@@ -93,7 +96,7 @@ class Handler(BaseHTTPRequestHandler):
             # was sent, not by the clock: the connection holds many seconds of audio the bot hasn't played yet.
             sent[0] += 1
             song = "Song B" if changing and (sent[0] // 50) % 2 else "Song A"
-            title = f"StreamTitle='Test Artist - {song}';".encode()
+            title = ("StreamTitle='2044 - 2044';" if numbers else f"StreamTitle='Test Artist - {song}';").encode()
             return bytes([(len(title) + 15) // 16]) + title.ljust(((len(title) + 15) // 16) * 16, b"\0")
         pos = 0
         try:

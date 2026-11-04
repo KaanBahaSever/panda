@@ -10,3 +10,13 @@ s announce=false
 c !play http://127.0.0.1:8096/radio2
 w 30
 n Now on air
+c !stop
+# A station whose titles are only its track numbers ("2044 - 2044", Nostalgie): no song, nothing said.
+s announce=true
+c !play http://127.0.0.1:8096/radio3
+e Now playing
+w 30
+n Now on air
+c !np
+n 2044
+c !stop
