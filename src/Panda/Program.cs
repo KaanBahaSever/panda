@@ -95,6 +95,20 @@ if (config.YouTube.CookiesFile.Length == 0 && File.Exists(cookies))
 	config.YouTube.CookiesFile = cookies;
 config.Save();
 
+// panel.https: the panel's own certificate, or a self-signed one made now.
+PanelCertificate? certificate = null;
+var madeCertificate = false;
+if (config.Panel.Https.Enabled)
+{
+	try { certificate = PanelCertificate.Load(config.Panel.Https, dataDir, config.Panel, out madeCertificate); }
+	catch (InvalidOperationException ex)
+	{
+		Console.Error.WriteLine(ex.Message);
+		return 1;
+	}
+}
+var scheme = certificate != null ? "https" : "http";
+
 // The latest log lines also stay in memory for the panel's log screen.
 var logBuffer = new LogBuffer();
 TSLibLogging.Configure(logBuffer);
@@ -106,7 +120,30 @@ builder.Logging.AddProvider(logBuffer);
 builder.Logging.AddFilter("Microsoft", LogLevel.Warning);
 // Keys live in the data folder, which is already private to the panda user.
 builder.Logging.AddFilter("Microsoft.AspNetCore.DataProtection", LogLevel.Error);
-builder.WebHost.UseUrls($"http://{config.Panel.Listen}:{config.Panel.Port}");
+if (certificate == null)
+	builder.WebHost.UseUrls($"http://{config.Panel.Listen}:{config.Panel.Port}");
+else
+	builder.WebHost.ConfigureKestrel(k =>
+	{
+		// Each connection takes the certificate as it is now (renewed files are read again) with its chain.
+		var tls = new Microsoft.AspNetCore.Server.Kestrel.Https.TlsHandshakeCallbackOptions
+		{
+			OnConnection = _ => ValueTask.FromResult(new System.Net.Security.SslServerAuthenticationOptions
+			{
+				ServerCertificateContext = certificate.Context,
+				ApplicationProtocols = [System.Net.Security.SslApplicationProtocol.Http11],
+			}),
+		};
+		void Https(Microsoft.AspNetCore.Server.Kestrel.Core.ListenOptions o)
+		{
+			o.Protocols = Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http1;
+			o.UseHttps(tls);
+		}
+		var listen = config.Panel.Listen.Trim();
+		if (System.Net.IPAddress.TryParse(listen.Trim('[', ']'), out var ip)) k.Listen(ip, config.Panel.Port, Https);
+		else if (listen.Equals("localhost", StringComparison.OrdinalIgnoreCase)) k.ListenLocalhost(config.Panel.Port, Https);
+		else k.ListenAnyIP(config.Panel.Port, Https);   // "*", "+" or a name, as with plain HTTP
+	});
 
 builder.Services.ConfigureHttpJsonOptions(o =>
 	o.SerializerOptions.Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping);
@@ -141,6 +178,7 @@ builder.Services.AddAuthentication("panda")
 		o.Cookie.Name = "panda_session";
 		o.Cookie.HttpOnly = true;
 		o.Cookie.SameSite = SameSiteMode.Strict;
+		if (certificate != null) o.Cookie.SecurePolicy = CookieSecurePolicy.Always;
 		o.ExpireTimeSpan = TimeSpan.FromDays(30);
 		o.SlidingExpiration = true;
 		o.Events.OnRedirectToLogin = ctx => { ctx.Response.StatusCode = 401; return Task.CompletedTask; };
@@ -167,6 +205,35 @@ foreach (var proxy in config.Panel.TrustedProxies)
 	else app.Logger.LogWarning("panel.trustedProxies: {Proxy} is not an address", proxy);
 }
 app.UseForwardedHeaders(forwarded);
+// Then Cloudflare (panel.trustCloudflare), straight or through the proxy above: the visitor from CF-Connecting-IP.
+if (config.Panel.TrustCloudflare)
+	app.Use((ctx, next) =>
+	{
+		if (Cloudflare.Visitor(ctx.Connection.RemoteIpAddress, ctx.Request.Headers["CF-Connecting-IP"]) is { } visitor)
+		{
+			ctx.Connection.RemoteIpAddress = visitor;
+			var proto = ctx.Request.Headers["X-Forwarded-Proto"].ToString();
+			if (proto is "https" or "http") ctx.Request.Scheme = proto;
+		}
+		return next();
+	});
+if (certificate != null)
+{
+	certificate.Log = app.Logger;
+	if (madeCertificate)
+		app.Logger.LogWarning("panel.https: made a self-signed certificate ({Cert}); browsers warn about it once. SHA-256 {Fingerprint}",
+			Path.GetFullPath(config.Panel.Https.CertFile, dataDir), PanelCertificate.Fingerprint(certificate.Current));
+	else
+		app.Logger.LogInformation("panel.https: {Subject}, valid until {Until:yyyy-MM-dd}, SHA-256 {Fingerprint}",
+			certificate.Current.Subject, certificate.Current.NotAfter, PanelCertificate.Fingerprint(certificate.Current));
+	// panel.https.hsts: browsers keep to HTTPS on this name for a year, on every port (not its subdomains).
+	if (config.Panel.Https.Hsts)
+		app.Use((ctx, next) =>
+		{
+			ctx.Response.Headers.StrictTransportSecurity = "max-age=31536000";
+			return next();
+		});
+}
 
 var panelFiles = new ManifestEmbeddedFileProvider(typeof(PanelApi).Assembly, "wwwroot");
 // The page asks for its script and styles by version, so a browser holding an older panel gets the
@@ -198,11 +265,11 @@ app.UseAuthorization();
 PanelApi.Map(app);
 
 if (config.Panel.PublicUrl.Length > 0)
-	app.Logger.LogInformation("🐼 Panda {Version} — panel on {Url} (http://{Listen}:{Port}), data in {Data}",
-		PanelApi.Version, config.Panel.PublicUrl, config.Panel.Listen, config.Panel.Port, dataDir);
+	app.Logger.LogInformation("🐼 Panda {Version} — panel on {Url} ({Scheme}://{Listen}:{Port}), data in {Data}",
+		PanelApi.Version, config.Panel.PublicUrl, scheme, config.Panel.Listen, config.Panel.Port, dataDir);
 else
-	app.Logger.LogInformation("🐼 Panda {Version} — panel on http://{Listen}:{Port}, data in {Data}",
-		PanelApi.Version, config.Panel.Listen, config.Panel.Port, dataDir);
+	app.Logger.LogInformation("🐼 Panda {Version} — panel on {Scheme}://{Listen}:{Port}, data in {Data}",
+		PanelApi.Version, scheme, config.Panel.Listen, config.Panel.Port, dataDir);
 // A console window closed on Windows (SIGHUP there) or the terminal gone on Linux: stop properly, so the
 // queue is saved for the next start. Windows ends the process ~5 s after the window closes, so this waits.
 using var hangUp = System.Runtime.InteropServices.PosixSignalRegistration.Create(System.Runtime.InteropServices.PosixSignal.SIGHUP, ctx =>

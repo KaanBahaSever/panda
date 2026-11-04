@@ -355,7 +355,9 @@ Everything is editable in the panel; the file is `/var/lib/panda/config.json` (o
   "panel": { "listen": "0.0.0.0", "port": 8080, "users": [ /* set in the panel */ ],
              "autoUpdate": false,      // install new versions by itself when nothing plays
              "publicUrl": "",          // e.g. "https://panda.example.com": the address shown in the log and by the installer
-             "trustedProxies": [] },   // a proxy on another machine or container: its own address; this machine is always trusted
+             "trustedProxies": [],     // a proxy on another machine or container: its own address; this machine is always trusted
+             "trustCloudflare": false, // Cloudflare in front of the panel: believe its addresses
+             "https": { "enabled": false, "certFile": "cert.pem", "keyFile": "key.pem", "hsts": false } },   // see below
   "youTube": { "ytDlpPath": "yt-dlp", "ffmpegPath": "ffmpeg", "cookiesFile": "", "maxDurationMinutes": 60,
                 "playAttempts": 3,                                 // tries when YouTube refuses a song
                 "retryPlayerClients": "android_vr,tv,web_safari",  // yt-dlp clients from the third try on
@@ -378,7 +380,30 @@ Reset a panel password (or create an admin when every password is lost):
 `sudo -u panda /opt/panda/panda --data /var/lib/panda set-password <new> [user]`.
 
 The panel speaks plain HTTP. If it is reachable from the internet, put it behind a reverse proxy with
-HTTPS (Caddy, nginx) or a firewall. Behind a proxy on the same machine, set `panel.listen` to `127.0.0.1`
+HTTPS (Caddy, nginx) or a firewall, or let the panel speak HTTPS itself.
+
+**HTTPS without a proxy** (a game host with one port, for example): set `panel.https.enabled` to `true`.
+The port then speaks only HTTPS (`https://your-server:8080`). Put a PEM certificate and its key in the data
+folder as `cert.pem` and `key.pem` (or name other files in `certFile` and `keyFile`): a Cloudflare Origin
+Certificate, or one from Let's Encrypt. Panda reads them again within a minute when they change, so a
+renewed certificate needs no restart. Without either file under these default names, Panda makes a
+self-signed certificate on the first start and writes its SHA-256 fingerprint in the log: browsers warn
+about it, so compare the fingerprint once. A file you name yourself must be there and readable by Panda
+(certbot's `/etc/letsencrypt/live` is only for root: copy the files), or Panda doesn't start and says why.
+The session cookie is then always `Secure`. Backups don't hold the certificate or its key.
+
+`hsts: true` also tells browsers to use only HTTPS for this name for a year (HSTS). That covers every port
+on the name, also other services there, and stays after HTTPS is turned off again, so turn it on only when
+the name is the panel's alone. Behind Cloudflare, its own HSTS setting does the same.
+
+**Behind Cloudflare**: set `panel.trustCloudflare` to `true`. For requests from Cloudflare's own addresses,
+Panda then takes the visitor's address from `CF-Connecting-IP`, so the login guard locks out one visitor after
+five wrong passwords, not everyone coming through the same Cloudflare server. With the panel on HTTPS and a
+Cloudflare Origin Certificate, Cloudflare's SSL mode can be "Full (strict)", so the whole way is encrypted.
+"Flexible" sends the panel's password unencrypted from Cloudflare to your server. If you can, let only
+Cloudflare reach the port (a firewall, or Cloudflare's Authenticated Origin Pulls).
+
+Behind a proxy on the same machine, set `panel.listen` to `127.0.0.1`
 so only the proxy reaches the panel, and `panel.publicUrl` to the address people open. Panda reads the
 visitor's address from the proxy's `X-Forwarded-For` (only from this machine, or from `panel.trustedProxies`),
 so the login guard locks out one visitor after five wrong passwords, not everyone. With Docker, publish the

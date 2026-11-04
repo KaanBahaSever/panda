@@ -65,6 +65,9 @@ public sealed class PandaConfig
 		cfg.Sources ??= new();
 		cfg.Panel.PublicUrl ??= "";
 		cfg.Panel.TrustedProxies ??= [];
+		cfg.Panel.Https ??= new();
+		cfg.Panel.Https.CertFile = string.IsNullOrWhiteSpace(cfg.Panel.Https.CertFile) ? HttpsSettings.DefaultCert : cfg.Panel.Https.CertFile;
+		cfg.Panel.Https.KeyFile = string.IsNullOrWhiteSpace(cfg.Panel.Https.KeyFile) ? HttpsSettings.DefaultKey : cfg.Panel.Https.KeyFile;
 		foreach (var b in cfg.Bots)
 		{
 			b.Bot.SongChannel ??= "";
@@ -515,6 +518,10 @@ public sealed class PanelSettings
 	/// 10.0.0.5/32), besides this machine itself (always). Needed when the proxy is elsewhere (Docker): name
 	/// the proxy, not a whole network, or anyone coming through it could claim another address.</summary>
 	public List<string> TrustedProxies { get; set; } = [];
+	/// <summary>Cloudflare in front of the panel: its addresses (Cloudflare.Networks) are trusted proxies, so the
+	/// login guard sees each visitor, not Cloudflare.</summary>
+	public bool TrustCloudflare { get; set; }
+	public HttpsSettings Https { get; set; } = new();
 	/// <summary>The page /now.html shows anyone what the bots play (no names of who asked).</summary>
 	public bool PublicPage { get; set; }
 	/// <summary>How many bots there may be (!create bot stops there).</summary>

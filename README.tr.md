@@ -338,7 +338,32 @@ Bir panel şifresini sıfırlamak (ya da bütün şifreler unutulduysa yeni bir 
 `sudo -u panda /opt/panda/panda --data /var/lib/panda set-password <yeni> [kullanıcı]`.
 
 Panel düz HTTP konuşur. İnternetten erişilebiliyorsa önüne HTTPS'li bir ters vekil sunucu
-(Caddy, nginx) ya da güvenlik duvarı koy. Vekil aynı makinedeyse `panel.listen` ayarını `127.0.0.1` yap
+(Caddy, nginx) ya da güvenlik duvarı koy, ya da HTTPS'i panelin kendisi konuşsun.
+
+**Vekilsiz HTTPS** (örneğin tek portlu bir oyun sunucusu hostu): `panel.https.enabled` ayarını `true` yap.
+Port artık sadece HTTPS konuşur (`https://sunucun:8080`). Veri klasörüne PEM biçiminde bir sertifika ve
+anahtarını `cert.pem` ve `key.pem` adıyla koy (ya da `certFile` ve `keyFile` ile başka dosyaları göster):
+Cloudflare Origin Certificate ya da Let's Encrypt sertifikası olabilir. Dosyalar değişince Panda onları bir
+dakika içinde yeniden okur, yenilenen sertifika için yeniden başlatmak gerekmez. Bu varsayılan adlarla iki
+dosya da yoksa Panda ilk açılışta kendi imzaladığı bir sertifika üretir ve SHA-256 parmak izini loga yazar.
+Tarayıcılar bu sertifika için uyarır, parmak izini bir kez karşılaştır. Kendin adını yazdığın dosya yerinde
+olmalı ve Panda onu okuyabilmeli (certbot'un `/etc/letsencrypt/live` klasörünü sadece root okur: dosyaları
+kopyala), yoksa Panda açılmaz ve nedenini söyler. Oturum çerezi bu durumda hep `Secure` olur. Yedeklerde
+sertifika ve anahtarı yoktur.
+
+`hsts: true` tarayıcılara bir yıl boyunca bu adda sadece HTTPS kullanmalarını da söyler (HSTS). Bu, o addaki
+bütün portları ve oradaki başka servisleri de kapsar, HTTPS sonradan kapatılsa da sürer. O yüzden sadece ad
+yalnızca panele aitse aç. Cloudflare arkasındaysan Cloudflare'in kendi HSTS ayarı aynı işi görür.
+
+**Cloudflare arkasında**: `panel.trustCloudflare` ayarını `true` yap. Panda o zaman Cloudflare'in kendi
+adreslerinden gelen isteklerde ziyaretçinin adresini `CF-Connecting-IP` başlığından alır. Böylece giriş
+koruması beş yanlış şifreden sonra aynı Cloudflare sunucusundan gelen herkesi değil, sadece o ziyaretçiyi
+kilitler. Panel HTTPS konuşuyorsa ve Cloudflare Origin Certificate kullanılıyorsa Cloudflare'in SSL modu
+"Full (strict)" olabilir, yolun tamamı şifreli olur. "Flexible" modda panelin şifresi Cloudflare'den sunucuna
+şifresiz gider. Yapabiliyorsan porta sadece Cloudflare ulaşsın (güvenlik duvarı ya da Cloudflare'in
+Authenticated Origin Pulls özelliği).
+
+Vekil aynı makinedeyse `panel.listen` ayarını `127.0.0.1` yap
 (panele sadece vekil ulaşsın), `panel.publicUrl` ayarına da insanların açtığı adresi yaz. Panda ziyaretçinin
 adresini vekilin `X-Forwarded-For` başlığından okur (sadece bu makineden ya da `panel.trustedProxies`
 listesindekilerden). Böylece giriş koruması beş yanlış şifreden sonra herkesi değil, sadece o ziyaretçiyi

@@ -1,8 +1,8 @@
 #!/bin/bash
 # Builds Panda and the chat test client for Linux, then runs the tests: translations, chat (WSL TS6
-# server), stop time, and with "all" also the panel update test (installs Panda in WSL as root).
+# server), stop time, the panel's HTTPS, and with "all" also the panel update test (installs Panda in WSL as root).
 # Runs from Git Bash on Windows (tests in WSL) or on Linux.
-# usage: tests/run.sh            translations, chat, stop time
+# usage: tests/run.sh            translations, chat, stop time, HTTPS
 #        tests/run.sh all        and the panel update test, and the self update test
 #        tests/run.sh long       failure cases and a long run (SOAK_MIN minutes, default 30)
 #        tests/run.sh chat 12 13 only these chat scenarios (by number)
@@ -39,6 +39,7 @@ dotnet publish "$R/tests/chat/ChatTest.csproj" -c Release -r linux-x64 --self-co
 
 run "chat" in_linux bash "$(lp "$R/tests/wsl/chat.sh")" "$(lp "$B/panda/panda")" "$(lp "$B/chat/chattest")" ${SCENARIOS[@]+"${SCENARIOS[@]}"}
 [ "$MODE" = chat ] || run "stop time" in_linux bash "$(lp "$R/tests/wsl/stoptime.sh")" "$(lp "$B/panda/panda")"
+[ "$MODE" = chat ] || run "https" in_linux bash "$(lp "$R/tests/wsl/https.sh")" "$(lp "$B/panda/panda")"
 
 if [ "$MODE" = long ]; then
 	run "failure cases and long run" in_linux env SOAK_MIN="${SOAK_MIN:-30}" bash "$(lp "$R/tests/wsl/resilience.sh")" "$(lp "$B/panda/panda")"

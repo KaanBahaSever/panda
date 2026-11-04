@@ -515,7 +515,7 @@ public static class PanelApi
 
 	static async Task<IResult> Login(LoginRequest req, HttpContext ctx, PandaConfig config)
 	{
-		var ip = ctx.Connection.RemoteIpAddress?.ToString() ?? "?";
+		var ip = Visitor(ctx.Connection.RemoteIpAddress);
 		if (Failures.TryGetValue(ip, out var f) && f.Fails >= 5 && f.Until > DateTime.UtcNow)
 			return Results.Json(new { error = "too-many-attempts" }, statusCode: 429);
 
@@ -533,6 +533,18 @@ public static class PanelApi
 		Failures.TryRemove(ip, out _);
 		await SignIn(ctx, user);
 		return Results.NoContent();
+	}
+
+	/// <summary>Who the guard counts: an IPv4 address, or an IPv6 /64 (one home or server gets a whole /64,
+	/// so counting single IPv6 addresses would give one person billions of tries).</summary>
+	static string Visitor(System.Net.IPAddress? a)
+	{
+		if (a is null) return "?";
+		if (a.IsIPv4MappedToIPv6) a = a.MapToIPv4();
+		if (a.AddressFamily != System.Net.Sockets.AddressFamily.InterNetworkV6) return a.ToString();
+		var bytes = a.GetAddressBytes();
+		Array.Clear(bytes, 8, 8);
+		return new System.Net.IPAddress(bytes) + "/64";
 	}
 
 	static ClaimsPrincipal Principal(PanelUser u) => new(new ClaimsIdentity(
