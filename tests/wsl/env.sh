@@ -56,7 +56,7 @@ cat > "$T/data/library/library.json" <<EOF
 EOF
 printf '{ "bots": [ { "id": "1", "server": { "address": "127.0.0.1" } } ], "panel": { "port": 8097 },
   "youTube": { "ytDlpPath": "%s", "sponsorBlockUrl": "http://127.0.0.1:8096/sb" },
-  "sources": { "localLinks": true, "radioBrowserUrl": "http://127.0.0.1:8096/rb" } }\n' \
+  "sources": { "localLinks": true, "radioBrowserUrl": "http://127.0.0.1:8096/rb", "radioNamesUrl": "http://127.0.0.1:8096/rn" } }\n' \
 	"$T/fake-yt-dlp/yt-dlp" > "$T/data/config.json"
 "$T/panda" --data "$T/data" set-password testpass123 admin >/dev/null
 # Spotify and Deezer are asked at the web stand-in.

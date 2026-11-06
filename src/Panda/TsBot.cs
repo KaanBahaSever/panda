@@ -113,7 +113,7 @@ public sealed partial class TsBot : BackgroundService
 
 		player.TrackStarted += t => _ = scheduler.InvokeAsync(() => OnTrackStarted(t));
 		player.TrackFailed += (t, reason) => _ = scheduler.InvokeAsync(() => OnTrackFailed(t, reason));
-		player.StreamTitleChanged += (t, song) => _ = scheduler.InvokeAsync(async () => { await ShowSong(); await AnnounceOnAir(t, song); });
+		player.StreamTitleChanged += (t, song) => _ = scheduler.InvokeAsync(async () => { await ShowSong(); if (song != null) await AnnounceOnAir(t, song); });
 		player.Changed += () =>
 		{
 			if (player.Current is null)
@@ -551,7 +551,7 @@ public sealed partial class TsBot : BackgroundService
 	string? SongName(Track t)
 	{
 		// A radio station: the song on air, without the station's name (30 characters go fast).
-		var song = t.Source == Media.Radio && player.StreamTitle is { Length: > 0 } onAir && player.Current == t ? onAir : t.Title;
+		var song = t.IsLive && player.StreamTitle is { Length: > 0 } onAir && player.Current == t ? onAir : t.Title;
 		var name = CleanName(Bot.SongNicknameFormat.Replace("{name}", Bot.Nickname).Replace("{song}", song), 30);
 		return name.EnumerateRunes().Count() >= 3 ? name : null;
 	}
@@ -634,7 +634,7 @@ public sealed partial class TsBot : BackgroundService
 
 	// A radio station with the song it plays, when it says.
 	string Describe(Track t) =>
-		t.Source == Media.Radio && player.StreamTitle is { } song && player.Current == t ? $"📻 {t.Title}: {song}" : "♪ " + t.Title;
+		t.IsLive && player.StreamTitle is { } song && player.Current == t ? $"📻 {t.Title}: {song}" : "♪ " + t.Title;
 
 	string? onAirSaid;
 	DateTime onAirAt = DateTime.MinValue;
@@ -1149,7 +1149,9 @@ public sealed partial class TsBot : BackgroundService
 			if (s.Current is null) return Strings.Get(Lang, "nothing-playing");
 			var t = s.Current.Track;
 			var pos = Strings.FormatTime(s.Current.Position);
-			return Strings.Get(Lang, "now-playing", Link(t), t.IsLive ? Strings.Get(Lang, "live") : $"{pos} / {Strings.FormatTime(t.Duration)}")
+			// A radio station: with the song it plays, when it (or radio.net) says.
+			var live = s.Current.StreamTitle is { Length: > 0 } onAir ? $"{Strings.Get(Lang, "live")} · {Escape(onAir)}" : Strings.Get(Lang, "live");
+			return Strings.Get(Lang, "now-playing", Link(t), t.IsLive ? live : $"{pos} / {Strings.FormatTime(t.Duration)}")
 				+ (s.Current.Paused ? " ⏸" : "");
 		}
 

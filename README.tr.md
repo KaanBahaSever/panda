@@ -110,6 +110,14 @@ kendi yayınını çalar). Yıldızladığın radyolar favorilerde kalır; `!fm`
 `!fm <ad ya da numara>` birini çalar, radyo çalarken `!fav` onu favorilere ekler. Favorilerde her radyonun
 şu an ne çaldığı görünür ("Yayında: Sanatçı - Şarkı"); duyuru açıksa çalan radyodaki her yeni şarkı sohbete
 yazılır, böylece neler çalındığının bir kaydı olur.
+Bazı radyolar şarkı adını göndermez: RTL2 hiçbir şey göndermez, NRJ grubununkiler (Nostalgie, Chérie FM…)
+sadece kendi şarkı numaralarını gönderir, HLS yayınlarında da başlık hiç yoktur. Bunlar için Panda
+[radio.net](https://www.radio.net/)'e sorar; radio.net çoğu zaman bilir, şarkı başladıktan bir dakika kadar
+sonra. Panda oraya sadece radyonun adını gönderir, dinleyenler hakkında hiçbir şey göndermez. Radyoyu
+orada yayın adresinden ya da adı ve ülkesinden bulur; emin olamazsa başka bir radyonun şarkısını
+göstermektense hiçbir şey göstermez. Bu radio.net'in sitesinin kullandığı uç nokta, resmi bir API değil:
+cevap vermezse ya da değişirse adlar durur, yeniden cevap verince kendiliğinden geri gelir. Ayarlar →
+Kaynaklar'daki **Şarkı adını göndermeyen istasyonlarda adları radio.net'ten al** ile kapatılır.
 
 **YouTube ayarları** (Ayarlar → YouTube): en uzun şarkı süresi, `!ara` sonuç sayısı, canlı yayınları ya da
 bir dakikadan kısa videoları aramalardan çıkarma, ses kalitesi (en iyi ya da veri tasarrufu için yaklaşık

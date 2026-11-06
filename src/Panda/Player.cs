@@ -51,6 +51,7 @@ public sealed class Player : IDisposable
 	readonly Library library;
 	readonly SponsorBlock sponsorBlock;
 	readonly PlayHistory history;
+	readonly RadioNames radioNames;
 	readonly ILogger log;
 
 	readonly PreciseTimedPipe timePipe;
@@ -93,6 +94,10 @@ public sealed class Player : IDisposable
 	bool sessionSaved;
 	// What the radio station playing says it plays.
 	string? streamTitle;
+	// The station's stream names its songs itself: radio.net isn't asked. A new play of a station bumps namesPlay,
+	// so the asking for the one before stops.
+	bool streamNames;
+	int namesPlay;
 	// Goes up when the queue is thrown away (!stop, !clear): songs of a list still being looked up stop coming.
 	int epoch;
 
@@ -102,10 +107,11 @@ public sealed class Player : IDisposable
 	public event Action? Changed;
 	public event Action<Track>? TrackStarted;
 	public event Action<Track, string>? TrackFailed;
-	/// <summary>The radio station playing names another song.</summary>
-	public event Action<Track, string>? StreamTitleChanged;
+	/// <summary>The radio station playing names another song (null: what it plays isn't known any more).</summary>
+	public event Action<Track, string?>? StreamTitleChanged;
 
-	public Player(BotConfig settings, PandaConfig config, YouTube youtube, Library library, SponsorBlock sponsorBlock, PlayHistory history, ILogger log)
+	public Player(BotConfig settings, PandaConfig config, YouTube youtube, Library library, SponsorBlock sponsorBlock, PlayHistory history,
+		RadioNames radioNames, ILogger log)
 	{
 		this.settings = settings;
 		this.config = config;
@@ -113,6 +119,7 @@ public sealed class Player : IDisposable
 		this.library = library;
 		this.sponsorBlock = sponsorBlock;
 		this.history = history;
+		this.radioNames = radioNames;
 		this.log = log;
 
 		encoder = new OpusEncoderPipe(bitrate: 96_000);
@@ -643,7 +650,13 @@ public sealed class Player : IDisposable
 			heardBefore = 0;
 		}
 
-		if (retry == 0 && !seeking) streamTitle = null;
+		if (retry == 0 && !seeking)
+		{
+			streamTitle = null;
+			streamNames = false;
+			var play = ++namesPlay;
+			if (Stations.FromTrack(track) != null && radioNames.Enabled) _ = Task.Run(() => AskNamesAsync(play, track));
+		}
 		// SponsorBlock: a song that starts with a part to skip starts after it.
 		var segments = sponsorBlock.Known(track);
 		if (segments?.FirstOrDefault(s => s.Start <= startSeconds + 0.5 && s.End > startSeconds) is { } first && first.End < track.Duration - 2)
@@ -874,10 +887,51 @@ public sealed class Player : IDisposable
 	{
 		lock (gate)
 		{
-			if (gen != generation || current != track || streamTitle == title) return;
+			if (gen != generation || current != track) return;
+			streamNames = true;
+			if (streamTitle == title) return;
 			streamTitle = title;
 		}
-		log.LogInformation("{Station} plays {Title}", track.Title, title);
+		NewStreamTitle(track, title);
+	}
+
+	/// <summary>
+	/// A station whose stream doesn't name its songs (only numbers, nothing, or HLS): radio.net is asked every 30 s
+	/// while it plays, until the stream names one itself. radio.net is about a minute late with a new song.
+	/// </summary>
+	async Task AskNamesAsync(int play, Track track)
+	{
+		// Radio Browser's stations say "Country · tags"; anything else isn't a country and matches none.
+		var country = track.Channel.Split(" · ")[0];
+		var misses = 0;
+		// The stream's first title comes within a few seconds: then radio.net isn't needed.
+		await Task.Delay(TimeSpan.FromSeconds(5));
+		while (true)
+		{
+			try
+			{
+				lock (gate) if (disposed || play != namesPlay || current != track || streamNames) return;
+				var title = await radioNames.TitleAsync(track.Title, track.Link!, country);
+				// Nothing known for a while (a show, radio.net resting): the song before isn't shown for ever.
+				misses = title is null ? misses + 1 : 0;
+				var change = false;
+				lock (gate)
+				{
+					if (disposed || play != namesPlay || current != track || streamNames) return;
+					if (title != null && streamTitle != title) { streamTitle = title; change = true; }
+					else if (title is null && misses == 3 && streamTitle != null) { streamTitle = null; change = true; }
+				}
+				if (change) NewStreamTitle(track, title);
+			}
+			catch (Exception ex) when (ex is not OutOfMemoryException) { log.LogDebug(ex, "Asking radio.net for {Station} failed", track.Title); }
+			await Task.Delay(TimeSpan.FromSeconds(30));
+		}
+	}
+
+	void NewStreamTitle(Track track, string? title)
+	{
+		if (title is null) log.LogInformation("{Station}: radio.net doesn't say what it plays now", track.Title);
+		else log.LogInformation("{Station} plays {Title}", track.Title, title);
 		try { StreamTitleChanged?.Invoke(track, title); }
 		catch (Exception ex) { log.LogError(ex, "StreamTitleChanged handler failed"); }
 		RaiseChanged();

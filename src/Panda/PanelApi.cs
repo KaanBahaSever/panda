@@ -774,6 +774,8 @@ public sealed class SettingsDto
 		public bool Services { get; set; } = true;
 		public bool Pages { get; set; } = true;
 		public bool Radio { get; set; } = true;
+		/// <summary>Null from a panel older than 1.6: left as it is.</summary>
+		public bool? RadioNames { get; set; }
 		public bool LocalLinks { get; set; }
 	}
 
@@ -838,7 +840,7 @@ public sealed class SettingsDto
 		Sources = new()
 		{
 			Search = c.Sources.Search, Fallback = c.Sources.Fallback, YouTubeMusic = c.Sources.YouTubeMusic, SoundCloud = c.Sources.SoundCloud,
-			Sites = c.Sources.Sites, Services = c.Sources.Services, Pages = c.Sources.Pages, Radio = c.Sources.Radio, LocalLinks = c.Sources.LocalLinks,
+			Sites = c.Sources.Sites, Services = c.Sources.Services, Pages = c.Sources.Pages, Radio = c.Sources.Radio, RadioNames = c.Sources.RadioNames, LocalLinks = c.Sources.LocalLinks,
 		},
 		YouTube = new()
 		{
@@ -925,6 +927,7 @@ public sealed class SettingsDto
 			c.Sources.Pages = s.Pages;
 			c.Sources.Radio = s.Radio;
 			c.Sources.LocalLinks = s.LocalLinks;
+			if (s.RadioNames is { } names) c.Sources.RadioNames = names;
 		}
 		if (YouTube is { } y)
 		{

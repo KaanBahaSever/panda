@@ -7,8 +7,12 @@
 #   /page.html          a page titled "test tone"                  /rb/...     Radio Browser (one "Test Station")
 #   /spotify/embed/...  Spotify's embed pages (a song, a playlist)  /deezer/... Deezer's API (a song)
 #   /sb/api/...         SponsorBlock (the test song: 0-5 s and 20-30 s are "music_offtopic")
+#   /rn/...             radio.net: its search finds "Test FM" (whose stream is /radio3) and a decoy of the same name
+#                       elsewhere; now-playing names Test FM's songs: Black Cars for its first two asks, then Musica
+#                       (the count starts again after 40 s without one). /rn-mode?m=ok|odd|down: as it is, an
+#                       answer of another shape, or an error (and the count starts again).
 # usage: fake-web.py <folder with radio.mp3 and song.mp3>
-import json, os, sys, urllib.parse
+import json, os, sys, time, urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 DIR = sys.argv[1]
@@ -19,6 +23,14 @@ STATION = {
     "homepage": "", "favicon": "", "tags": "testing,lofi", "country": "Testland", "countrycode": "TL",
     "codec": "MP3", "bitrate": 128, "votes": 1, "hls": 0,
 }
+# A station whose stream only sends track numbers (as Nostalgie's): its names come from radio.net.
+NUMBERS = dict(STATION, stationuuid="a0000000-0000-4000-8000-000000000002", name="Numbers FM",
+               url="http://127.0.0.1:8096/radio3", url_resolved="http://127.0.0.1:8096/radio3")
+RN = {"mode": "ok", "asks": 0, "last": 0.0}
+RN_STATIONS = [
+    {"id": "wrongfm", "name": "Test FM", "country": "Elsewhere", "streams": [{"url": "http://elsewhere.example/live", "contentFormat": "MP3"}]},
+    {"id": "testfm", "name": "TEST FM", "country": "Testland", "streams": [{"url": "http://127.0.0.1:8096/radio3?origine=radio.net", "contentFormat": "MP3"}]},
+]
 
 
 def embed(entity):
@@ -67,9 +79,14 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(json.dumps({"title": "Deezer Song", "artist": {"name": "Fake"}}))
         if path.startswith("/rb/json/stations/search"):
             name = q.get("name", [""])[0].lower()
-            return self.send(json.dumps([STATION] if "test" in name else []))
+            return self.send(json.dumps([STATION] if "test" in name else [NUMBERS] if "numbers" in name else []))
         if path.startswith("/rb/json/stations/byuuid/"):
-            return self.send(json.dumps([STATION] if path.endswith(STATION["stationuuid"]) else []))
+            return self.send(json.dumps([s for s in (STATION, NUMBERS) if path.endswith(s["stationuuid"])]))
+        if path == "/rn-mode":
+            RN.update(mode=q.get("m", ["ok"])[0], asks=0)
+            return self.send("{}")
+        if path.startswith("/rn/"):
+            return self.radio_net(path, q)
         if path.startswith("/rb/json/url/"):
             return self.send("{}")
         if path.startswith("/rb/json/countries"):
@@ -80,6 +97,28 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(json.dumps([{"videoID": "tstTone0001", "segments": [
                 {"category": "music_offtopic", "actionType": "skip", "segment": [0, 5]},
                 {"category": "music_offtopic", "actionType": "skip", "segment": [20, 30]}]}]))
+        self.send('{"error":"not found"}', status=404)
+
+    def radio_net(self, path, q):
+        if RN["mode"] == "down":
+            return self.send('{"error":"down"}', status=503)
+        if RN["mode"] == "odd":
+            return self.send(json.dumps({"unexpected": True}))
+        if path == "/rn/stations/search":
+            return self.send(json.dumps({"totalCount": len(RN_STATIONS), "playables": RN_STATIONS}))
+        if path == "/rn/stations/now-playing":
+            ids = q.get("stationIds", [""])[0].split(",")
+            out = []
+            if "testfm" in ids:
+                if time.time() - RN["last"] > 40:
+                    RN["asks"] = 0
+                RN["asks"] += 1
+                RN["last"] = time.time()
+                # The second one ends in radio.net's own number, as RTL2's do ("… §7713783"): it isn't shown.
+                out.append({"title": "Gino Vannelli - Black Cars" if RN["asks"] <= 2 else "Michel Sardou - Musica §7713783", "stationId": "testfm"})
+            if "wrongfm" in ids:
+                out.append({"title": "Wrong Artist - Wrong Song", "stationId": "wrongfm"})
+            return self.send(json.dumps(out))
         self.send('{"error":"not found"}', status=404)
 
     # The test tone over and over, with "StreamTitle='Test Artist - Song A';" every METAINT bytes when asked for.

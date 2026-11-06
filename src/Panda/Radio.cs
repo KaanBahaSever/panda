@@ -285,10 +285,11 @@ public sealed class RadioFavorites
 
 /// <summary>
 /// What saved stations play right now, for the panel's list: a short look at each stream (connect, read up to
-/// its first song title, hang up: a few KB), at most every 30 s per station, a few at a time. HLS stations and
-/// those that don't name their songs give nothing. The links go through the same checks as songs (Web.cs).
+/// its first song title, hang up: a few KB), at most every 30 s per station, a few at a time. For HLS stations
+/// and those that don't name their songs, radio.net is asked (<see cref="RadioNames"/>). The links go through
+/// the same checks as songs (Web.cs).
 /// </summary>
-public sealed class OnAir(ILogger<OnAir> log)
+public sealed class OnAir(RadioNames names, ILogger<OnAir> log)
 {
 	readonly System.Collections.Concurrent.ConcurrentDictionary<string, (DateTime At, string? Title)> seen = new();
 	readonly System.Collections.Concurrent.ConcurrentDictionary<string, Task<string?>> looking = new();
@@ -298,7 +299,6 @@ public sealed class OnAir(ILogger<OnAir> log)
 	/// <summary>The song on air, or null; a look already on its way is shared.</summary>
 	public Task<string?> TitleAsync(Station s)
 	{
-		if (s.Hls) return Task.FromResult<string?>(null);
 		if (seen.TryGetValue(s.Url, out var c) && DateTime.UtcNow - c.At < Fresh) return Task.FromResult(c.Title);
 		// One look per station at a time; a finished one left behind (it ended before it was stored) is replaced.
 		if (looking.TryGetValue(s.Url, out var running) && !running.IsCompleted) return running;
@@ -311,9 +311,10 @@ public sealed class OnAir(ILogger<OnAir> log)
 	{
 		await slots.WaitAsync();
 		string? title = null;
-		try { title = await ReadAsync(s.Url); }
+		try { title = s.Hls ? null : await ReadAsync(s.Url); }
 		catch (Exception ex) when (ex is not OutOfMemoryException) { log.LogDebug("No title from {Station}: {Error}", s.Name, ex.Message); }
 		finally { slots.Release(); }
+		title ??= await names.TitleAsync(s.Name, s.Url, s.Country);
 		seen[s.Url] = (DateTime.UtcNow, title);
 		return title;
 	}

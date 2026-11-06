@@ -54,7 +54,7 @@ var defaults = new Dictionary<string, string>
 	["commandLevels"] = "{}", ["othersSongs"] = "everyone", ["onlyFromChannel"] = "false",
 	// The test's own web server (radio, pages, music services) is on 127.0.0.1.
 	["sources.localLinks"] = "true", ["sources.search"] = "youtube", ["sources.fallback"] = "true", ["sources.youTubeMusic"] = "true",
-	["sources.soundCloud"] = "true", ["sources.sites"] = "true", ["sources.services"] = "true", ["sources.pages"] = "true", ["sources.radio"] = "true",
+	["sources.soundCloud"] = "true", ["sources.sites"] = "true", ["sources.services"] = "true", ["sources.pages"] = "true", ["sources.radio"] = "true", ["sources.radioNames"] = "true",
 	["normalizeVolume"] = "true", ["youTube.sponsorBlock"] = "false", ["youTube.searchResults"] = "5", ["youTube.hideLive"] = "false", ["youTube.hideShort"] = "false",
 };
 var panel = new Panel(args[1], Environment.GetEnvironmentVariable("PANDA_TEST_PASSWORD") ?? "testpass123");

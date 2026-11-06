@@ -114,6 +114,13 @@ unless **Links into the local network** is on, so nobody can make Panda open the
 Star stations to keep them; `!fm` lists the favorites, `!fm <name or number>` plays one, `!fav` while a
 station plays adds it. The favorites show what each station plays right now ("On air: Artist - Song"), and
 with announcing on, every new song on the station playing is said in the chat: a record of what was played.
+Some stations don't send their songs' names: RTL2 sends nothing, the NRJ group's (Nostalgie, Chérie FM…)
+only their own track numbers, and HLS streams have no titles at all. For those Panda asks
+[radio.net](https://www.radio.net/), which often knows, about a minute after the song starts.
+It sends only the station's name, nothing about who listens. Panda finds the station there by its stream,
+or by its name and country, and shows nothing rather than another station's songs. It's radio.net's
+site API, not an official one: if it stops answering or changes, the names pause, and they come back by
+themselves when it answers again. Turn it off with **Song names from radio.net** in Settings → Sources.
 
 **YouTube settings** (Settings → YouTube): max song length, the number of `!search` results, leaving live
 streams or videos under a minute out of searches, audio quality (best, or about 70 kbps to save data),
@@ -367,6 +374,7 @@ Everything is editable in the panel; the file is `/var/lib/panda/config.json` (o
                 "autoplayNoRepeat": 30, "autoplaySameArtist": true },
   "sources": { "search": "youtube", "fallback": true,             // or "youtubeMusic", "soundcloud"
                "youTubeMusic": true, "soundCloud": true, "sites": true, "services": true, "pages": true, "radio": true,
+               "radioNames": true,                                 // song names from radio.net
                "localLinks": false },                              // links into the local network
   "library": { "enabled": true, "maxSizeMb": 5120, "path": "" },   // 0 MB = no limit; empty path = data/library
   "audio": { "normalize": true, "targetLufs": -14 }   // -18 natural, -14 standard, -11 loud

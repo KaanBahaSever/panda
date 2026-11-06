@@ -594,6 +594,10 @@ public sealed class SourcesSettings
 	public bool LocalLinks { get; set; }
 	/// <summary>The Radio Browser server; empty = one of radio-browser.info's.</summary>
 	public string RadioBrowserUrl { get; set; } = "";
+	/// <summary>Song names from radio.net for stations whose stream doesn't name its songs (see <see cref="Panda.RadioNames"/>).</summary>
+	public bool RadioNames { get; set; } = true;
+	/// <summary>radio.net's API; empty = its own (for the tests, or if it moves).</summary>
+	public string RadioNamesUrl { get; set; } = "";
 
 	public static readonly string[] Searches = ["youtube", "youtubeMusic", "soundcloud"];
 

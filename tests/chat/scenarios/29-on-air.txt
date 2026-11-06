@@ -11,12 +11,29 @@ c !play http://127.0.0.1:8096/radio2
 w 30
 n Now on air
 c !stop
-# A station whose titles are only its track numbers ("2044 - 2044", Nostalgie): no song, nothing said.
-s announce=true
+# A station whose titles are only its track numbers ("2044 - 2044", Nostalgie), radio.net off: no song, nothing said.
+s announce=true sources.radioNames=false
 c !play http://127.0.0.1:8096/radio3
 e Now playing
 w 30
 n Now on air
 c !np
 n 2044
+n Black Cars
+c !stop
+# radio.net on: the songs' names come from there (found by the stream's address; not the other "Test FM"), and
+# a new one is said when radio.net names it (about a minute after the stream, as the real one).
+s sources.radioNames=true
+c !play http://127.0.0.1:8096/radio3
+e Now playing
+w 20
+e Now on air on [b]Test FM[/b]: Gino Vannelli - Black Cars
+w 55
+e Now on air on [b]Test FM[/b]: Michel Sardou - Musica
+n Wrong Song
+n §
+c !np
+e (LIVE · Michel Sardou - Musica)
+n 2044
+N Michel Sardou
 c !stop

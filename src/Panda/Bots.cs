@@ -6,7 +6,7 @@ public sealed record BotSummary(string Id, string Nickname, string State, string
 
 /// <summary>What every bot shares: where songs come from and where they are kept.</summary>
 public sealed record BotShared(YouTube YouTube, Library Library, Playlists Playlists, Sources Sources, SponsorBlock SponsorBlock,
-	RadioBrowser Radios, RadioFavorites Favorites);
+	RadioBrowser Radios, RadioFavorites Favorites, RadioNames RadioNames);
 
 /// <summary>One bot: its TeamSpeak connection, its player and its play history.</summary>
 public sealed class BotInstance : IDisposable
@@ -27,7 +27,7 @@ public sealed class BotInstance : IDisposable
 		sessionPath = Path.Combine(dir, "session.json");
 		log = logs.CreateLogger($"Panda.Bot.{config.Id}");
 		History = new PlayHistory(dir, logs.CreateLogger<PlayHistory>());
-		Player = new Player(config, global, s.YouTube, s.Library, s.SponsorBlock, History, logs.CreateLogger($"Panda.Player.{config.Id}"));
+		Player = new Player(config, global, s.YouTube, s.Library, s.SponsorBlock, History, s.RadioNames, logs.CreateLogger($"Panda.Player.{config.Id}"));
 		Ts = new TsBot(config, global, Player, s.Library, s.Sources, s.Radios, s.Favorites, s.Playlists, dir, logs.CreateLogger($"Panda.TsBot.{config.Id}"));
 		RestoreSession();
 	}

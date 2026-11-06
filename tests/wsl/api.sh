@@ -60,7 +60,7 @@ post() { curl -s -b $J -H 'Content-Type: application/json' -d "$2" "$P$1"; }
 # Radio and local links on (a chat scenario may have left them off).
 curl -s -b $J $P/api/bots/1/settings | python3 -c "
 import sys, json
-d = json.load(sys.stdin); d['sources']['radio'] = True; d['sources']['localLinks'] = True; print(json.dumps(d))" \
+d = json.load(sys.stdin); d['sources']['radio'] = True; d['sources']['radioNames'] = True; d['sources']['localLinks'] = True; print(json.dumps(d))" \
 	| curl -s -b $J -X PUT -H 'Content-Type: application/json' -d @- $P/api/bots/1/settings -o /dev/null
 check "radio search" "$(curl -s -b $J "$P/api/radio/search?name=test" | json "d[0]['name']")" "Test Station"
 check "a search needs something to look for" "$(curl -s -b $J "$P/api/radio/search" | json "len(d)")" 0
@@ -72,6 +72,23 @@ check "play a station" "$(post /api/bots/1/fm "{\"uuid\":\"$UUID\"}" | json "d['
 # Stations are played by their id only: an address in the request is never used.
 check "no station for an unknown id (an address is ignored)" "$(code -b $J -H 'Content-Type: application/json' -d '{"uuid":"nope","url":"http://10.0.0.1/"}' $P/api/bots/1/fm)" 404
 check "remove the favorite" "$(code -b $J -X DELETE $P/api/radio/favorites/$UUID)" 204
+# A station that only sends track numbers: what it plays comes from radio.net (the stand-in in fake-web.py).
+# When radio.net answers in a shape Panda doesn't know, there's no name (and no error), it's said once in the
+# log, and the names come back by themselves after a minute's rest when it answers again.
+NUM=a0000000-0000-4000-8000-000000000002
+onair() { curl -s -b $J $P/api/radio/onair | json "d.get('$NUM')"; }
+curl -s "http://127.0.0.1:8096/rn-mode?m=ok" -o /dev/null
+# What a chat scenario's bot heard from radio.net for the same station is kept 20 s.
+sleep 21
+check "favorite a station that sends numbers" "$(code -b $J -H 'Content-Type: application/json' -d "{\"uuid\":\"$NUM\"}" $P/api/radio/favorites)" 200
+check "what it plays, from radio.net" "$(onair)" "Gino Vannelli - Black Cars"
+curl -s "http://127.0.0.1:8096/rn-mode?m=odd" -o /dev/null; sleep 31
+check "radio.net answers in another shape: no name" "$(onair)" None
+check "said once in the log" "$(curl -s -b $J $P/api/system/logs.txt | grep -c "radio.net didn't answer as expected")" 1
+curl -s "http://127.0.0.1:8096/rn-mode?m=ok" -o /dev/null; sleep 70
+check "radio.net is fine again: the name is back by itself" "$(onair)" "Gino Vannelli - Black Cars"
+check "and the log says so" "$(curl -s -b $J $P/api/system/logs.txt | grep -c "radio.net answers again")" 1
+check "remove that favorite" "$(code -b $J -X DELETE $P/api/radio/favorites/$NUM)" 204
 check "the panel takes any link" "$(post /api/bots/1/play '{"query":"http://127.0.0.1:8096/radio"}' | json "d['title']")" "Test FM"
 check "a Spotify playlist says how many more come" "$(post /api/bots/1/play '{"query":"https://open.spotify.com/playlist/abcdefghij1234567890"}' | json "(d['more'], d['list'])")" "(2, 'Test Mix')"
 curl -s -b $J -X POST $P/api/bots/1/control/stop -o /dev/null
