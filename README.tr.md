@@ -115,7 +115,9 @@ sadece kendi şarkı numaralarını gönderir, HLS yayınlarında da başlık hi
 [radio.net](https://www.radio.net/)'e sorar; radio.net çoğu zaman bilir, şarkı başladıktan bir dakika kadar
 sonra. Panda oraya sadece radyonun adını gönderir, dinleyenler hakkında hiçbir şey göndermez. Radyoyu
 orada yayın adresinden ya da adı ve ülkesinden bulur; emin olamazsa başka bir radyonun şarkısını
-göstermektense hiçbir şey göstermez. Bu radio.net'in sitesinin kullandığı uç nokta, resmi bir API değil:
+göstermektense hiçbir şey göstermez. Yapıştırılan bir yayın linki önce Radio Browser'da aranır (sadece
+adresi gönderilir): orada bilinen link o radyo olarak, adı, ülkesi ve logosuyla çalar, şarkıları da böylece
+bulunur. Bu radio.net'in sitesinin kullandığı uç nokta, resmi bir API değil:
 cevap vermezse ya da değişirse adlar durur, yeniden cevap verince kendiliğinden geri gelir. Ayarlar →
 Kaynaklar'daki **Şarkı adını göndermeyen istasyonlarda adları radio.net'ten al** ile kapatılır.
 

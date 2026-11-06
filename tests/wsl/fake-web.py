@@ -2,6 +2,7 @@
 # Test stand-in for the web Panda reaches besides YouTube, on 127.0.0.1:8096 (the tests never leave the machine):
 #   /radio2             the same, its song changes every 25 s of audio (Song A, Song B)
 #   /radio3             the same, its titles are track numbers ("2044 - 2044", as Nostalgie's)
+#   /radio4             the same, named "TESTFM SAT MP3 - RK" (as Nostalgie's own links): Radio Browser knows it as Test FM
 #   /radio              an old Shoutcast station ("ICY 200 OK") sending the test tone with the song title in between
 #   /radio.m3u, .pls    playlist files that name /radio            /song.mp3   an audio file with title tags
 #   /page.html          a page titled "test tone"                  /rb/...     Radio Browser (one "Test Station")
@@ -26,6 +27,9 @@ STATION = {
 # A station whose stream only sends track numbers (as Nostalgie's): its names come from radio.net.
 NUMBERS = dict(STATION, stationuuid="a0000000-0000-4000-8000-000000000002", name="Numbers FM",
                url="http://127.0.0.1:8096/radio3", url_resolved="http://127.0.0.1:8096/radio3")
+# A pasted link radio.net doesn't list: Radio Browser knows it (without "?from=..."), as Test FM of Testland.
+LINKED = dict(STATION, stationuuid="a0000000-0000-4000-8000-000000000004", name="Test FM",
+              url="http://127.0.0.1:8096/radio4", url_resolved="http://127.0.0.1:8096/radio4")
 RN = {"mode": "ok", "asks": 0, "last": 0.0}
 RN_STATIONS = [
     {"id": "wrongfm", "name": "Test FM", "country": "Elsewhere", "streams": [{"url": "http://elsewhere.example/live", "contentFormat": "MP3"}]},
@@ -87,6 +91,10 @@ class Handler(BaseHTTPRequestHandler):
             return self.send("{}")
         if path.startswith("/rn/"):
             return self.radio_net(path, q)
+        if path == "/rb/json/stations/byurl":
+            return self.send(json.dumps([LINKED] if q.get("url", [""])[0] == LINKED["url"] else []))
+        if path == "/radio4":
+            return self.radio(numbers=True, name="TESTFM SAT MP3 - RK")
         if path.startswith("/rb/json/url/"):
             return self.send("{}")
         if path.startswith("/rb/json/countries"):
@@ -122,9 +130,9 @@ class Handler(BaseHTTPRequestHandler):
         self.send('{"error":"not found"}', status=404)
 
     # The test tone over and over, with "StreamTitle='Test Artist - Song A';" every METAINT bytes when asked for.
-    def radio(self, changing=False, numbers=False):
+    def radio(self, changing=False, numbers=False, name="Test FM"):
         meta = self.headers.get("Icy-MetaData") == "1"
-        head = "ICY 200 OK\r\nicy-name: Test FM\r\nicy-genre: Testing\r\ncontent-type: audio/mpeg\r\n"
+        head = f"ICY 200 OK\r\nicy-name: {name}\r\nicy-genre: Testing\r\ncontent-type: audio/mpeg\r\n"
         if meta:
             head += f"icy-metaint: {METAINT}\r\n"
         self.wfile.write((head + "\r\n").encode())

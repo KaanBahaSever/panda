@@ -17,7 +17,7 @@ public sealed record Resolved(Track Track, IReadOnlyList<string>? More = null, s
 /// sites through yt-dlp, music service links (looked up on YouTube), radio streams, any other page (its
 /// title looked up on YouTube). Every source but YouTube can be turned off (<see cref="SourcesSettings"/>).
 /// </summary>
-public sealed partial class Sources(PandaConfig config, YouTube youtube, Library library, ILogger<Sources> log)
+public sealed partial class Sources(PandaConfig config, YouTube youtube, Library library, RadioBrowser radios, ILogger<Sources> log)
 {
 	SourcesSettings S => config.Sources;
 	const int MaxListSongs = 200;
@@ -222,13 +222,15 @@ public sealed partial class Sources(PandaConfig config, YouTube youtube, Library
 			if (RadioLinks.IsPlaylist(type, http.Url))
 			{
 				var text = await http.ReadTextAsync(64 * 1024, ct);
-				if (RadioLinks.IsHls(text)) return Stream(http.Url, Media.Direct, null, null);
+				if (RadioLinks.IsHls(text)) return await StreamAsync(http.Url, Media.Direct, null, null);
 				if (RadioLinks.FirstStream(text) is { } inner && Uri.TryCreate(inner, UriKind.Absolute, out var innerUri))
 				{
 					await Web.CheckAsync(innerUri, ct);
 					// The stream itself names the station.
-					using var s = await HttpStream.OpenAsync(inner, ct);
-					return Stream(s.Url, Media.Radio, s.Headers.GetValueOrDefault("icy-name"), s.Headers.GetValueOrDefault("icy-genre"));
+					Uri streamUrl; string? name, genre;
+					using (var s = await HttpStream.OpenAsync(inner, ct))
+						(streamUrl, name, genre) = (s.Url, s.Headers.GetValueOrDefault("icy-name"), s.Headers.GetValueOrDefault("icy-genre"));
+					return await StreamAsync(streamUrl, Media.Radio, name, genre);
 				}
 				return null;
 			}
@@ -237,14 +239,22 @@ public sealed partial class Sources(PandaConfig config, YouTube youtube, Library
 			if (!audio && !http.IsIcy) return null;
 			// A station sends forever; a file says how long it is.
 			if (http.IsIcy || http.Length is null)
-				return Stream(http.Url, Media.Radio, http.Headers.GetValueOrDefault("icy-name"), http.Headers.GetValueOrDefault("icy-genre"));
+			{
+				var (url, name, genre) = (http.Url, http.Headers.GetValueOrDefault("icy-name"), http.Headers.GetValueOrDefault("icy-genre"));
+				http.Dispose();   // not held open while Radio Browser is asked
+				return await StreamAsync(url, Media.Radio, name, genre);
+			}
 		}
 		if (!S.Sites) throw new YouTubeException("source-off");
 		return await youtube.ProbeFileAsync(final.AbsoluteUri, requestedBy, ct);
 
-		Track Stream(Uri url, string source, string? name, string? genre)
+		async Task<Track> StreamAsync(Uri url, string source, string? name, string? genre)
 		{
 			if (!S.Radio) throw new YouTubeException("source-off");
+			// A station Radio Browser knows is that station (its name, country and logo; the song names from
+			// radio.net need the first two): "NOSTA SAT MP3 - RK" is Nostalgie. Played from the pasted link.
+			if (S.RadioNames && await radios.ByUrlAsync(url, ct) is { } known)
+				return (known with { Url = url.AbsoluteUri, Hls = known.Hls || source == Media.Direct }).ToTrack(requestedBy);
 			var host = url.Host;
 			return new Station("link-" + YouTube.Hash(url.AbsoluteUri), Short(name) ?? host, url.AbsoluteUri, Tags: Short(genre) ?? "", Hls: source == Media.Direct)
 				.ToTrack(requestedBy) with { Channel = Short(genre) ?? host };

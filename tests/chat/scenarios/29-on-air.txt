@@ -37,3 +37,13 @@ e (LIVE · Michel Sardou - Musica)
 n 2044
 N Michel Sardou
 c !stop
+# A pasted link radio.net doesn't list, with the stream's own odd name ("NOSTA SAT MP3 - RK"): Radio Browser
+# knows it (here without its "?from=..."), so it is Test FM of Testland and its names come from radio.net too.
+c !play http://127.0.0.1:8096/radio4?from=friend
+e Now playing
+w 20
+c !np
+e (LIVE · 
+n 2044
+N Test FM
+c !stop

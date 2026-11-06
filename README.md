@@ -118,7 +118,9 @@ Some stations don't send their songs' names: RTL2 sends nothing, the NRJ group's
 only their own track numbers, and HLS streams have no titles at all. For those Panda asks
 [radio.net](https://www.radio.net/), which often knows, about a minute after the song starts.
 It sends only the station's name, nothing about who listens. Panda finds the station there by its stream,
-or by its name and country, and shows nothing rather than another station's songs. It's radio.net's
+or by its name and country, and shows nothing rather than another station's songs. A pasted stream link
+is looked up in Radio Browser first (only its address is sent): a link it knows plays as that station, with
+its name, country and logo, so its songs are found too. It's radio.net's
 site API, not an official one: if it stops answering or changes, the names pause, and they come back by
 themselves when it answers again. Turn it off with **Song names from radio.net** in Settings → Sources.
 

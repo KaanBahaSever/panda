@@ -112,6 +112,32 @@ public sealed class RadioBrowser(PandaConfig config, ILogger<RadioBrowser> log)
 		return doc.RootElement.EnumerateArray().Select(FromJson).OfType<Station>().FirstOrDefault();
 	}
 
+	/// <summary>The station whose stream a pasted link is (Radio Browser knows a link exactly, query and all;
+	/// without the query too). Null when it isn't listed, Radio Browser doesn't answer soon, or the link is on
+	/// one's own network (that isn't told to radio-browser.info).</summary>
+	public async Task<Station?> ByUrlAsync(Uri url, CancellationToken ct)
+	{
+		var own = config.Sources.RadioBrowserUrl.Trim().Length > 0;
+		if (!own && (url.IsLoopback || System.Net.IPAddress.TryParse(url.Host.Trim('[', ']'), out var ip) && Web.IsPrivate(ip))) return null;
+		try
+		{
+			using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+			cts.CancelAfter(TimeSpan.FromSeconds(5));
+			var tries = url.Query.Length > 0 ? new[] { url.AbsoluteUri, url.GetLeftPart(UriPartial.Path) } : [url.AbsoluteUri];
+			foreach (var link in tries)
+			{
+				using var doc = JsonDocument.Parse(await GetAsync("/json/stations/byurl?url=" + Uri.EscapeDataString(link), cts.Token));
+				if (doc.RootElement.ValueKind == JsonValueKind.Array && doc.RootElement.EnumerateArray().Select(FromJson).OfType<Station>().FirstOrDefault() is { } s)
+					return s;
+			}
+		}
+		catch (Exception ex) when (!ct.IsCancellationRequested)
+		{
+			log.LogInformation("Radio Browser didn't say which station {Url} is: {Error}", url.Authority, ex.Message);
+		}
+		return null;
+	}
+
 	public async Task<List<RadioCountry>> CountriesAsync(CancellationToken ct)
 	{
 		if (countries is { } c && DateTime.UtcNow - c.At < TimeSpan.FromDays(1)) return c.List;

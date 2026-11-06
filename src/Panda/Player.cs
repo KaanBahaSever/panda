@@ -52,6 +52,7 @@ public sealed class Player : IDisposable
 	readonly SponsorBlock sponsorBlock;
 	readonly PlayHistory history;
 	readonly RadioNames radioNames;
+	readonly RadioBrowser radios;
 	readonly ILogger log;
 
 	readonly PreciseTimedPipe timePipe;
@@ -111,7 +112,7 @@ public sealed class Player : IDisposable
 	public event Action<Track, string?>? StreamTitleChanged;
 
 	public Player(BotConfig settings, PandaConfig config, YouTube youtube, Library library, SponsorBlock sponsorBlock, PlayHistory history,
-		RadioNames radioNames, ILogger log)
+		RadioNames radioNames, RadioBrowser radios, ILogger log)
 	{
 		this.settings = settings;
 		this.config = config;
@@ -120,6 +121,7 @@ public sealed class Player : IDisposable
 		this.sponsorBlock = sponsorBlock;
 		this.history = history;
 		this.radioNames = radioNames;
+		this.radios = radios;
 		this.log = log;
 
 		encoder = new OpusEncoderPipe(bitrate: 96_000);
@@ -902,16 +904,24 @@ public sealed class Player : IDisposable
 	async Task AskNamesAsync(int play, Track track)
 	{
 		// Radio Browser's stations say "Country · tags"; anything else isn't a country and matches none.
-		var country = track.Channel.Split(" · ")[0];
+		// A pasted link ("radio:link-…", a favorite of one too, from before Panda looked links up) has the
+		// stream's genre there: Radio Browser may still know the link, else it has no country.
+		var name = track.Title;
+		var country = track.Id.StartsWith("radio:link-") ? null : track.Channel.Split(" · ")[0];
 		var misses = 0;
 		// The stream's first title comes within a few seconds: then radio.net isn't needed.
 		await Task.Delay(TimeSpan.FromSeconds(5));
+		if (country is null && Uri.TryCreate(track.Link, UriKind.Absolute, out var link))
+		{
+			lock (gate) if (disposed || play != namesPlay || current != track || streamNames) return;
+			if (await radios.ByUrlAsync(link, default) is { } known) (name, country) = (known.Name, known.Country);
+		}
 		while (true)
 		{
 			try
 			{
 				lock (gate) if (disposed || play != namesPlay || current != track || streamNames) return;
-				var title = await radioNames.TitleAsync(track.Title, track.Link!, country);
+				var title = await radioNames.TitleAsync(name, track.Link!, country);
 				// Nothing known for a while (a show, radio.net resting): the song before isn't shown for ever.
 				misses = title is null ? misses + 1 : 0;
 				var change = false;
