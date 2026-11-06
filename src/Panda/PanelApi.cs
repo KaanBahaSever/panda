@@ -66,9 +66,17 @@ public static class PanelApi
 		});
 		authed.MapGet("/me", (HttpContext ctx) => new { name = ctx.User.Identity?.Name, role = ctx.User.FindFirst(ClaimTypes.Role)?.Value });
 
+		// A bot owner's account, from the link !panel sent them in the chat.
+		// The key goes in the body: an address would end up in a proxy's log.
+		api.MapPost("/owner/check", async (OwnerClaim req, OwnerLinks links, PandaConfig config, HttpContext ctx) =>
+			await OwnerLinkAsync(req, ctx, config, links) is { } who
+				? Results.Ok(new { name = who.Name, account = config.FindOwner(who.Uid)?.Name })
+				: NoLink(ctx));
+		api.MapPost("/owner", ClaimOwner);
+
 		// --- bots ---
 
-		authed.MapGet("/bots", (BotManager bots) => bots.Summaries());
+		authed.MapGet("/bots", (BotManager bots, PandaConfig config, HttpContext ctx) => VisibleBots(ctx, config, bots));
 		admin.MapPost("/bots", async (AddBotRequest req, BotManager bots) =>
 		{
 			var b = await bots.AddAsync(bots.Get(req.Like ?? ""));
@@ -76,18 +84,35 @@ public static class PanelApi
 		});
 
 		var bot = authed.MapGroup("/bots/{bot}");
+		// An owner sees only their own bots: any other is as if it weren't there.
+		bot.AddEndpointFilter(async (fc, next) =>
+		{
+			var ctx = fc.HttpContext;
+			if (ctx.User.IsInRole(Roles.Owner))
+			{
+				var services = ctx.RequestServices;
+				var b = ctx.GetRouteValue("bot") is string id ? services.GetRequiredService<BotManager>().Get(id) : null;
+				if (b is null || Me(ctx, services.GetRequiredService<PandaConfig>())?.Owns(b.Config) != true)
+					return Results.NotFound(new { error = "no-bot" });
+			}
+			return await next(fc);
+		});
+		// Playing and steering a bot, its sound, name and description: admins, and its owner.
+		var botControl = bot.MapGroup("").RequireAuthorization(ManageBot);
+		// The rest of a bot (its connection, picture, removing it): admins.
 		var botAdmin = bot.MapGroup("").RequireAuthorization(Roles.Admin);
 		botAdmin.MapDelete("", async (BotInstance b, BotManager bots) => Done(await bots.RemoveAsync(b.Id)));
-		bot.MapGet("/state", async (BotInstance b, BotManager bots, Library library, Playlists lists) => await Snapshot(b, bots, library, lists));
+		bot.MapGet("/state", async (BotInstance b, BotManager bots, Library library, Playlists lists, PandaConfig config, HttpContext ctx) =>
+			await Snapshot(b, VisibleBots(ctx, config, bots), library, lists));
 		bot.MapGet("/events", Events);
 
 		bot.MapPost("/play", async (PlayRequest req, BotInstance b, Sources sources, HttpContext ctx) =>
 		{
-			var isAdmin = ctx.User.IsInRole(Roles.Admin);
+			var isAdmin = Manages(ctx);
 			if (req.Now && !isAdmin) return Results.StatusCode(StatusCodes.Status403Forbidden); // it skips the current song
 			try
 			{
-				var by = isAdmin && req.RequestedBy is { Length: > 0 } r ? r : "🌐 " + ctx.User.Identity?.Name;
+				var by = ctx.User.IsInRole(Roles.Admin) && req.RequestedBy is { Length: > 0 } r ? r : "🌐 " + ctx.User.Identity?.Name;
 				var requester = "panel:" + ctx.User.Identity?.Name;
 				var found = await sources.ResolveAsync(req.Query ?? "", by);
 				var track = found.Track with { RequesterId = requester };
@@ -107,7 +132,7 @@ public static class PanelApi
 		bot.MapPost("/fm", async (FmRequest req, BotInstance b, RadioBrowser radios, RadioFavorites favorites, PandaConfig config, HttpContext ctx) =>
 		{
 			if (!config.Sources.Radio) return Problem("source-off");
-			var isAdmin = ctx.User.IsInRole(Roles.Admin);
+			var isAdmin = Manages(ctx);
 			if (req.Now && !isAdmin) return Results.StatusCode(StatusCodes.Status403Forbidden);
 			Station? station;
 			try { station = await FindStationAsync(req.Uuid ?? "", radios, favorites, ctx.RequestAborted); }
@@ -125,7 +150,7 @@ public static class PanelApi
 			catch (UserLimitException) { return Problem("user-limit"); }
 		});
 
-		botAdmin.MapPost("/control/{action}", (string action, BotInstance b) => action switch
+		botControl.MapPost("/control/{action}", (string action, BotInstance b) => action switch
 		{
 			"pause" => Done(b.Player.Pause()),
 			"resume" => Done(b.Player.Resume()),
@@ -137,12 +162,12 @@ public static class PanelApi
 			_ => Results.NotFound(),
 		});
 
-		botAdmin.MapPost("/seek", (SeekRequest req, BotInstance b) => Done(b.Player.Seek((int)Math.Round(req.Seconds))));
-		botAdmin.MapPost("/volume", (VolumeRequest req, BotInstance b) => Done(Run(() => b.Player.SetVolume(req.Volume))));
-		botAdmin.MapPost("/loop", (LoopRequest req, BotInstance b) => Done(Run(() => b.Player.SetLoop(req.Mode))));
-		botAdmin.MapPost("/autoplay", (AutoplayRequest req, BotInstance b) => Done(Run(() => b.Player.SetAutoplay(req.On))));
+		botControl.MapPost("/seek", (SeekRequest req, BotInstance b) => Done(b.Player.Seek((int)Math.Round(req.Seconds))));
+		botControl.MapPost("/volume", (VolumeRequest req, BotInstance b) => Done(Run(() => b.Player.SetVolume(req.Volume))));
+		botControl.MapPost("/loop", (LoopRequest req, BotInstance b) => Done(Run(() => b.Player.SetLoop(req.Mode))));
+		botControl.MapPost("/autoplay", (AutoplayRequest req, BotInstance b) => Done(Run(() => b.Player.SetAutoplay(req.On))));
 		// Equalizer, effects, speed, crossfade: what's left out stays as it is.
-		botAdmin.MapPut("/sound", (SoundRequest req, BotInstance b) =>
+		botControl.MapPut("/sound", (SoundRequest req, BotInstance b) =>
 		{
 			if (req.Equalizer != null && !Sound.Equalizers.Contains(req.Equalizer)) return Problem("bad-equalizer");
 			if (req.Effect != null && !Sound.Effects.Contains(req.Effect)) return Problem("bad-effect");
@@ -159,20 +184,21 @@ public static class PanelApi
 			return Results.Ok(now);
 		});
 		// The name up to 0.5.
-		botAdmin.MapPost("/radio", (AutoplayRequest req, BotInstance b) => Done(Run(() => b.Player.SetAutoplay(req.On))));
+		botControl.MapPost("/radio", (AutoplayRequest req, BotInstance b) => Done(Run(() => b.Player.SetAutoplay(req.On))));
 		// The song id guards against the queue having moved on since the panel showed it.
-		botAdmin.MapDelete("/queue/{index:int}", (int index, string? id, BotInstance b) => Done(b.Player.Remove(index, id) != null));
-		botAdmin.MapPost("/queue/move", (MoveRequest req, BotInstance b) => Done(b.Player.Move(req.From, req.To, req.Id)));
+		botControl.MapDelete("/queue/{index:int}", (int index, string? id, BotInstance b) => Done(b.Player.Remove(index, id) != null));
+		botControl.MapPost("/queue/move", (MoveRequest req, BotInstance b) => Done(b.Player.Move(req.From, req.To, req.Id)));
 
-		botAdmin.MapGet("/settings", (BotInstance b, PandaConfig config) => SettingsDto.From(config, b.Config));
-		botAdmin.MapPut("/settings", (SettingsDto dto, BotInstance b, PandaConfig config, Library library) =>
+		botControl.MapGet("/settings", (BotInstance b, PandaConfig config, HttpContext ctx) =>
+			ctx.User.IsInRole(Roles.Admin) ? SettingsDto.From(config, b.Config) : SettingsDto.ForOwner(b.Config));
+		botControl.MapPut("/settings", (SettingsDto dto, BotInstance b, PandaConfig config, Library library, HttpContext ctx) =>
 		{
-			var reconnect = dto.Apply(config, b.Config);
+			var reconnect = dto.Apply(config, b.Config, admin: ctx.User.IsInRole(Roles.Admin));
 			config.Save();
 			library.SettingsChanged();
 			if (reconnect) b.Ts.Reconnect();
 			else b.Ts.SettingsChanged();
-			return Results.Ok(SettingsDto.From(config, b.Config));
+			return Results.Ok(ctx.User.IsInRole(Roles.Admin) ? SettingsDto.From(config, b.Config) : SettingsDto.ForOwner(b.Config));
 		});
 		botAdmin.MapPost("/reconnect", (BotInstance b) => Done(Run(b.Ts.Reconnect)));
 		botAdmin.MapGet("/ts/people", async (BotInstance b) => await b.Ts.GetPeopleAsync());
@@ -266,7 +292,11 @@ public static class PanelApi
 
 		authed.MapGet("/library", (string? q, Library library) => library.GetInfo(q));
 		// bot: an id or "all"; days: 0 = everything; tz: the browser's getTimezoneOffset().
-		authed.MapGet("/stats", (string? bot, int? days, int? tz, Stats stats) => stats.Get(bot, days ?? 30, tz ?? 0));
+		authed.MapGet("/stats", (string? bot, int? days, int? tz, Stats stats, BotManager bots, PandaConfig config, HttpContext ctx) =>
+			// An owner: their own bots only, one at a time ("all" is everyone's).
+			ctx.User.IsInRole(Roles.Owner) && (bots.Get(bot ?? "") is not { } b || Me(ctx, config)?.Owns(b.Config) != true)
+				? Results.NotFound(new { error = "no-bot" })
+				: Results.Ok(stats.Get(bot, days ?? 30, tz ?? 0)));
 		admin.MapDelete("/library/{id}", (string id, Library library) => Done(library.Delete(id)));
 
 		// A backup of the settings, identities, histories and lists; restoring one restarts Panda.
@@ -360,7 +390,7 @@ public static class PanelApi
 			if (lists.Find(req.Name ?? "") is not { } p) return Results.NotFound();
 			var songs = p.Songs.Select(s => s.ToTrack("🌐 " + ctx.User.Identity?.Name) with { RequesterId = "panel:" + ctx.User.Identity?.Name });
 			if (req.Shuffle) songs = songs.OrderBy(_ => Random.Shared.Next());
-			var added = b.Player.EnqueueMany(songs.ToList(), exempt: ctx.User.IsInRole(Roles.Admin), out var limited);
+			var added = b.Player.EnqueueMany(songs.ToList(), exempt: Manages(ctx), out var limited);
 			return added == 0 && p.Songs.Count > 0 ? Problem(limited ? "user-limit" : "queue-full") : Results.Ok(new { added, limited });
 		});
 
@@ -416,7 +446,7 @@ public static class PanelApi
 			return Results.NoContent();
 		});
 
-		admin.MapGet("/users", (PandaConfig config) => config.Panel.Users.Select(u => new { u.Name, u.Role }));
+		admin.MapGet("/users", (PandaConfig config) => config.Panel.Users.Select(u => new { u.Name, u.Role, u.Uid }));
 
 		admin.MapGet("/apikeys", (PandaConfig config) => config.Panel.ApiKeys.Select(k => new { k.Id, k.Name, k.Role, k.Created, k.LastUsed }));
 		admin.MapPost("/apikeys", (UserRequest req, PandaConfig config) =>
@@ -435,8 +465,15 @@ public static class PanelApi
 			var name = (req.Name ?? "").Trim();
 			if (!PanelUser.IsValidName(name)) return Problem("bad-name");
 			if ((req.Password ?? "").Length < 6) return Problem("password-too-short");
-			if (!Roles.IsValid(req.Role ?? "")) return Problem("bad-role");
-			return config.AddUser(name, req.Password!, req.Role!) ? Results.NoContent() : Problem("user-exists");
+			// A bot owner: by their TeamSpeak unique id, the bots whose owner it is are theirs.
+			var uid = (req.Uid ?? "").Trim();
+			if (req.Role == Roles.Owner)
+			{
+				if (uid.Length is 0 or > 100 || uid.Any(char.IsControl)) return Problem("bad-uid");
+				if (config.FindOwner(uid) != null) return Problem("uid-taken");
+			}
+			else if (!Roles.IsValid(req.Role ?? "")) return Problem("bad-role");
+			return config.AddUser(name, req.Password!, req.Role!, req.Role == Roles.Owner ? uid : null) ? Results.NoContent() : Problem("user-exists");
 		});
 		// Changes the role and/or sets a new password.
 		admin.MapPut("/users/{name}", (string name, UserRequest req, PandaConfig config) =>
@@ -521,6 +558,8 @@ public static class PanelApi
 
 		var name = (req.Name ?? "").Trim();
 		var user = config.CheckLogin(name.Length > 0 ? name : "admin", req.Password ?? "");
+		// Bot owners can't log in while the panel isn't open to them.
+		if (user is { Role: Roles.Owner } && !config.Panel.BotOwners) return Results.Json(new { error = "owners-off" }, statusCode: 403);
 		if (user is null)
 		{
 			if (Failures.Count > 1000) // forget old entries so a flood of addresses can't grow this forever
@@ -561,7 +600,7 @@ public static class PanelApi
 	{
 		var config = ctx.HttpContext.RequestServices.GetRequiredService<PandaConfig>();
 		var user = ctx.Principal?.Identity?.Name is { } name ? config.FindUser(name) : null;
-		if (user is null || user.Stamp != ctx.Principal!.FindFirst("stamp")?.Value)
+		if (user is null || user.Stamp != ctx.Principal!.FindFirst("stamp")?.Value || user.Role == Roles.Owner && !config.Panel.BotOwners)
 		{
 			ctx.RejectPrincipal();
 			return ctx.HttpContext.SignOutAsync(Scheme);
@@ -576,12 +615,12 @@ public static class PanelApi
 
 	// --- live updates (Server-Sent Events) ---
 
-	/// <summary>Everything about one bot, plus a short line about every bot for the bot picker.</summary>
-	static async Task<object> Snapshot(BotInstance b, BotManager bots, Library library, Playlists lists) => new
+	/// <summary>Everything about one bot, plus a short line about every bot the user sees, for the bot picker.</summary>
+	static async Task<object> Snapshot(BotInstance b, IEnumerable<BotSummary> visible, Library library, Playlists lists) => new
 	{
 		player = b.Player.GetState(),
 		bot = await b.Ts.GetStatusAsync(),
-		bots = bots.Summaries(),
+		bots = visible,
 		library = library.GetSummary(),
 		playlists = lists.All().Select(p => new { p.Name, Count = p.Songs.Count, Duration = p.Songs.Sum(s => s.Duration) }),
 		serverTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
@@ -600,9 +639,75 @@ public static class PanelApi
 	static string? CurrentRole(HttpContext ctx, PandaConfig config)
 	{
 		if (ctx.User.FindFirst("apikey")?.Value is { } id) return config.FindApiKeyById(id)?.Role;
-		var user = ctx.User.Identity?.Name is { } name ? config.FindUser(name) : null;
-		return user != null && user.Stamp == ctx.User.FindFirst("stamp")?.Value ? user.Role : null;
+		var user = Me(ctx, config);
+		return user is { Role: Roles.Owner } && !config.Panel.BotOwners ? null : user?.Role;
 	}
+
+	public const string ManageBot = "manage-bot";
+
+	/// <summary>The logged-in panel user (not an API key), as the settings say now; null when gone or logged out.</summary>
+	static PanelUser? Me(HttpContext ctx, PandaConfig config)
+	{
+		if (ctx.User.FindFirst("apikey") != null || ctx.User.Identity?.Name is not { } name) return null;
+		var user = config.FindUser(name);
+		return user != null && user.Stamp == ctx.User.FindFirst("stamp")?.Value ? user : null;
+	}
+
+	/// <summary>Runs the bot of the request: an admin, or its owner (the bot routes let an owner reach only theirs).</summary>
+	static bool Manages(HttpContext ctx) => ctx.User.IsInRole(Roles.Admin) || ctx.User.IsInRole(Roles.Owner);
+
+	/// <summary>The bots the user may see: an owner only theirs.</summary>
+	static IEnumerable<BotSummary> VisibleBots(HttpContext ctx, PandaConfig config, BotManager bots)
+	{
+		if (!ctx.User.IsInRole(Roles.Owner)) return bots.Summaries();
+		var me = Me(ctx, config);
+		return me is null ? [] : bots.All.Where(b => me.Owns(b.Config)).Select(b => b.Summary()).ToList();
+	}
+
+	/// <summary>
+	/// A bot owner makes their account (or sets a new password) with the link !panel sent them. The link is good
+	/// once, for 10 minutes; wrong links count like wrong passwords. Their bots must still be theirs.
+	/// </summary>
+	// Five wrong tries (passwords or links) lock the visitor out for 10 minutes.
+	static bool Locked(HttpContext ctx) =>
+		Failures.TryGetValue(Visitor(ctx.Connection.RemoteIpAddress), out var f) && f.Fails >= 5 && f.Until > DateTime.UtcNow;
+
+	static IResult NoLink(HttpContext ctx) => Locked(ctx)
+		? Results.Json(new { error = "too-many-attempts" }, statusCode: 429)
+		: Results.NotFound(new { error = "link-expired" });
+
+	/// <summary>Whose good link it is; a wrong one counts like a wrong password. Null when it isn't, or the visitor is locked out.</summary>
+	static async Task<OwnerLinks.Link?> OwnerLinkAsync(OwnerClaim req, HttpContext ctx, PandaConfig config, OwnerLinks links)
+	{
+		if (Locked(ctx)) return null;
+		if (config.Panel.BotOwners && links.Peek(req.Token ?? "") is { } who) return who;
+		Failures.AddOrUpdate(Visitor(ctx.Connection.RemoteIpAddress), (1, DateTime.UtcNow.AddMinutes(10)), (_, old) => (old.Fails + 1, DateTime.UtcNow.AddMinutes(10)));
+		await Task.Delay(700);
+		return null;
+	}
+
+	static async Task<IResult> ClaimOwner(OwnerClaim req, HttpContext ctx, PandaConfig config, OwnerLinks links, BotManager bots)
+	{
+		var ip = Visitor(ctx.Connection.RemoteIpAddress);
+		if (await OwnerLinkAsync(req, ctx, config, links) is not { } who) return NoLink(ctx);
+		if (!bots.All.Any(b => b.Config.Owner == who.Uid)) return Problem("no-bot");
+		if ((req.Password ?? "").Length < 6) return Problem("password-too-short");
+		// One who has an account keeps its name.
+		var name = config.FindOwner(who.Uid)?.Name ?? (req.Name ?? "").Trim();
+		if (!PanelUser.IsValidName(name)) return Problem("bad-name");
+		// Used up first, so two tries at once can't both use it; given back when the name is taken.
+		if (!links.Take(req.Token!)) return Results.NotFound(new { error = "link-expired" });
+		if (config.ClaimOwner(who.Uid, name, req.Password!, out var error) is not { } user)
+		{
+			links.GiveBack(req.Token!, who);
+			return Problem(error ?? "bad-name");
+		}
+		Failures.TryRemove(ip, out _);
+		await SignIn(ctx, user);
+		return Results.NoContent();
+	}
+
+	public sealed record OwnerClaim(string? Token, string? Name, string? Password);
 
 	static async Task Events(HttpContext ctx, BotInstance b, BotManager bots, Library library, Playlists lists, PandaConfig config,
 		IHostApplicationLifetime life)
@@ -632,7 +737,9 @@ public static class PanelApi
 				if (!StillAllowed(ctx, config, admin: false)) break;
 				// Made admin or "dj" meanwhile: the panel reconnects and shows the controls that go with it.
 				if (CurrentRole(ctx, config) != role) break;
-				var json = JsonSerializer.Serialize(await Snapshot(b, bots, library, lists), SseJson);
+				// An owner whose bot an admin gave to someone else.
+				if (role == Roles.Owner && Me(ctx, config)?.Owns(b.Config) != true) break;
+				var json = JsonSerializer.Serialize(await Snapshot(b, VisibleBots(ctx, config, bots), library, lists), SseJson);
 				await ctx.Response.WriteAsync($"data: {json}\n\n", ct);
 				await ctx.Response.Body.FlushAsync(ct);
 			}
@@ -681,7 +788,7 @@ public static class PanelApi
 	}
 
 	public sealed record LoginRequest(string? Name, string? Password);
-	public sealed record UserRequest(string? Name, string? Password, string? Role);
+	public sealed record UserRequest(string? Name, string? Password, string? Role, string? Uid = null);
 	/// <param name="Like">Copy the server address from this bot.</param>
 	public sealed record AddBotRequest(string? Like);
 	public sealed record PlayRequest(string? Query, bool Now = false, string? RequestedBy = null);
@@ -718,6 +825,8 @@ public sealed class SettingsDto
 	public string? ChannelPassword { get; set; }
 	public bool HasChannelPassword { get; set; }
 	public string Nickname { get; set; } = "";
+	/// <summary>The bot's own description; null (an older panel): left as it is.</summary>
+	public string? Description { get; set; }
 	public string CommandPrefix { get; set; } = "!";
 	public string Language { get; set; } = "en";
 	public bool Announce { get; set; }
@@ -741,6 +850,12 @@ public sealed class SettingsDto
 	public bool OnlyFromChannel { get; set; }
 	public int LeaveWhenEmpty { get; set; }
 	public bool? PublicPage { get; set; }
+	/// <summary>Bot owners manage their bots in the panel (all bots). Null: left as it is.</summary>
+	public bool? BotOwners { get; set; }
+	/// <summary>The bot's owner (TeamSpeak unique id; "" = none). Null: left as it is. Only admins change it.</summary>
+	public string? Owner { get; set; }
+	/// <summary>The owner's name when they made it; ignored when saving.</summary>
+	public string? OwnerName { get; set; }
 	public string SongChannel { get; set; } = "";
 	public string SongChannelFormat { get; set; } = "🎵 {song}";
 	public string SongChannelIdle { get; set; } = "🎵 Panda";
@@ -801,6 +916,7 @@ public sealed class SettingsDto
 		Channel = b.Server.Channel,
 		HasChannelPassword = b.Server.ChannelPassword.Length > 0,
 		Nickname = b.Bot.Nickname,
+		Description = b.Bot.Description,
 		CommandPrefix = b.Bot.CommandPrefix,
 		Language = b.Bot.Language,
 		Announce = b.Bot.Announce,
@@ -812,6 +928,9 @@ public sealed class SettingsDto
 		Members = b.Bot.Members,
 		LeaveWhenEmpty = b.Bot.LeaveWhenEmpty,
 		PublicPage = c.Panel.PublicPage,
+		BotOwners = c.Panel.BotOwners,
+		Owner = b.Owner ?? "",
+		OwnerName = b.OwnerName,
 		SongChannel = b.Bot.SongChannel,
 		SongChannelFormat = b.Bot.SongChannelFormat,
 		SongChannelIdle = b.Bot.SongChannelIdle,
@@ -851,6 +970,10 @@ public sealed class SettingsDto
 		},
 	};
 
+	/// <summary>What a bot's owner sees and changes: its name and description (the rest is left at the defaults and
+	/// isn't saved from them).</summary>
+	public static SettingsDto ForOwner(BotConfig b) => new() { Nickname = b.Bot.Nickname, Description = b.Bot.Description, Owner = b.Owner, OwnerName = b.OwnerName };
+
 	// Unique ids as TeamSpeak shows them; names only for showing.
 	static List<ChatPerson> People(List<ChatPerson>? list) => (list ?? [])
 		.Where(p => p != null)
@@ -859,19 +982,33 @@ public sealed class SettingsDto
 		.DistinctBy(p => p.Uid).Take(500).ToList();
 
 	/// <summary>Copies the values into the config; returns true when the bot has to reconnect.</summary>
-	public bool Apply(PandaConfig c, BotConfig b)
+	/// <param name="admin">False for a bot's owner: only the name and the description change (a music bot's owner plays
+	/// and steers it; its other settings are the admins').</param>
+	public bool Apply(PandaConfig c, BotConfig b, bool admin = true)
 	{
 		var reconnect = false;
 		void Set(ref bool flag, string oldValue, string newValue) { if (oldValue != newValue) flag = true; }
 
-		var address = ServerAddress.Trim();
-		if (address.Length > 0) { Set(ref reconnect, b.Server.Address, address); b.Server.Address = address; }
-		if (ServerPassword != null) { Set(ref reconnect, b.Server.Password, ServerPassword); b.Server.Password = ServerPassword; }
-		Set(ref reconnect, b.Server.Channel, Channel.Trim());
-		b.Server.Channel = Channel.Trim();
-		if (ChannelPassword != null) { Set(ref reconnect, b.Server.ChannelPassword, ChannelPassword); b.Server.ChannelPassword = ChannelPassword; }
+		if (admin)
+		{
+			var address = ServerAddress.Trim();
+			if (address.Length > 0) { Set(ref reconnect, b.Server.Address, address); b.Server.Address = address; }
+			if (ServerPassword != null) { Set(ref reconnect, b.Server.Password, ServerPassword); b.Server.Password = ServerPassword; }
+			Set(ref reconnect, b.Server.Channel, Channel.Trim());
+			b.Server.Channel = Channel.Trim();
+			if (ChannelPassword != null) { Set(ref reconnect, b.Server.ChannelPassword, ChannelPassword); b.Server.ChannelPassword = ChannelPassword; }
+			if (BotOwners is { } owners) c.Panel.BotOwners = owners;
+			if (Owner is { } owner)
+			{
+				owner = owner.Trim();
+				if (owner.Length == 0) b.Owner = b.OwnerName = null;
+				else if (owner.Length <= 100 && owner != b.Owner && !owner.Any(char.IsControl) && c.Bots.FirstOrDefault() != b) { b.Owner = owner; b.OwnerName = null; }
+			}
+		}
 		var nick = Nickname.Trim();
 		if (nick.EnumerateRunes().Count() is >= 3 and <= 30) { Set(ref reconnect, b.Bot.Nickname, nick); b.Bot.Nickname = nick; }
+		if (Description != null) b.Bot.Description = TsBot.CleanName(Description, BotSettings.MaxDescription);
+		if (!admin) return reconnect;
 
 		if (CommandPrefix.Trim().Length is > 0 and <= 3) b.Bot.CommandPrefix = CommandPrefix.Trim();
 		if (Strings.Languages.Contains(Language)) b.Bot.Language = Language;
@@ -889,27 +1026,41 @@ public sealed class SettingsDto
 		b.Bot.Blocked = People(Blocked);
 		b.Bot.AdminGroups = (AdminGroups ?? []).Distinct().Take(100).ToList();
 		b.Bot.DjGroups = (DjGroups ?? []).Distinct().Take(100).ToList();
-		b.Bot.CommandLevels = (CommandLevels ?? [])
+		var levels = (CommandLevels ?? [])
 			.Where(kv => ChatPermissions.Commands.Contains(kv.Key) && ChatPermissions.IsLevel(kv.Value) && kv.Value != ChatPermissions.Default(kv.Key))
 			.ToDictionary(kv => kv.Key, kv => kv.Value);
-		b.Bot.OnlyFromChannel = OnlyFromChannel;
-		if (LeaveWhenEmpty is >= 0 and <= 24 * 60) b.Bot.LeaveWhenEmpty = LeaveWhenEmpty;
-		if (PublicPage is { } pub) c.Panel.PublicPage = pub;
-		b.Bot.SongChannel = (SongChannel ?? "").Trim() is var sc && sc.Length <= 200 ? sc : b.Bot.SongChannel;
-		if ((SongChannelFormat ?? "").Trim() is { Length: > 0 and <= 60 } sf && sf.Contains("{song}")) b.Bot.SongChannelFormat = sf;
-		if ((SongChannelIdle ?? "").Trim() is { Length: > 0 and <= 40 } si) b.Bot.SongChannelIdle = si;
-		// Left out (a script, an older panel): the schedule stays.
-		if (Afk != null)
+		// Who may make more bots (each owned by whoever made it) is the admins' call, not a bot owner's.
+		if (!admin)
 		{
-			Afk.Clean();
-			b.Bot.Afk = Afk;
+			levels.Remove("create");
+			if (b.Bot.CommandLevels.TryGetValue("create", out var create)) levels["create"] = create;
 		}
+		b.Bot.CommandLevels = levels;
+		b.Bot.OnlyFromChannel = OnlyFromChannel;
+		if (admin)
+		{
+			if (LeaveWhenEmpty is >= 0 and <= 24 * 60) b.Bot.LeaveWhenEmpty = LeaveWhenEmpty;
+			if (PublicPage is { } pub) c.Panel.PublicPage = pub;
+			b.Bot.SongChannel = (SongChannel ?? "").Trim() is var sc && sc.Length <= 200 ? sc : b.Bot.SongChannel;
+			if ((SongChannelFormat ?? "").Trim() is { Length: > 0 and <= 60 } sf && sf.Contains("{song}")) b.Bot.SongChannelFormat = sf;
+			if ((SongChannelIdle ?? "").Trim() is { Length: > 0 and <= 40 } si) b.Bot.SongChannelIdle = si;
+			// Left out (a script, an older panel): kept as they are.
+			if (Afk != null)
+			{
+				Afk.Clean();
+				b.Bot.Afk = Afk;
+			}
+		}
+		// Left out (a script, an older panel): the schedule stays.
 		if (Schedule != null) b.Bot.Schedule = Schedule.Where(e => e is { IsValid: true }).Take(50)
 			.Select(e => e with { Days = (e.Days ?? []).Distinct().Order().ToList(), Target = e.Action == "stop" ? "" : e.Target.Trim() }).ToList();
 		if (ChatPermissions.IsLevel(OthersSongs)) b.Bot.OthersSongs = OthersSongs;
 		if (MaxQueueLength is >= 1 and <= 1000) b.Bot.MaxQueueLength = MaxQueueLength;
 		if (MaxSongsPerUser is >= 0 and <= 1000) b.Bot.MaxSongsPerUser = MaxSongsPerUser;
 		b.Bot.VoteSkip = VoteSkip;
+		// A vote is for the people who may not skip others' songs; with everyone allowed there'd be none.
+		if (b.Bot.VoteSkip && b.Bot.OthersSongs == "everyone") b.Bot.OthersSongs = "dj";
+		if (!admin) return reconnect;
 		if (MaxDurationMinutes is >= 0 and <= 1440) c.YouTube.MaxDurationMinutes = MaxDurationMinutes;
 		c.Library.Enabled = LibraryEnabled;
 		if (LibraryMaxSizeMb is 0 or (>= 100 and <= 1_000_000)) c.Library.MaxSizeMb = LibraryMaxSizeMb;
@@ -944,8 +1095,6 @@ public sealed class SettingsDto
 			if (y.AutoplayNoRepeat is >= 0 and <= PlayHistory.RecentSize) c.YouTube.AutoplayNoRepeat = y.AutoplayNoRepeat;
 			c.YouTube.AutoplaySameArtist = y.AutoplaySameArtist;
 		}
-		// A vote is for the people who may not skip others' songs; with everyone allowed there'd be none.
-		if (b.Bot.VoteSkip && b.Bot.OthersSongs == "everyone") b.Bot.OthersSongs = "dj";
 		return reconnect;
 	}
 }

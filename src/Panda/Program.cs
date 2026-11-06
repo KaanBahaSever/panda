@@ -157,6 +157,7 @@ builder.Services.AddSingleton<RadioBrowser>();
 builder.Services.AddSingleton<RadioFavorites>();
 builder.Services.AddSingleton<RadioNames>();
 builder.Services.AddSingleton<OnAir>();
+builder.Services.AddSingleton<OwnerLinks>();
 builder.Services.AddSingleton<Sources>();
 builder.Services.AddSingleton<BotShared>();
 builder.Services.AddSingleton(logBuffer);
@@ -187,7 +188,9 @@ builder.Services.AddAuthentication("panda")
 		o.Events.OnValidatePrincipal = PanelApi.ValidateSession;
 	});
 builder.Services.AddAuthorizationBuilder()
-	.AddPolicy(Roles.Admin, p => p.RequireRole(Roles.Admin));
+	.AddPolicy(Roles.Admin, p => p.RequireRole(Roles.Admin))
+	// Running one bot: admins, and owners for their own bots (PanelApi checks which bot).
+	.AddPolicy(PanelApi.ManageBot, p => p.RequireRole(Roles.Admin, Roles.Owner));
 
 var app = builder.Build();
 

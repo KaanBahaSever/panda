@@ -70,7 +70,9 @@ public sealed partial class TsBot : BackgroundService
 	static readonly System.Collections.Concurrent.ConcurrentDictionary<string, bool> PandaUids = new();
 
 	/// <summary>"!create bot": makes a new bot in that channel (set by BotManager).</summary>
-	public Func<ulong, Task<(BotInstance? Bot, string? Error)>>? CreateBot { get; set; }
+	public Func<ulong, string?, string, Task<(BotInstance? Bot, string? Error)>>? CreateBot { get; set; }
+	/// <summary>"!panel": a reply's key and, when there is one, the link to make a bot owner's panel account (set by BotManager).</summary>
+	public Func<string, string, (string Key, string? Link)>? PanelLink { get; set; }
 
 	/// <summary>People (not bots) in the bot's channel; -1 when not connected.</summary>
 	public async Task<int> CountListenersAsync()
@@ -488,7 +490,7 @@ public sealed partial class TsBot : BackgroundService
 	async Task ShowSong()
 	{
 		var t = player.Current;
-		await SetDescription(t is null ? "" : Describe(t));
+		await SetDescription(t is null ? null : Describe(t));
 		await SetSongChannel(t);
 		QueueNickname();
 	}
@@ -593,18 +595,19 @@ public sealed partial class TsBot : BackgroundService
 		return cut.ToString().TrimEnd() + "…";
 	}
 
-	async Task SetDescription(string text)
+	/// <param name="song">The song playing, as the description says it; null when nothing plays.</param>
+	async Task SetDescription(string? song)
 	{
 		if (client is not { Connected: true } c) return;
 		// What Panda last wrote: the client's own view of itself doesn't follow its own edits.
 		var current = description ??= c.Book.Self()?.Description ?? "";
-		if (!Bot.ShowSongInDescription)
-		{
-			// Turned off: clear the song Panda put there, but leave a description someone else wrote.
-			if (!current.StartsWith("♪ ")) return;
-			text = "";
-		}
-		if (text.Length > 80) text = text[..79] + "…";
+		var own = Bot.Description.Trim();
+		// The song while one plays (when it's shown), else the bot's own description.
+		var text = Bot.ShowSongInDescription && song != null ? song : own;
+		// Nothing of Panda's to show: clear the song Panda put there, but leave a description someone else wrote.
+		if (text.Length == 0 && !current.StartsWith("♪ ") && !current.StartsWith("📻 ") && current != lastOwn) return;
+		if (song != null && text == song && text.Length > 80) text = text[..79] + "…";
+		lastOwn = own.Length > 0 ? own : lastOwn;
 		if (current == text) return;
 		var r = await c.ChangeDescription(text);
 		Note("description", r, "b_client_modify_own_description");
@@ -621,6 +624,7 @@ public sealed partial class TsBot : BackgroundService
 	}
 	bool descriptionWarned;
 	string? description;   // null: not known yet on this connection
+	string? lastOwn;       // the bot's own description Panda wrote last (cleared when it's taken away)
 
 	/// <summary>The panel saved this bot's settings: what can change without reconnecting does so now.</summary>
 	public void SettingsChanged() =>
@@ -761,12 +765,14 @@ public sealed partial class TsBot : BackgroundService
 				"queue" when arg.Length > 0 => "playlist", "playlist" when arg.Length == 0 => "playlists", "fm" when arg.Length == 0 => "stations",
 				_ => command,
 			};
-			var asking = acting is "np" or "queue" or "help" or "playlists" or "stations";
+			var asking = acting is "np" or "queue" or "help" or "playlists" or "stations" or "panel";
 			if (Bot.OnlyFromChannel && level < ChatLevel.Admin && !asking && !InBotChannel(c, msg))
 			{
 				await Reply(Strings.Get(Lang, "only-in-channel"));
 				return;
 			}
+			// A bot's owner runs it from the chat like an admin; whether they may make more bots stays as it was set.
+			if (acting != "create" && level != ChatLevel.None && IsOwner(msg)) level = ChatLevel.Admin;
 			var need = asking ? ChatLevel.Everyone : ChatPermissions.Required(Bot, acting);
 			if (level < need)
 			{
@@ -826,6 +832,10 @@ public sealed partial class TsBot : BackgroundService
 		var groups = c.Book.Clients.TryGetValue(msg.InvokerId, out var who) ? who.ServerGroups.Select(g => g.Value) : [];
 		return ChatPermissions.LevelOf(Bot, msg.InvokerUid?.Value, groups);
 	}
+
+	/// <summary>The one who wrote made this bot with !create bot, and bot owners are allowed (panel.botOwners).</summary>
+	bool IsOwner(TextMessage msg) =>
+		config.Panel.BotOwners && settings.Owner is { Length: > 0 } owner && msg.InvokerUid?.Value == owner;
 
 	static bool InBotChannel(TsFullClient c, TextMessage msg) =>
 		c.Book.Self() is { } self && c.Book.Clients.TryGetValue(msg.InvokerId, out var who) && who.Channel == self.Channel;
@@ -1246,9 +1256,43 @@ public sealed partial class TsBot : BackgroundService
 		{
 			if (CreateBot is null || !c.Book.Clients.TryGetValue(msg.InvokerId, out var asker)) return Strings.Get(Lang, "join-failed");
 			// Off this bot's thread: the new bot must not live on it.
-			var (made, error) = await Task.Run(() => CreateBot(asker.Channel.Value));
+			// Who asked owns it: with bot owners allowed, they run it in the panel (!panel).
+			var (made, error) = await Task.Run(() => CreateBot(asker.Channel.Value, msg.InvokerUid?.Value, msg.InvokerName ?? ""));
 			if (made is null) return Strings.Get(Lang, "create-full", MaxBotsHint());
 			return Strings.Get(Lang, "create-done", Escape(made.Config.Bot.Nickname), made.Config.Bot.CommandPrefix);
+		}
+
+		case "name":
+		{
+			if (arg.Length == 0) return Strings.Get(Lang, "name-is", Escape(Bot.Nickname), Prefix);
+			var name = CleanName(arg, 30);
+			if (name.EnumerateRunes().Count() < 3) return Strings.Get(Lang, "name-bad");
+			if (name == Bot.Nickname) return Confirm(Strings.Get(Lang, "name-set", Escape(name)));
+			Bot.Nickname = name;
+			config.Save();
+			// Under its new name after the answer; the panel saves a new name the same way.
+			_ = Task.Delay(1500).ContinueWith(_ => Reconnect());
+			return Strings.Get(Lang, "name-set", Escape(name));
+		}
+
+		case "description":
+		{
+			if (arg.Length == 0) return Bot.Description.Length > 0 ? Strings.Get(Lang, "description-is", Escape(Bot.Description), Prefix) : Strings.Get(Lang, "description-none", Prefix);
+			var text = Switch(arg) == false ? "" : CleanName(arg, BotSettings.MaxDescription);
+			Bot.Description = text;
+			config.Save();
+			await ShowSong();
+			return Confirm(text.Length > 0 ? Strings.Get(Lang, "description-set", Escape(text)) : Strings.Get(Lang, "description-off"));
+		}
+
+		case "panel":
+		{
+			if (PanelLink is null || msg.InvokerUid?.Value is not { Length: > 0 } uid) return Strings.Get(Lang, "panel-off");
+			var (key, link) = PanelLink(uid, msg.InvokerName ?? "");
+			if (link is null) return Strings.Get(Lang, key, Prefix);
+			// The link opens the account: only ever in a private message.
+			await c.SendPrivateMessage(Strings.Get(Lang, key, link, (int)OwnerLinks.Life.TotalMinutes), msg.InvokerId);
+			return msg.Target == TextMessageTargetMode.Private ? null : Strings.Get(Lang, "panel-sent");
 		}
 
 		case "sleep":
@@ -1533,6 +1577,9 @@ public static class Commands
 		["playlist"] = "playlist", ["pl"] = "playlist", ["çalmalistesi"] = "playlist", ["calmalistesi"] = "playlist",
 		["playlists"] = "playlists", ["lists"] = "playlists", ["listeler"] = "playlists",
 		["fav"] = "fav", ["favorite"] = "fav", ["favori"] = "fav",
+		["panel"] = "panel", ["panneau"] = "panel",
+		["name"] = "name", ["nick"] = "name", ["rename"] = "name", ["isim"] = "name", ["adını"] = "name", ["nom"] = "name", ["renommer"] = "name", ["umbenennen"] = "name",
+		["description"] = "description", ["desc"] = "description", ["açıklama"] = "description", ["aciklama"] = "description", ["beschreibung"] = "description",
 		["create"] = "create", ["newbot"] = "create", ["oluştur"] = "create", ["olustur"] = "create", ["yenibot"] = "create", ["créer"] = "create", ["creer"] = "create", ["erstellen"] = "create",
 		["sleep"] = "sleep", ["uyku"] = "sleep", ["dormir"] = "sleep", ["schlafen"] = "sleep",
 		["myfav"] = "myfav", ["myfavs"] = "myfav", ["mfav"] = "myfav", ["favorim"] = "myfav", ["favorilerim"] = "myfav", ["mesfavoris"] = "myfav", ["mesfavs"] = "myfav", ["meinefavs"] = "myfav", ["meinefavoriten"] = "myfav",

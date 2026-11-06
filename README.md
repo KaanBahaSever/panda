@@ -154,6 +154,18 @@ The 🎛️ button next to the volume (admins) opens the sound settings of the b
   permissions and a prefix no other bot uses (the reply says which). **Leave when nobody listens for (min)**
   in a bot's settings removes it when it's alone with nothing playing; the last bot never goes.
   `panel.maxBots` (10) caps the number of bots.
+- **Bot owners** (off by default; **Whoever makes a bot with !create can run it in the panel** in a bot's
+  settings): whoever makes a bot with `!create bot` owns it. They type `!panel` in TeamSpeak and get a
+  private link (good once, for 10 minutes) where they choose a name and a password. An admin can also make
+  the account under **Panel users**, with the role **Bot owner** and their TeamSpeak unique id. The account sees
+  only their own bots. They can play music and steer it (pause, skip, the queue, the sound), change the volume, and
+  change the bot's name and description. In the chat, they do the same on their bot as an admin would, including
+  `!name` and `!description`. Everything else stays with the admins: the bot's other settings, its picture, removing
+  it, who may `!create` more bots, and the panel's own pages.
+  - The link needs the panel's address in `panel.publicUrl`.
+  - `!panel` again gives a new link that sets a new password.
+  - An admin can change or empty a bot's **Owner**. Removing an owner's account takes their bots from them too.
+  - Turning bot owners off logs them all out at once.
 - **Channel named after the song**: pick a channel (its path or `/id`); its name becomes "🎵 Song" while
   something plays. The bot needs `b_channel_modify_name` there.
 - **The song in the bot's name** (off by default): "Panda: Song" while something plays, its own name
@@ -268,6 +280,9 @@ Write them in the bot's channel or in a private message to the bot.
 | `!myfav` / `!myfav play\|shuffle\|list\|remove <#>` | `!favorim` / `çal`, `karıştır`, `liste`, `sil` | `!mesfavoris` | `!meinefavs` | Your own list: save the song playing, play it, show it |
 | `!sleep <minutes\|HH:mm\|off>` | `!uyku` | `!dormir` | `!schlafen` | Stop later (a sleep timer) |
 | `!create bot` | `!oluştur` | `!créer` | `!erstellen` | A new bot in your channel, with its own prefix (admins) |
+| `!panel` | `!panel` | `!panneau` | `!panel` | A private link to run the bots you made in the panel (when bot owners are allowed) |
+| `!name <name>` | `!isim` | `!nom` | `!name` | The bot's name (admins and the bot's owner) |
+| `!description <text\|off>` | `!açıklama` | `!description` | `!beschreibung` | The bot's description on TeamSpeak (admins and the bot's owner) |
 | `!playlist <name>` / `!pl` | `!liste <ad>` | `!playlist` | `!playlist` | Queue a saved playlist |
 | `!playlists` | `!listeler` | `!playlists` | `!playlists` | List saved playlists |
 | `!fav` | `!fav` | `!fav` | `!fav` | Save the song playing to Favorites |
@@ -361,7 +376,8 @@ Everything is editable in the panel; the file is `/var/lib/panda/config.json` (o
   ],
   "panel": { "listen": "0.0.0.0", "port": 8080, "users": [ /* set in the panel */ ],
              "autoUpdate": false,      // install new versions by itself when nothing plays
-             "publicUrl": "",          // e.g. "https://panda.example.com": the address shown in the log and by the installer
+             "publicUrl": "",          // e.g. "https://panda.example.com": the address shown in the log and by the installer, and in !panel's links
+             "botOwners": false,       // whoever makes a bot with !create bot runs it in the panel (!panel)
              "trustedProxies": [],     // a proxy on another machine or container: its own address; this machine is always trusted
              "trustCloudflare": false, // Cloudflare in front of the panel: believe its addresses
              "https": { "enabled": false, "certFile": "cert.pem", "keyFile": "key.pem", "hsts": false } },   // see below

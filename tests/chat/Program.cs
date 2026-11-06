@@ -29,6 +29,10 @@
 //   Z on|off          the test client sets itself away in TeamSpeak (or back)
 //   M on|off          the test client turns its sound (speakers) off (or on)
 //   I <channel>       the test client is in that channel (by name), or "panda": in Panda's channel
+//   O <name> <pw>     make a bot owner's account with the #owner= link in the last replies (the same link
+//                     can't be used twice); $OWNED is then the first bot the owner sees
+//   H <method> <path> <status> [text|!text]   a request as that owner: its status, and text in the answer (or not)
+//   U key=value ...   the owner changes $OWNED's settings (like s)
 // Exit code: the number of failed checks.
 using System.Globalization;
 using System.Net;
@@ -47,6 +51,7 @@ if (args.Length < 3)
 
 var defaults = new Dictionary<string, string>
 {
+	["botOwners"] = "false",
 	["announce"] = "true", ["confirmCommands"] = "true", ["showSongInDescription"] = "true", ["language"] = "en",
 	["afk.enabled"] = "false", ["afk.exemptGroups"] = "[]",
 	["maxQueueLength"] = "100", ["maxDurationMinutes"] = "60", ["maxSongsPerUser"] = "0", ["voteSkip"] = "false",
@@ -120,6 +125,11 @@ await scheduler.InvokeAsync(async () =>
 	}
 	async Task<string> Description() => await Query.DescriptionAsync(panda.Name.ToString())
 		?? c.Book.Clients.GetValueOrDefault(panda.Id)?.Description ?? "";
+
+	// A bot owner's panel session (O, H, U).
+	var owner = new HttpClient(new HttpClientHandler { CookieContainer = new CookieContainer() }) { BaseAddress = new Uri(args[1]) };
+	var owned = "";
+	string Owned(string s) => s.Replace("$OWNED", owned);
 
 	foreach (var file in args[2..])
 	{
@@ -242,6 +252,42 @@ await scheduler.InvokeAsync(async () =>
 				{
 					var n = (await panel.StateAsync())["player"]?["queue"]?.AsArray().Count ?? -1;
 					Check(n == int.Parse(arg), $"{arg} songs in the queue ({n})");
+					break;
+				}
+				case 'O':
+				{
+					var parts = arg.Split(' ', 2);
+					var token = Got().Select(g => System.Text.RegularExpressions.Regex.Match(g, "#owner=([A-Za-z0-9_-]+)")).FirstOrDefault(m => m.Success)?.Groups[1].Value;
+					Check(token != null, "a link came");
+					if (token is null) break;
+					var info = await owner.PostAsJsonAsync("/api/owner/check", new { token });
+					Check(info.IsSuccessStatusCode, $"the panel knows the link ({(int)info.StatusCode})");
+					var made = await owner.PostAsJsonAsync("/api/owner", new { token, name = parts[0], password = parts[1] });
+					Check((int)made.StatusCode == 204, $"the account is made ({(int)made.StatusCode})");
+					var again = await new HttpClient { BaseAddress = new Uri(args[1]) }.PostAsJsonAsync("/api/owner", new { token, name = "other", password = "something" });
+					Check((int)again.StatusCode == 404, $"the link works once ({(int)again.StatusCode})");
+					owned = (string?)(await owner.GetFromJsonAsync<JsonArray>("/api/bots"))?.FirstOrDefault()?["id"] ?? "";
+					Console.WriteLine($"   the owner sees bot {owned}");
+					break;
+				}
+				case 'H':
+				{
+					var parts = Owned(arg).Split(' ', 4);
+					using var res = await owner.SendAsync(new HttpRequestMessage(new HttpMethod(parts[0]), parts[1]));
+					var body = await res.Content.ReadAsStringAsync();
+					var ok = (int)res.StatusCode == int.Parse(parts[2]);
+					if (parts.Length > 3) ok &= parts[3].StartsWith('!') ? !body.Contains(parts[3][1..]) : body.Contains(parts[3]);
+					Check(ok, $"owner: {parts[0]} {parts[1]} → {parts[2]}{(parts.Length > 3 ? " " + parts[3] : "")} ({(int)res.StatusCode}{(ok ? "" : ": " + (body.Length > 300 ? body[..300] : body))})");
+					break;
+				}
+				case 'U':
+				{
+					var s = await owner.GetFromJsonAsync<JsonObject>($"/api/bots/{owned}/settings") ?? throw new InvalidOperationException("no settings");
+					foreach (var kv in arg.Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(kv => kv.Split('=', 2)))
+						s[kv[0]] = bool.TryParse(kv[1], out var b) ? JsonValue.Create(b) : int.TryParse(kv[1], out var i) ? JsonValue.Create(i) : JsonValue.Create(kv[1]);
+					var put = await owner.PutAsJsonAsync($"/api/bots/{owned}/settings", s);
+					Check(put.IsSuccessStatusCode, $"the owner saves the settings ({(int)put.StatusCode})");
+					await Task.Delay(1000);
 					break;
 				}
 				default: Console.WriteLine($"?? unknown line: {line}"); failed++; break;

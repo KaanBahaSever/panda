@@ -323,7 +323,8 @@ dialog::backdrop { background: rgba(22,22,30,.45); backdrop-filter: blur(2px); }
 #confirm-input { margin: -6px 0 18px; }
 
 /* roles: "dj" users only watch and add songs */
-[data-role="dj"] .admin-only { display: none !important; }
+/* "dj": watches and adds songs. "owner": runs their own bots, not what all bots share. */
+[data-role="dj"] .admin-only, [data-role="owner"] .admin-only, [data-role="dj"] .manage-only, [data-role="owner"] .not-owner { display: none !important; }
 
 /* playlists */
 .pls { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }

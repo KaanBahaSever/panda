@@ -57,10 +57,10 @@ check "removing a key that isn't there" "$(code -H "Authorization: Bearer $ADMIN
 echo "== internet radio"
 UUID=a0000000-0000-4000-8000-000000000001
 post() { curl -s -b $J -H 'Content-Type: application/json' -d "$2" "$P$1"; }
-# Radio and local links on (a chat scenario may have left them off).
+# Radio and local links on, bot owners off (a chat scenario may have left them otherwise).
 curl -s -b $J $P/api/bots/1/settings | python3 -c "
 import sys, json
-d = json.load(sys.stdin); d['sources']['radio'] = True; d['sources']['radioNames'] = True; d['sources']['localLinks'] = True; print(json.dumps(d))" \
+d = json.load(sys.stdin); d['sources']['radio'] = True; d['sources']['radioNames'] = True; d['sources']['localLinks'] = True; d['botOwners'] = False; print(json.dumps(d))" \
 	| curl -s -b $J -X PUT -H 'Content-Type: application/json' -d @- $P/api/bots/1/settings -o /dev/null
 check "radio search" "$(curl -s -b $J "$P/api/radio/search?name=test" | json "d[0]['name']")" "Test Station"
 check "a search needs something to look for" "$(curl -s -b $J "$P/api/radio/search" | json "len(d)")" 0
@@ -202,6 +202,17 @@ check "back to Panda's" "$(curl -s -b $J -X DELETE $P/api/bots/1/avatar | json "
 check "...on the server too" "$(server_avatar)" "$(curl -s -b $J $P/api/bots/1/avatar | md5sum | cut -c1-32)"
 # The custom one again, for the backup below.
 curl -s -b $J -X PUT -H 'Content-Type: image/png' --data-binary @/tmp/panda-avatar.png $P/api/bots/1/avatar -o /dev/null
+
+echo "== a bot owner's account made by an admin"
+post /api/users '{"name":"ownerx","password":"ownerpass","role":"owner"}' > /tmp/panda-api-owner.json
+check "it needs their TeamSpeak id" "$(json "d['error']" < /tmp/panda-api-owner.json)" bad-uid
+check "made with it" "$(code -b $J -H 'Content-Type: application/json' -d '{"name":"ownerx","password":"ownerpass","role":"owner","uid":"TestUid123="}' $P/api/users)" 204
+check "one account per TeamSpeak id" "$(post /api/users '{"name":"ownery","password":"ownerpass","role":"owner","uid":"TestUid123="}' | json "d['error']")" uid-taken
+check "the list shows it" "$(curl -s -b $J $P/api/users | json "[(u['role'], u['uid']) for u in d if u['name'] == 'ownerx']")" "[('owner', 'TestUid123=')]"
+check "an owner key can't be made" "$(post /api/apikeys '{"name":"ownerkey","role":"owner"}' | json "d['error']")" bad-role
+# Off: bot owners can't log in.
+check "owners can't log in while bot owners are off" "$(code -H 'Content-Type: application/json' -d '{"name":"ownerx","password":"ownerpass"}' $P/api/login)" 403
+check "remove it" "$(code -b $J -X DELETE $P/api/users/ownerx)" 204
 
 echo "== login behind a proxy (X-Forwarded-For from this machine is believed)"
 for i in 1 2 3 4 5; do code -H 'X-Forwarded-For: 203.0.113.7' -H 'Content-Type: application/json' -d '{"name":"admin","password":"wrong"}' $P/api/login >/dev/null; done

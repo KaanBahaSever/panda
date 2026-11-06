@@ -104,7 +104,7 @@ public sealed class BotInstance : IDisposable
 }
 
 /// <summary>Starts a bot for every entry in config.Bots; bots can be added and removed while running.</summary>
-public sealed class BotManager(PandaConfig config, BotShared shared, DataPaths paths, ILoggerFactory logs, ILogger<BotManager> log)
+public sealed class BotManager(PandaConfig config, BotShared shared, DataPaths paths, OwnerLinks ownerLinks, ILoggerFactory logs, ILogger<BotManager> log)
 	: IHostedService, IDisposable
 {
 	readonly object gate = new();
@@ -128,7 +128,8 @@ public sealed class BotManager(PandaConfig config, BotShared shared, DataPaths p
 	{
 		var b = new BotInstance(c, config, shared, paths.BotDir(c.Id), logs);
 		var made = b;
-		b.Ts.CreateBot = channel => CreateFromChatAsync(made, channel);
+		b.Ts.CreateBot = (channel, uid, name) => CreateFromChatAsync(made, channel, uid, name);
+		b.Ts.PanelLink = PanelLinkFor;
 		b.Player.Changed += RaiseChanged;
 		b.Ts.StatusChanged += RaiseChanged;
 		lock (gate) bots.Add(b);
@@ -173,7 +174,8 @@ public sealed class BotManager(PandaConfig config, BotShared shared, DataPaths p
 	/// "!create bot": a new bot on the same server, in the channel of who asked, with the same chat
 	/// permissions and language, and a prefix no other bot uses. Null and a reason when it can't.
 	/// </summary>
-	public async Task<(BotInstance? Bot, string? Error)> CreateFromChatAsync(BotInstance from, ulong channel)
+	/// <param name="owner">Who asked (TeamSpeak unique id), and their name: they own the new bot.</param>
+	public async Task<(BotInstance? Bot, string? Error)> CreateFromChatAsync(BotInstance from, ulong channel, string? owner = null, string ownerName = "")
 	{
 		string? prefix = null;
 		// The count and the prefix are looked at while no other bot is being added (two !create at once).
@@ -186,6 +188,11 @@ public sealed class BotManager(PandaConfig config, BotShared shared, DataPaths p
 		}, setUp: c =>
 		{
 			c.Server.Channel = "/" + channel;
+			if (!string.IsNullOrEmpty(owner))
+			{
+				c.Owner = owner;
+				c.OwnerName = ownerName.Length > 64 ? ownerName[..64] : ownerName;
+			}
 			var s = c.Bot;
 			var f = from.Config.Bot;
 			s.CommandPrefix = prefix!;
@@ -201,6 +208,21 @@ public sealed class BotManager(PandaConfig config, BotShared shared, DataPaths p
 			s.SettingsVersion = f.SettingsVersion;
 		});
 		return b is null ? (null, "too-many-bots") : (b, null);
+	}
+
+	/// <summary>
+	/// "!panel": a link for someone who made bots to make their panel account (or set a new password), when bot
+	/// owners are allowed and the panel's address is known; else the reason, as a chat text's key.
+	/// </summary>
+	(string Key, string? Link) PanelLinkFor(string uid, string name)
+	{
+		if (!config.Panel.BotOwners) return ("panel-off", null);
+		if (!All.Any(b => b.Config.Owner == uid)) return ("panel-none", null);
+		if (config.FindOwner(uid) is { } account && account.Role != Roles.Owner) return ("panel-not-owner", null);
+		var url = config.Panel.PublicUrl.Trim().TrimEnd('/');
+		if (!Uri.TryCreate(url, UriKind.Absolute, out var u) || u.Scheme is not ("http" or "https") || u.Query.Length > 0 || u.Fragment.Length > 0)
+			return ("panel-no-url", null);
+		return ("panel-link", url + "/#owner=" + ownerLinks.Make(uid, name));
 	}
 
 	/// <summary>Disconnects the bot and deletes its identity and history. The last bot can't be removed.</summary>

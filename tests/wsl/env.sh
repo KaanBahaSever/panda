@@ -54,7 +54,7 @@ for _ in $(seq 20); do curl -s http://127.0.0.1:8096/page.html >/dev/null && bre
 cat > "$T/data/library/library.json" <<EOF
 { "songs": [ { "id": "tstTone0001", "title": "Test Tone Song", "channel": "Tester", "duration": 90, "size": $SIZE, "added": "2026-10-15T00:00:00Z" } ], "stats": {} }
 EOF
-printf '{ "bots": [ { "id": "1", "server": { "address": "127.0.0.1" } } ], "panel": { "port": 8097 },
+printf '{ "bots": [ { "id": "1", "server": { "address": "127.0.0.1" } } ], "panel": { "port": 8097, "publicUrl": "http://127.0.0.1:8097" },
   "youTube": { "ytDlpPath": "%s", "sponsorBlockUrl": "http://127.0.0.1:8096/sb" },
   "sources": { "localLinks": true, "radioBrowserUrl": "http://127.0.0.1:8096/rb", "radioNamesUrl": "http://127.0.0.1:8096/rn" } }\n' \
 	"$T/fake-yt-dlp/yt-dlp" > "$T/data/config.json"

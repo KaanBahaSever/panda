@@ -151,6 +151,17 @@ Ses düzeyinin yanındaki 🎛️ düğmesi (yöneticiler) botun ses ayarların�
 - **`!create bot`** (aksi ayarlanmadıkça yöneticiler): kanalına aynı sohbet yetkileriyle ve başka botun
   kullanmadığı bir önekle yeni bir bot gelir (cevapta yazar). Botun ayarlarındaki **Kimse dinlemezse ayrıl
   (dk)**, bot yalnız ve sessiz kaldığında onu kaldırır; son bot hiç gitmez. `panel.maxBots` (10) üst sınırdır.
+- **Bot sahipleri** (varsayılan kapalı; botun ayarlarında **!oluştur ile bot yapan, onu panelden
+  yönetebilsin**): `!create bot` ile bot yapan o botun sahibidir. TeamSpeak'te `!panel` yazar ve özelden bir
+  link alır (bir kez, 10 dakika geçerli); orada bir ad ve şifre seçer. Hesabı bir yönetici de **Panel
+  kullanıcıları**'ndan, **Bot sahibi** rolü ve kişinin TeamSpeak kimliğiyle açabilir. Hesap sadece kendi botlarını
+  görür: müzik çalar ve yönetir (duraklat, geç, sıra, ses efektleri), ses düzeyini, botun adını ve açıklamasını
+  değiştirir. Sohbette kendi botunda yönetici gibidir, `!isim` ve `!açıklama` dahil. Gerisi yöneticilerde kalır:
+  botun diğer ayarları, resmi, botu kaldırmak, kimin `!oluştur` ile bot açabileceği ve panelin kendi ekranları.
+  - Link için panelin adresi `panel.publicUrl`'de yazılı olmalı.
+  - Yeniden `!panel` yeni bir link verir; o link yeni bir şifre belirletir.
+  - Yönetici botun **Sahibi** alanını değiştirebilir ya da boşaltabilir. Sahibin hesabı silinince botları da onun olmaktan çıkar.
+  - Bot sahipleri kapatılınca hepsinin oturumu hemen kapanır.
 - **Adı şarkı olan kanal**: bir kanal seç (yolu ya da `/numarası`); bir şey çalarken adı "🎵 Şarkı" olur.
   Botun orada `b_channel_modify_name` izni olmalı.
 - **Şarkı botun adında** (varsayılan kapalı): bir şey çalarken "Panda: Şarkı", yoksa kendi adı. Biçimi
@@ -273,6 +284,9 @@ Botun kanalına ya da bota özel mesaj olarak yaz. İngilizce karşılıkları d
 | `!favorim` / `!myfav çal\|karıştır\|liste\|sil <#>` | `!myfav` / `play`, `shuffle`, `list`, `remove` | `!mesfavoris` | `!meinefavs` | Kendi listen: çalan şarkıyı kaydet, çal, göster |
 | `!uyku <dakika\|SS:dd\|kapat>` | `!sleep` | `!dormir` | `!schlafen` | Sonra durdur (uyku zamanlayıcısı) |
 | `!oluştur` | `!create bot` | `!créer` | `!erstellen` | Kanalına kendi önekiyle yeni bir bot (yöneticiler) |
+| `!panel` | `!panel` | `!panneau` | `!panel` | Yaptığın botları panelden yönetmek için özel link (bot sahiplerine izin varsa) |
+| `!isim <ad>` | `!name` | `!nom` | `!name` | Botun adı (yöneticiler ve botun sahibi) |
+| `!açıklama <yazı\|kapat>` | `!description` | `!description` | `!beschreibung` | Botun TeamSpeak'teki açıklaması (yöneticiler ve botun sahibi) |
 | `!liste <ad>` | `!playlist` / `!pl` | `!playlist` | `!playlist` | Kayıtlı bir listeyi sıraya ekle |
 | `!listeler` | `!playlists` | `!playlists` | `!playlists` | Kayıtlı listeleri göster |
 | `!fav` | `!fav` | `!fav` | `!fav` | Çalan şarkıyı Favoriler'e kaydet |

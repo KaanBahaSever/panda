@@ -76,6 +76,7 @@ const I18N = {
     sPrefixHint: 'Bots in the same channel need different prefixes, or they all answer.', sShared: 'Shared by all bots.',
     sRemoveBot: 'Remove this bot', sRemoveBotHint: 'Disconnects it and deletes its TeamSpeak identity and play history.', removeBot: 'Remove bot',
     confirmBotRemove: x => `Remove "${x}"? Its identity and play history are deleted.`, botRemoved: 'Bot removed',
+    roleOwner: "Bot owner", sBotOwners: "Whoever makes a bot with !create can run it in the panel", sBotOwnersHint: "They type !panel in TeamSpeak and get a private link to make their account (it needs the panel's address: panel.publicUrl), or an admin makes one below with their TeamSpeak unique id. They see only their own bots: they play music and steer it, change the volume and the bot's name and description (also with !name and !description in the chat). Nothing else. For all bots.", sOwner: "Owner (TeamSpeak unique id)", ownerHintNone: "Nobody: made in the panel, or the owner was taken away.", ownerHintName: n => "Made by " + n + " with !create. Empty this to take it away from them.", sDescription: "Description", sDescriptionHint: "Shown on TeamSpeak under the bot's name. With \"Show song in bot description\" on, the song takes its place while one plays. In the chat: !description <text>.", userUid: "TeamSpeak unique id", userUidHint: "The bots whose owner it is (Settings of a bot, Owner) are theirs. They can play, steer and change the volume of them, and change their name and description.", "err.bad-uid": "Write the person's TeamSpeak unique id.", "err.uid-taken": "That TeamSpeak id has an account already.", "err.not-owner": "That account isn't a bot owner's.", ownerTitle: "Your panel account", ownerIntro: "Choose a name and a password. You'll see only your own bots: you can play music, steer it, change the volume and the bot's name and description.", ownerHas: n => "You have an account already (" + n + "): choose a new password.", passwordAgain: "Password again", ownerGo: "Save and log in", ownerMismatch: "The two passwords aren't the same.", noBots: "You have no bot right now. Make one in TeamSpeak with !create.", "err.link-expired": "This link has run out or was used already. Type !panel in TeamSpeak for a new one.", "err.name-taken": "That name is taken; choose another.", "err.owners-off": "The panel isn't open to bot owners right now.", 
     userName: 'User name', role: 'Role', roleAdmin: 'Admin', roleDj: 'Can only add songs', sUsers2: 'Panel users',
     sUsersHint2: 'Admins can do everything. "Can only add songs" users can watch and add songs, nothing else.',
     addUser: 'Add user', userAdded: 'User added', userRemoved: 'User removed', roleChanged: 'Role changed', you: '(you)',
@@ -184,6 +185,7 @@ const I18N = {
     sPrefixHint: 'Aynı kanaldaki botların önekleri farklı olmalı, yoksa hepsi cevap verir.', sShared: 'Tüm botlar için geçerli.',
     sRemoveBot: 'Bu botu kaldır', sRemoveBotHint: 'Bağlantısını keser, TeamSpeak kimliğini ve çalma geçmişini siler.', removeBot: 'Botu kaldır',
     confirmBotRemove: x => `"${x}" kaldırılsın mı? Kimliği ve çalma geçmişi silinir.`, botRemoved: 'Bot kaldırıldı',
+    roleOwner: "Bot sahibi", sBotOwners: "!oluştur ile bot yapan, onu panelden yönetebilsin", sBotOwnersHint: "TeamSpeak'te !panel yazar ve hesabını açmak için özelden bir link alır (panelin adresi gerekir: panel.publicUrl) ya da bir yönetici aşağıdan TeamSpeak kimliğiyle hesap açar. Sadece kendi botlarını görür: müzik çalar ve yönetir, sesi ve botun adını, açıklamasını değiştirir (sohbette !isim ve !açıklama ile de). Başka bir şey değil. Bütün botlar için.", sOwner: "Sahibi (TeamSpeak kimliği)", ownerHintNone: "Yok: panelden eklendi ya da sahipliği alındı.", ownerHintName: n => "" + n + " tarafından !oluştur ile yapıldı. Sahipliği almak için boşalt.", sDescription: "Açıklama", sDescriptionHint: "TeamSpeak'te botun adının altında görünür. \"Şarkıyı bot açıklamasında göster\" açıksa çalarken yerine şarkı yazar. Sohbette: !açıklama <yazı>.", userUid: "TeamSpeak kimliği", userUidHint: "Sahibi bu kimlik olan botlar (botun ayarları, Sahibi) onundur. Onları çalabilir, yönetebilir, sesini, adını ve açıklamasını değiştirebilir.", "err.bad-uid": "Kişinin TeamSpeak kimliğini yaz.", "err.uid-taken": "Bu TeamSpeak kimliğinin zaten bir hesabı var.", "err.not-owner": "Bu hesap bir bot sahibinin değil.", ownerTitle: "Panel hesabın", ownerIntro: "Bir ad ve şifre seç. Sadece kendi botlarını göreceksin: müzik çalabilir, yönetebilir, sesi ve botun adını, açıklamasını değiştirebilirsin.", ownerHas: n => "Zaten bir hesabın var (" + n + "): yeni bir şifre seç.", passwordAgain: "Şifre (tekrar)", ownerGo: "Kaydet ve giriş yap", ownerMismatch: "İki şifre aynı değil.", noBots: "Şu an hiç botun yok. TeamSpeak'te !oluştur ile bir tane yap.", "err.link-expired": "Bu linkin süresi doldu ya da kullanıldı. Yenisi için TeamSpeak'te !panel yaz.", "err.name-taken": "Bu ad alınmış; başka bir ad seç.", "err.owners-off": "Panel şu an bot sahiplerine açık değil.", 
     userName: 'Kullanıcı adı', role: 'Rol', roleAdmin: 'Yönetici', roleDj: 'Sadece şarkı ekler', sUsers2: 'Panel kullanıcıları',
     sUsersHint2: 'Yöneticiler her şeyi yapabilir. "Sadece şarkı ekler" kullanıcıları izler ve şarkı ekler, başka bir şey yapamaz.',
     addUser: 'Kullanıcı ekle', userAdded: 'Kullanıcı eklendi', userRemoved: 'Kullanıcı silindi', roleChanged: 'Rol değişti', you: '(sen)',
@@ -292,6 +294,7 @@ const I18N = {
     sPrefixHint: 'Les bots d\'un même canal doivent avoir des préfixes différents, sinon ils répondent tous.', sShared: 'Commun à tous les bots.',
     sRemoveBot: 'Supprimer ce bot', sRemoveBotHint: 'Le déconnecte et supprime son identité TeamSpeak et son historique.', removeBot: 'Supprimer le bot',
     confirmBotRemove: x => `Supprimer « ${x} » ? Son identité et son historique seront effacés.`, botRemoved: 'Bot supprimé',
+    roleOwner: "Propriétaire de bot", sBotOwners: "Qui crée un bot avec !créer peut le gérer dans le panneau", sBotOwnersHint: "Il tape !panel dans TeamSpeak et reçoit en privé un lien pour créer son compte (il faut l'adresse du panneau : panel.publicUrl), ou un admin le crée plus bas avec son identifiant unique TeamSpeak. Il ne voit que ses propres bots : il joue de la musique et la pilote, change le volume et le nom et la description du bot (aussi avec !nom et !description dans le chat). Rien d'autre. Pour tous les bots.", sOwner: "Propriétaire (identifiant unique TeamSpeak)", ownerHintNone: "Personne : ajouté dans le panneau, ou on le lui a retiré.", ownerHintName: n => "Créé par " + n + " avec !créer. Vide ce champ pour le lui retirer.", sDescription: "Description", sDescriptionHint: "Affichée sur TeamSpeak sous le nom du bot. Avec « Afficher le morceau dans la description du bot », le morceau prend sa place pendant la lecture. Dans le chat : !description <texte>.", userUid: "Identifiant unique TeamSpeak", userUidHint: "Les bots dont c'est le propriétaire (réglages d'un bot, Propriétaire) sont à lui. Il peut y jouer de la musique, les piloter, changer le volume, leur nom et leur description.", "err.bad-uid": "Écris l'identifiant unique TeamSpeak de la personne.", "err.uid-taken": "Cet identifiant TeamSpeak a déjà un compte.", "err.not-owner": "Ce compte n'est pas celui d'un propriétaire de bot.", ownerTitle: "Ton compte du panneau", ownerIntro: "Choisis un nom et un mot de passe. Tu ne verras que tes propres bots : tu peux jouer de la musique, la piloter, changer le volume et le nom et la description du bot.", ownerHas: n => "Tu as déjà un compte (" + n + ") : choisis un nouveau mot de passe.", passwordAgain: "Mot de passe (encore)", ownerGo: "Enregistrer et se connecter", ownerMismatch: "Les deux mots de passe ne sont pas les mêmes.", noBots: "Tu n'as aucun bot pour l'instant. Crées-en un dans TeamSpeak avec !créer.", "err.link-expired": "Ce lien a expiré ou a déjà servi. Tape !panel dans TeamSpeak pour en avoir un nouveau.", "err.name-taken": "Ce nom est déjà pris ; choisis-en un autre.", "err.owners-off": "Le panneau n'est pas ouvert aux propriétaires de bots pour l'instant.", 
     userName: 'Nom d\'utilisateur', role: 'Rôle', roleAdmin: 'Admin', roleDj: 'Peut seulement ajouter des morceaux', sUsers2: 'Utilisateurs du panneau',
     sUsersHint2: 'Les admins peuvent tout faire. Les utilisateurs « Peut seulement ajouter des morceaux » peuvent regarder et ajouter des morceaux, rien d\'autre.',
     addUser: 'Ajouter un utilisateur', userAdded: 'Utilisateur ajouté', userRemoved: 'Utilisateur supprimé', roleChanged: 'Rôle modifié', you: '(vous)',
@@ -400,6 +403,7 @@ const I18N = {
     sPrefixHint: 'Bots im selben Channel brauchen verschiedene Präfixe, sonst antworten alle.', sShared: 'Gilt für alle Bots.',
     sRemoveBot: 'Diesen Bot entfernen', sRemoveBotHint: 'Trennt ihn und löscht seine TeamSpeak-Identität und seinen Verlauf.', removeBot: 'Bot entfernen',
     confirmBotRemove: x => `„${x}“ entfernen? Seine Identität und sein Verlauf werden gelöscht.`, botRemoved: 'Bot entfernt',
+    roleOwner: "Bot-Besitzer", sBotOwners: "Wer mit !erstellen einen Bot erstellt, kann ihn im Panel verwalten", sBotOwnersHint: "Er schreibt !panel in TeamSpeak und bekommt privat einen Link für sein Konto (dafür braucht es die Adresse des Panels: panel.publicUrl), oder ein Admin legt es unten mit seiner eindeutigen TeamSpeak-ID an. Er sieht nur seine eigenen Bots: er spielt und steuert Musik, ändert die Lautstärke und den Namen und die Beschreibung des Bots (auch mit !name und !beschreibung im Chat). Sonst nichts. Für alle Bots.", sOwner: "Besitzer (eindeutige TeamSpeak-ID)", ownerHintNone: "Niemand: im Panel hinzugefügt, oder der Besitz wurde entzogen.", ownerHintName: n => "Von " + n + " mit !erstellen erstellt. Leere das Feld, um ihm den Bot wegzunehmen.", sDescription: "Beschreibung", sDescriptionHint: "Steht in TeamSpeak unter dem Namen des Bots. Mit „Song in der Bot-Beschreibung zeigen“ steht dort beim Abspielen der Song. Im Chat: !beschreibung <Text>.", userUid: "Eindeutige TeamSpeak-ID", userUidHint: "Die Bots, deren Besitzer diese ID ist (Einstellungen eines Bots, Besitzer), gehören ihm. Er kann darauf Musik spielen, sie steuern, die Lautstärke, ihren Namen und ihre Beschreibung ändern.", "err.bad-uid": "Schreib die eindeutige TeamSpeak-ID der Person.", "err.uid-taken": "Diese TeamSpeak-ID hat schon ein Konto.", "err.not-owner": "Dieses Konto ist keins eines Bot-Besitzers.", ownerTitle: "Dein Panel-Konto", ownerIntro: "Wähle einen Namen und ein Passwort. Du siehst nur deine eigenen Bots: du kannst Musik spielen und steuern, die Lautstärke und den Namen und die Beschreibung des Bots ändern.", ownerHas: n => "Du hast schon ein Konto (" + n + "): wähle ein neues Passwort.", passwordAgain: "Passwort (noch einmal)", ownerGo: "Speichern und anmelden", ownerMismatch: "Die beiden Passwörter sind nicht gleich.", noBots: "Du hast gerade keinen Bot. Erstelle einen in TeamSpeak mit !erstellen.", "err.link-expired": "Dieser Link ist abgelaufen oder wurde schon benutzt. Schreib !panel in TeamSpeak für einen neuen.", "err.name-taken": "Dieser Name ist vergeben; wähle einen anderen.", "err.owners-off": "Das Panel ist gerade nicht für Bot-Besitzer offen.", 
     userName: 'Benutzername', role: 'Rolle', roleAdmin: 'Admin', roleDj: 'Darf nur Songs hinzufügen', sUsers2: 'Panel-Nutzer',
     sUsersHint2: 'Admins dürfen alles. Nutzer mit „Darf nur Songs hinzufügen“ können zusehen und Songs hinzufügen, sonst nichts.',
     addUser: 'Nutzer hinzufügen', userAdded: 'Nutzer hinzugefügt', userRemoved: 'Nutzer entfernt', roleChanged: 'Rolle geändert', you: '(du)',
@@ -652,6 +656,8 @@ async function pickBot() {
 /* Who is logged in. "dj" users only watch and add songs; the server enforces it, the page hides the rest. */
 let me = { name: '', role: 'admin' };
 const isAdmin = () => me.role === 'admin';
+/** Runs the bot shown: an admin, or its owner (an owner only ever sees their own bots). */
+const canManage = () => me.role === 'admin' || me.role === 'owner';
 function applyRole() {
   document.body.dataset.role = me.role;
   $('pw-user').textContent = me.name;
@@ -672,6 +678,9 @@ async function loadBot() {
   const m = await api('GET', '/api/me');
   if (m.role !== me.role) lastQueueSig = lastHistorySig = lastBotsSig = '';   // rows have role-specific buttons
   me = m; applyRole();
+  // A bot owner whose bots are all gone (one that nobody listened to leaves after a while).
+  $('no-bots').hidden = !!botId;
+  if (!botId) { stopStream(); return; }
   try { setState(await api('GET', B('/state'))); }
   catch (e) { if (e.status !== 404) throw e; await pickBot(); setState(await api('GET', B('/state'))); }   // it was removed
   if ($('settings').open && settings && settingsBot !== botId) $('settings').close();
@@ -789,7 +798,7 @@ function renderNow() {
     $('np-stream').hidden = !cur.streamTitle; $('np-stream-title').textContent = cur.streamTitle || '';
     setLabel($('np-save'), t(isStation(tr) ? 'radioFav' : 'plAdd'));
     $('seek').hidden = tr.isLive;
-    $('seek').disabled = !isAdmin();
+    $('seek').disabled = !canManage();
     $('seek').max = Math.max(1, tr.duration);
     $('t-dur').textContent = tr.isLive ? t('live') : fmt(tr.duration);
     document.title = `${playing ? '▶' : '⏸'} ${cur.streamTitle ? cur.streamTitle + ' · ' : ''}${tr.title} — Panda 🐼`;
@@ -935,7 +944,7 @@ function resultRow(tr, saved) {
 function playButtons(tr, labelled, ...more) {
   const add = el('button', { class: labelled ? 'btn soft sm' : 'icon-btn sm', type: 'button', title: t('add'), 'aria-label': `${t('add')}: ${tr.title}` },
     icon('plus'), labelled && el('span', { class: 'lbl', text: t('add') }));
-  const now = el('button', { class: 'icon-btn sm admin-only', type: 'button', title: t('playNow'), 'aria-label': `${t('playNow')}: ${tr.title}` }, icon('play'));
+  const now = el('button', { class: 'icon-btn sm manage-only', type: 'button', title: t('playNow'), 'aria-label': `${t('playNow')}: ${tr.title}` }, icon('play'));
   add.addEventListener('click', () => addTrack(add, tr, false));
   now.addEventListener('click', () => addTrack(now, tr, true));
   return el('div', { class: 'acts' }, add, now, ...more);
@@ -1063,11 +1072,11 @@ function queueItem(tr, i, n) {
     const b = el('button', { class: 'icon-btn sm', type: 'button', title: label, 'aria-label': `${label}: ${tr.title}`, disabled: dis, 'data-key': `${name}:${key}` }, icon(name));
     b.addEventListener('click', fn); return b;
   };
-  const li = el('li', { class: 'track', draggable: isAdmin() ? 'true' : null },
-    el('span', { class: 'grip admin-only', 'aria-hidden': 'true' }, icon('grip')),
+  const li = el('li', { class: 'track', draggable: canManage() ? 'true' : null },
+    el('span', { class: 'grip manage-only', 'aria-hidden': 'true' }, icon('grip')),
     el('span', { class: 'num', text: i + 1 }),
     thumb(tr), trackText(tr),
-    el('div', { class: 'acts admin-only' },
+    el('div', { class: 'acts manage-only' },
       btn('up', t('moveUp'), () => move(i, i - 1), i === 0),
       btn('down', t('moveDown'), () => move(i, i + 1), i === n - 1),
       btn('x', t('remove'), () => remove(i, tr.id))));
@@ -1148,12 +1157,14 @@ const F = () => $('set-form').elements;
 /** Settings of the bot shown in the panel (plus the shared ones). Others only get their password. */
 async function openSettings() {
   if (!$('settings').open) $('settings').showModal();
-  $('set-bot').textContent = isAdmin() ? botName() : '';
+  $('set-bot').textContent = canManage() ? botName() : '';
   const v = api('GET', '/api/version').then(v => { $('version').textContent = 'v' + v.version; }).catch(() => {});
-  if (isAdmin()) {
+  if (canManage()) {
     settingsBot = botId; settings = null; perm = null; tsPeople = null;   // nothing to save until this bot's settings are in
     const s = await act(() => api('GET', SB('/settings')));
     if (s && settingsBot === botId) fillSettings(s);
+  }
+  if (isAdmin()) {
     loadUsers();
     loadKeys();
   }
@@ -1165,10 +1176,14 @@ $('open-settings').addEventListener('click', openSettings);
 async function loadUsers() {
   const list = await act(() => api('GET', '/api/users'));
   if (!list) return;
+  // Bot owners' ids, offered in a bot's Owner field.
+  $('owner-list').replaceChildren(...list.filter(u => u.role === 'owner' && u.uid).map(u => el('option', { value: u.uid, label: u.name })));
   $('user-list').replaceChildren(...list.map(u => {
     const self = u.name.toLowerCase() === me.name.toLowerCase();
     const role = el('select', { 'aria-label': `${t('role')}: ${u.name}` },
-      el('option', { value: 'admin', text: t('roleAdmin') }), el('option', { value: 'dj', text: t('roleDj') }));
+      el('option', { value: 'admin', text: t('roleAdmin') }), el('option', { value: 'dj', text: t('roleDj') }),
+      // A bot owner's account comes from TeamSpeak (!panel); it can only be made admin or dj here.
+      u.role === 'owner' && el('option', { value: 'owner', text: t('roleOwner'), disabled: '' }));
     role.value = u.role;
     role.addEventListener('change', async () => {
       const ok = await act(() => api('PUT', '/api/users/' + encodeURIComponent(u.name), { role: role.value }).then(() => true), t('roleChanged'));
@@ -1188,7 +1203,7 @@ async function loadUsers() {
       const ok = await act(() => api('DELETE', '/api/users/' + encodeURIComponent(u.name)).then(() => true), t('userRemoved'));
       if (ok) loadUsers();
     });
-    return el('li', {}, el('span', { class: 'nm', text: u.name }, self && el('span', { class: 'you', text: ' ' + t('you') })), role, pw, del);
+    return el('li', {}, el('span', { class: 'nm', text: u.name, title: u.uid || null }, self && el('span', { class: 'you', text: ' ' + t('you') })), role, pw, del);
   }));
 }
 async function loadKeys() {
@@ -1223,12 +1238,14 @@ $('key-copy').addEventListener('click', async () => {
   catch { getSelection().selectAllChildren($('key-secret')); }
 });
 
+function showUserUid() { document.querySelectorAll('.js-user-uid').forEach(x => { x.hidden = $('user-form').elements.role.value !== 'owner'; }); }
+$('user-form').elements.role.addEventListener('change', showUserUid);
 $('user-form').addEventListener('submit', async e => {
   e.preventDefault();
   const f = e.target.elements;
   await busy(e.submitter || e.target.querySelector('[type=submit]'), async () => {
-    const ok = await act(() => api('POST', '/api/users', { name: f.name.value.trim(), password: f.password.value, role: f.role.value }).then(() => true), t('userAdded'));
-    if (ok) { e.target.reset(); loadUsers(); }
+    const ok = await act(() => api('POST', '/api/users', { name: f.name.value.trim(), password: f.password.value, role: f.role.value, uid: f.uid.value.trim() }).then(() => true), t('userAdded'));
+    if (ok) { e.target.reset(); showUserUid(); loadUsers(); }
   });
 });
 
@@ -1290,8 +1307,11 @@ function renderAfkGroups() {
 function fillSettings(s) {
   settings = s; pwTouched = {};
   $('set-bot').textContent = s.nickname;
-  loadAvatar();
   const f = F();
+  f.description.value = s.description ?? '';
+  // A bot's owner changes only its name and description; the rest of the form is the admins'.
+  if (!isAdmin()) { f.nickname.value = s.nickname ?? ''; return; }
+  loadAvatar();
   for (const k of ['serverAddress', 'channel', 'nickname', 'commandPrefix', 'language', 'maxQueueLength', 'maxDurationMinutes', 'maxSongsPerUser', 'leaveWhenEmpty', 'songChannel', 'songChannelFormat', 'songChannelIdle', 'songNicknameFormat']) f[k].value = s[k] ?? '';
   f.announce.checked = !!s.announce; f.confirmCommands.checked = s.confirmCommands !== false; f.voteSkip.checked = !!s.voteSkip;
   f.showSongInDescription.checked = !!s.showSongInDescription;
@@ -1303,6 +1323,9 @@ function fillSettings(s) {
   fillPerm(s);
   fillSchedule(s);
   f.publicPage.checked = !!s.publicPage;
+  f.botOwners.checked = !!s.botOwners;
+  f.owner.value = s.owner || '';
+  $('owner-hint').textContent = s.owner ? t('ownerHintName', s.ownerName || s.owner) : t('ownerHintNone');
   f.libraryEnabled.checked = !!s.libraryEnabled; f.normalizeVolume.checked = !!s.normalizeVolume;
   // Another value from config.json shows as the nearest choice.
   f.targetLufs.value = [-18, -14, -11].reduce((a, b) => Math.abs(b - s.targetLufs) < Math.abs(a - s.targetLufs) ? b : a, -14);
@@ -1359,6 +1382,15 @@ $('set-form').addEventListener('submit', async e => {
   e.preventDefault();
   const form = $('set-form'), f = form.elements;
   if (!settings) return;
+  if (!isAdmin()) {
+    if (!f.nickname.checkValidity()) { f.nickname.reportValidity(); return toast(t('invalid'), 'err'); }
+    const body = { nickname: f.nickname.value.trim(), description: f.description.value.trim() };
+    await busy($('set-save'), async () => {
+      const s = await act(() => api('PUT', SB('/settings'), body), t(body.nickname !== settings.nickname ? 'reconnecting' : 'saved'));
+      if (s) fillSettings(s);
+    });
+    return;
+  }
   const gb = +f.libraryMaxGb.value;
   f.libraryMaxGb.setCustomValidity(gb === 0 || gb >= 0.1 ? '' : t('sLibMaxBad'));
   if (!form.checkValidity()) { form.reportValidity(); return toast(t('invalid'), 'err'); }
@@ -1366,14 +1398,14 @@ $('set-form').addEventListener('submit', async e => {
     ...settings,
     serverAddress: f.serverAddress.value.trim(), serverPassword: pwValue('serverPassword'),
     channel: f.channel.value.trim(), channelPassword: pwValue('channelPassword'),
-    nickname: f.nickname.value.trim(), commandPrefix: f.commandPrefix.value.trim(), language: f.language.value,
+    nickname: f.nickname.value.trim(), description: f.description.value.trim(), commandPrefix: f.commandPrefix.value.trim(), language: f.language.value,
     announce: f.announce.checked, confirmCommands: f.confirmCommands.checked, voteSkip: f.voteSkip.checked, showSongInDescription: f.showSongInDescription.checked, songInNickname: f.songInNickname.checked, songNicknameFormat: f.songNicknameFormat.value.trim(),
     maxQueueLength: +f.maxQueueLength.value, maxDurationMinutes: +f.maxDurationMinutes.value, maxSongsPerUser: +f.maxSongsPerUser.value, leaveWhenEmpty: +f.leaveWhenEmpty.value,
     songChannel: f.songChannel.value.trim(), songChannelFormat: f.songChannelFormat.value.trim(), songChannelIdle: f.songChannelIdle.value.trim(),
     everyoneCanUse: f.everyoneCanUse.checked, onlyFromChannel: f.onlyFromChannel.checked, othersSongs: f.othersSongs.value,
     members: perm.members, memberGroups: perm.memberGroups, admins: perm.admins, adminGroups: perm.adminGroups, djs: perm.djs, djGroups: perm.djGroups, blocked: perm.blocked,
     commandLevels: perm.commandLevels,
-    schedule: sched, publicPage: f.publicPage.checked,
+    schedule: sched, publicPage: f.publicPage.checked, botOwners: f.botOwners.checked, owner: f.owner.value.trim(),
     afk: { enabled: f.afkEnabled.checked, channel: f.afkChannel.value.trim(), minutes: +f.afkMinutes.value, away: f.afkAway.checked,
       muted: f.afkMuted.checked, idle: f.afkIdle.checked, moveBack: f.afkMoveBack.checked, exemptGroups: [...afkExempt] },
     libraryEnabled: f.libraryEnabled.checked, libraryMaxSizeMb: Math.round(gb * 1024), normalizeVolume: f.normalizeVolume.checked, targetLufs: +f.targetLufs.value,
@@ -1940,7 +1972,7 @@ function stationRow(s, saved) {
   const tr = { title: s.name, channel: [s.country, tags].filter(Boolean).join(' · '), isLive: true, thumbnail: s.favicon, url: s.homepage || '' };
   const add = el('button', { class: 'btn soft sm', type: 'button', title: t('add'), 'aria-label': `${t('add')}: ${s.name}` }, icon('plus'), el('span', { class: 'lbl', text: t('add') }));
   add.addEventListener('click', () => playStation(add, s, false));
-  const now = el('button', { class: 'icon-btn sm admin-only', type: 'button', title: t('playNow'), 'aria-label': `${t('playNow')}: ${s.name}` }, icon('play'));
+  const now = el('button', { class: 'icon-btn sm manage-only', type: 'button', title: t('playNow'), 'aria-label': `${t('playNow')}: ${s.name}` }, icon('play'));
   now.addEventListener('click', () => playStation(now, s, true));
   const fav = el('button', { class: 'icon-btn sm admin-only js-fav', type: 'button', 'data-uuid': s.uuid }, icon('star'));
   favState(fav, s.uuid);
@@ -1983,7 +2015,7 @@ let statsSeq = 0;
 
 async function loadStats() {
   const seq = ++statsSeq;
-  const bot = manyBots() && $('stats-bot').value === 'all' ? 'all' : botId;
+  const bot = me.role !== 'owner' && manyBots() && $('stats-bot').value === 'all' ? 'all' : botId;
   const r = await act(() => api('GET', `/api/stats?bot=${encodeURIComponent(bot)}&days=${$('stats-days').value}&tz=${new Date().getTimezoneOffset()}`));
   if (r && seq === statsSeq) renderStats(r);
 }
@@ -2319,6 +2351,39 @@ document.addEventListener('keydown', e => {
   if (e.key === '/' && !$('app').hidden && !e.target.closest('input,textarea,select,dialog')) { e.preventDefault(); $('add-q').focus(); }
 });
 
+/* ---------------- a bot owner's account (#owner=… from !panel) ---------------- */
+const ownerToken = (location.hash.match(/^#owner=([A-Za-z0-9_-]{20,100})$/) || [])[1];
+// A TeamSpeak name as a panel user name: letters, digits, ".", "_" and "-", 2 to 32 of them.
+const asUserName = n => { const s = (n || '').normalize('NFKC').replace(/[^\p{L}\p{N}._-]+/gu, '_').replace(/^_+|_+$/g, '').slice(0, 32); return s.length >= 2 ? s : ''; };
+async function showOwner() {
+  $('app').hidden = true; $('login').hidden = false; $('login-form').hidden = true; $('owner-form').hidden = false;
+  let r = null;
+  try { r = await api('POST', '/api/owner/check', { token: ownerToken }); } catch (e) { $('owner-err').textContent = errText(e); }
+  $('owner-go').disabled = !r;
+  if (!r) return;
+  $('owner-intro').textContent = r.account ? t('ownerHas', r.account) : t('ownerIntro');
+  $('owner-name').value = r.account || asUserName(r.name);
+  $('owner-name').readOnly = !!r.account;
+  ($('owner-name').value ? $('owner-pw') : $('owner-name')).focus();
+}
+$('owner-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  $('owner-err').textContent = '';
+  if ($('owner-pw').value !== $('owner-pw2').value) { $('owner-err').textContent = t('ownerMismatch'); return; }
+  await busy($('owner-go'), async () => {
+    try {
+      const name = $('owner-name').value.trim();
+      await api('POST', '/api/owner', { token: ownerToken, name, password: $('owner-pw').value });
+      store.set('panda.user', name);
+      // The link is used up: it leaves the address (and the history).
+      history.replaceState(null, '', location.pathname + location.search);
+      $('owner-pw').value = $('owner-pw2').value = '';
+      $('owner-form').hidden = true; $('login-form').hidden = false;
+      await boot();
+    } catch (err) { $('owner-err').textContent = errText(err); }
+  });
+});
+
 applyTheme();
 applyLang();
-boot();
+if (ownerToken) showOwner(); else boot();

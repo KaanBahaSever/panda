@@ -46,7 +46,7 @@ public sealed class PandaConfig
 			cfg.Panel.Users.Add(new PanelUser { Name = "admin", Role = Roles.Admin, PasswordHash = cfg.Panel.PasswordHash, Stamp = PasswordHasher.Generate() });
 		cfg.Panel.PasswordHash = null;
 		cfg.Panel.Users.RemoveAll(u => !PanelUser.IsValidName(u.Name) || u.PasswordHash.Length == 0);
-		foreach (var u in cfg.Panel.Users.Where(u => !Roles.IsValid(u.Role))) u.Role = Roles.Dj;
+		foreach (var u in cfg.Panel.Users.Where(u => !Roles.IsKnown(u.Role) || u.Role == Roles.Owner && string.IsNullOrEmpty(u.Uid))) u.Role = Roles.Dj;
 		cfg.knownUsers = cfg.UsersJson();
 
 		if (cfg.Bots.Count == 0)
@@ -76,6 +76,7 @@ public sealed class PandaConfig
 			b.Bot.Afk ??= new();
 			b.Bot.Afk.Clean();
 			b.Bot.SongChannelIdle ??= "🎵 Panda";
+			b.Bot.Description ??= "";
 		}
 		foreach (var b in cfg.Bots)
 			b.Bot.Schedule = (b.Bot.Schedule ?? []).Where(e => e is { IsValid: true }).ToList();
@@ -173,9 +174,10 @@ public sealed class PandaConfig
 	}
 
 	/// <summary>Adds a new user; false when the name is taken.</summary>
-	public bool AddUser(string name, string password, string role)
+	/// <param name="uid">A bot owner's TeamSpeak unique id.</param>
+	public bool AddUser(string name, string password, string role, string? uid = null)
 	{
-		var user = new PanelUser { Name = name, Role = role, PasswordHash = PasswordHasher.Hash(password), Stamp = PasswordHasher.Generate() };
+		var user = new PanelUser { Name = name, Role = role, Uid = uid, PasswordHash = PasswordHasher.Hash(password), Stamp = PasswordHasher.Generate() };
 		lock (saveLock)
 		{
 			if (Panel.Users.Any(u => u.Name.Equals(name, StringComparison.OrdinalIgnoreCase))) return false;
@@ -184,6 +186,39 @@ public sealed class PandaConfig
 		Save();
 		UsersChanged?.Invoke();
 		return true;
+	}
+
+	/// <summary>
+	/// A bot owner's account, from the link !panel sent them: theirs gets a new password (their name stays), or a
+	/// new one is made with this name. Null with the reason when it can't: "name-taken", or "not-owner" when the
+	/// account with their id isn't an owner's (an admin made it "dj": that's not undone from the chat).
+	/// </summary>
+	public PanelUser? ClaimOwner(string uid, string name, string password, out string? error)
+	{
+		error = null;
+		PanelUser? user;
+		lock (saveLock)
+		{
+			user = Panel.Users.FirstOrDefault(u => u.Uid == uid);
+			if (user != null && user.Role != Roles.Owner) { error = "not-owner"; return null; }
+			if (user is null)
+			{
+				if (Panel.Users.Any(u => u.Name.Equals(name, StringComparison.OrdinalIgnoreCase))) { error = "name-taken"; return null; }
+				user = new PanelUser { Name = name, Role = Roles.Owner, Uid = uid };
+				Panel.Users = [.. Panel.Users, user];
+			}
+			user.PasswordHash = PasswordHasher.Hash(password);
+			user.Stamp = PasswordHasher.Generate();
+		}
+		Save();
+		UsersChanged?.Invoke();
+		return user;
+	}
+
+	/// <summary>The account with this TeamSpeak id, whatever its role now.</summary>
+	public PanelUser? FindOwner(string uid)
+	{
+		lock (saveLock) return Panel.Users.FirstOrDefault(u => u.Uid == uid);
 	}
 
 	/// <summary>
@@ -220,7 +255,8 @@ public sealed class PandaConfig
 		return true;
 	}
 
-	/// <summary>Removes a user. The last admin can't be removed.</summary>
+	/// <summary>Removes a user. The last admin can't be removed. A bot owner's bots aren't theirs any more (or
+	/// !panel would just make the account again).</summary>
 	public bool RemoveUser(string name)
 	{
 		lock (saveLock)
@@ -228,6 +264,8 @@ public sealed class PandaConfig
 			var user = Panel.Users.FirstOrDefault(u => u.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
 			if (user is null || IsLastAdminLocked(user)) return false;
 			Panel.Users = Panel.Users.Where(u => u != user).ToList();
+			if (!string.IsNullOrEmpty(user.Uid))
+				foreach (var b in Bots.Where(b => b.Owner == user.Uid)) b.Owner = b.OwnerName = null;
 		}
 		Save();
 		UsersChanged?.Invoke();
@@ -354,6 +392,12 @@ public sealed class PanelUser
 	public string PasswordHash { get; set; } = "";
 	/// <summary>Changes with the password; sessions made with an older one are logged out.</summary>
 	public string Stamp { get; set; } = "";
+	/// <summary>A bot owner's TeamSpeak unique id: the bots whose <see cref="BotConfig.Owner"/> it is are theirs.</summary>
+	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+	public string? Uid { get; set; }
+
+	/// <summary>An owner and this is one of their bots.</summary>
+	public bool Owns(BotConfig b) => Role == Roles.Owner && !string.IsNullOrEmpty(Uid) && b.Owner == Uid;
 
 	public static bool IsValidName(string name) =>
 		name.Length is >= 2 and <= 32 && name.All(c => char.IsLetterOrDigit(c) || c is '.' or '_' or '-');
@@ -365,8 +409,15 @@ public static class Roles
 	public const string Admin = "admin";
 	/// <summary>Can watch and add songs to the queue, nothing else.</summary>
 	public const string Dj = "dj";
+	/// <summary>Someone who made bots with !create bot (<see cref="PanelSettings.BotOwners"/>): sees only those
+	/// and runs them like an admin, but not the connection, the server tools or what all bots share. The account
+	/// comes from the chat (!panel), never from the panel's user list.</summary>
+	public const string Owner = "owner";
 
+	/// <summary>A role the panel's user list and API keys can give.</summary>
 	public static bool IsValid(string role) => role is Admin or Dj;
+	/// <summary>A role a panel user may have.</summary>
+	public static bool IsKnown(string role) => role is Admin or Dj or Owner;
 }
 
 public static class SafeFile
@@ -405,6 +456,12 @@ public sealed class BotConfig
 	public string Id { get; set; } = "";
 	public ServerSettings Server { get; set; } = new();
 	public BotSettings Bot { get; set; } = new();
+	/// <summary>Who made it with !create bot (TeamSpeak unique id), and their name then: with
+	/// <see cref="PanelSettings.BotOwners"/> on, they manage it in the panel.</summary>
+	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+	public string? Owner { get; set; }
+	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+	public string? OwnerName { get; set; }
 
 	public static bool IsValidId(string id) =>
 		id.Length is > 0 and <= 32 && id.All(c => char.IsAsciiLetterOrDigit(c) || c is '-' or '_');
@@ -423,6 +480,10 @@ public sealed class ServerSettings
 public sealed class BotSettings
 {
 	public string Nickname { get; set; } = "Panda 🐼";
+	/// <summary>The bot's description on TeamSpeak (set in the panel or with !description); while a song plays it's
+	/// the song instead, when <see cref="ShowSongInDescription"/> is on.</summary>
+	public string Description { get; set; } = "";
+	public const int MaxDescription = 200;
 	public string CommandPrefix { get; set; } = "!";
 	/// <summary>Language of chat replies: "en", "tr", "fr" or "de".</summary>
 	public string Language { get; set; } = "en";
@@ -526,6 +587,9 @@ public sealed class PanelSettings
 	public bool PublicPage { get; set; }
 	/// <summary>How many bots there may be (!create bot stops there).</summary>
 	public int MaxBots { get; set; } = 10;
+	/// <summary>Whoever makes a bot with !create bot can manage it in the panel: !panel sends them a link to
+	/// make their account (<see cref="Roles.Owner"/>). Off: owners can't log in.</summary>
+	public bool BotOwners { get; set; }
 	public int Port { get; set; } = 8080;
 	public List<PanelUser> Users { get; set; } = [];
 	/// <summary>Keys for programs (scripts, a management panel) that use the API without logging in.</summary>

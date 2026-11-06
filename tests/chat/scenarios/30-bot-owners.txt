@@ -1,0 +1,66 @@
+# Bot owners (panel.botOwners, off by default): !panel says the panel isn't open to them.
+c !panel
+e isn't open to bot owners
+s botOwners=true admins=[{"uid":"$ME"}]
+c !panel
+e You haven't made a bot
+# !create bot: who asks owns the new bot. The link comes in private; the channel hears only that it was sent.
+c !create bot
+e is on its way to your channel
+w 4
+c !panel
+e I sent you the link in a private message
+e #owner=
+O owner1 ownerpass1
+# The owner sees only their own bot: they play music on it and steer it.
+H GET /api/me 200 "role":"owner"
+H GET /api/bots 200 "id":"$OWNED"
+H GET /api/bots 200 !"id":"1"
+H GET /api/bots/1/state 404
+H GET /api/bots/1/settings 404
+H POST /api/bots/1/control/stop 404
+H GET /api/bots/$OWNED/state 200 !"id":"1"
+H POST /api/bots/$OWNED/control/stop 204
+H GET /api/stats?bot=$OWNED 200
+H GET /api/stats?bot=all 404
+H GET /api/stats?bot=1 404
+# Of its settings, only the name and the description are theirs; nothing else is even shown.
+H GET /api/bots/$OWNED/settings 200 "serverAddress":""
+H GET /api/bots/$OWNED/settings 200 "admins":[]
+U serverAddress=10.9.9.9 nickname=Owners_Bot description=Music_for_everyone leaveWhenEmpty=0 publicPage=true botOwners=false maxDurationMinutes=999
+H GET /api/bots/$OWNED/settings 200 "nickname":"Owners_Bot"
+H GET /api/bots/$OWNED/settings 200 "description":"Music_for_everyone"
+w 8
+H GET /api/bots/$OWNED/state 200 "state":"connected"
+# Not the rest of the bot, nor the panel's own pages.
+H GET /api/bots/$OWNED/ts/people 403
+H POST /api/bots/$OWNED/reconnect 403
+H DELETE /api/bots/$OWNED/avatar 403
+H DELETE /api/bots/$OWNED 403
+H GET /api/system 403
+H GET /api/users 403
+H GET /api/backup 403
+H POST /api/bots 403
+# In the chat the owner runs their bot like an admin: its name and description too. Someone else can't.
+c .description Songs all day
+e New description: Songs all day
+H GET /api/bots/$OWNED/settings 200 "description":"Songs all day"
++ Guest
+o .name Guest Bot
+e is only for
+o .description nope
+e is only for
+# Turned off: the owner is logged out at once.
+s botOwners=false
+H GET /api/bots 401
+s botOwners=true
+# !panel again: a new link; the account keeps its name, with a new password.
+c !panel
+e #owner=
+O someone_else ownerpass2
+H GET /api/me 200 "name":"owner1"
+# The bot gone, they have none.
+R
+H GET /api/bots 200 []
+c !panel
+e You haven't made a bot
