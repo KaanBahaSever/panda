@@ -191,7 +191,7 @@ each on for one bot per server.
 - **AFK move**: people who are away in TeamSpeak, have their sound (speakers) off, or said and typed nothing
   for a while are moved to the AFK channel you pick, after the minutes you set, and back to their channel when
   they return. Server groups you tick are never moved. The bot needs `i_client_move_power` on the server (as
-  much as the people it moves need). To see everyone, the bot then subscribes to every channel.
+  much as the people it moves need).
 
 ## Statistics and the System screen
 
@@ -298,6 +298,10 @@ Write them in the bot's channel or in a private message to the bot.
 
 `!radio` (the old name of autoplay) still works for a while: alone or with on/off it is autoplay, with a
 name it plays a station.
+
+Commands work in a private message too, from any channel (`!join` brings the bot to you). To see the people
+in other channels, the bot subscribes to every channel, as TeamSpeak's own client does; if the server
+doesn't let it (`i_channel_subscribe_power`), the log says so.
 
 ### Who may do what
 

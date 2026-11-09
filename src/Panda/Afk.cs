@@ -49,8 +49,7 @@ public sealed partial class TsBot
 	readonly Dictionary<string, AfkPerson> afkPeople = [];
 	ChannelId? afkChannelId;
 	string? afkChannelSpec;
-	bool afkChannelWarned, afkMoveWarned, afkMovedOnce, afkSubscribeWarned;
-	DateTime afkSubscribedAt = DateTime.MinValue;   // to every channel (again every few minutes: new channels)
+	bool afkChannelWarned, afkMoveWarned, afkMovedOnce;
 	DateTime afkLookedAt = DateTime.MinValue;
 	int afkRunning;
 
@@ -87,18 +86,8 @@ public sealed partial class TsBot
 			return;
 		}
 		var now = DateTime.UtcNow;
-		// A client only sees the people in channels it subscribed to (TeamSpeak's own client subscribes to all):
-		// without it the people elsewhere, and those moved to the AFK channel, would be out of sight.
-		if (now - afkSubscribedAt > TimeSpan.FromMinutes(5))
-		{
-			afkSubscribedAt = now;
-			var sub = await c.SendVoid(new TSLib.Commands.TsCommand("channelsubscribeall"));
-			if (!sub.Ok && !afkSubscribeWarned)
-			{
-				afkSubscribeWarned = true;
-				log.LogWarning("AFK: could not subscribe to every channel ({Error}); only the people in the bot's channels are seen", sub.Error.ErrorFormat());
-			}
-		}
+		// The people in channels made after the bot connected are out of sight until it subscribes to them too.
+		if (now - subscribedAt > TimeSpan.FromMinutes(5)) await SubscribeAllAsync(c);
 		var spec = a.Channel;
 		var afk = afkChannelSpec == spec && afkChannelId is { } known && c.Book.Channels.ContainsKey(known) ? known : FindChannel(c, spec);
 		afkChannelSpec = spec;

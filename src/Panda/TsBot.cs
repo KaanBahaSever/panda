@@ -212,10 +212,10 @@ public sealed partial class TsBot : BackgroundService
 		c.OnEachTextMessage += (_, msg) => _ = HandleMessageAsync(c, msg);
 		c.OnEachClientMoved += (_, e) =>
 		{
-			StatusChanged?.Invoke();
+			ViewChanged(c);
 			if (e.ClientId == following) _ = FollowAsync(c, e.TargetChannelId);
 		};
-		c.OnEachClientEnterView += (_, _) => StatusChanged?.Invoke();
+		c.OnEachClientEnterView += (_, _) => ViewChanged(c);
 		c.OnEachClientLeftView += (_, e) =>
 		{
 			if (e.ClientId == following)
@@ -224,7 +224,7 @@ public sealed partial class TsBot : BackgroundService
 				if (e.TargetChannelId != ChannelId.Null) _ = FollowAsync(c, e.TargetChannelId);
 				else Unfollow();
 			}
-			StatusChanged?.Invoke();
+			ViewChanged(c);
 		};
 
 		var s = Server;
@@ -270,9 +270,51 @@ public sealed partial class TsBot : BackgroundService
 		nicknameShown = nicknameOwn = c.Book.Self()?.Name;
 		nicknameWarned = false;
 		nicknamesTaken.Clear();
-		afkSubscribedAt = DateTime.MinValue;
+		subscribeWarned = false;
+		shownView = null;
+		await SubscribeAllAsync(c);
 		await ShowSong();
 		return null;
+	}
+
+	// ---- the people on the server ----
+
+	DateTime subscribedAt = DateTime.MinValue;
+	bool subscribeWarned;
+
+	/// <summary>
+	/// A client only sees the people in the channels it subscribed to (TeamSpeak's own client subscribes to
+	/// all of them): without this, someone writing from another channel is a stranger (!join, !follow, their
+	/// server groups' chat level), and so is everyone the AFK move should see.
+	/// </summary>
+	async Task SubscribeAllAsync(TsFullClient c)
+	{
+		subscribedAt = DateTime.UtcNow;
+		var r = await c.SendVoid(new TSLib.Commands.TsCommand("channelsubscribeall"));
+		if (r.Ok || subscribeWarned) return;
+		subscribeWarned = true;
+		log.LogWarning("Could not subscribe to every channel ({Error}): only the people in the bot's channel are seen (!join and !follow from a private message, server groups in the chat permissions, the AFK move). On the TeamSpeak server, give the bot's group i_channel_subscribe_power.",
+			r.Error.ErrorFormat());
+	}
+
+	/// <summary>Someone the bot doesn't see (in a channel made since it subscribed): subscribed again, at most every 10 s.</summary>
+	async Task SeeAsync(TsFullClient c, ClientId id)
+	{
+		if (c.Book.Clients.ContainsKey(id) || DateTime.UtcNow - subscribedAt < TimeSpan.FromSeconds(10)) return;
+		await SubscribeAllAsync(c);
+	}
+
+	// What the panel shows of the server: the bot's channel and how many are in it. Seeing every channel,
+	// the moves elsewhere on a big server don't each redraw every open panel.
+	(ChannelId Channel, int People)? shownView;
+
+	void ViewChanged(TsFullClient c)
+	{
+		var self = c.Book.Self();
+		(ChannelId, int) view = self is null ? (ChannelId.Null, -1) : (self.Channel, c.Book.Clients.Values.Count(x => x.Channel == self.Channel));
+		if (shownView == view) return;
+		shownView = view;
+		StatusChanged?.Invoke();
 	}
 
 	// ---- the server's groups and people, and what the bot may do there (for the panel) ----
@@ -735,6 +777,7 @@ public sealed partial class TsBot : BackgroundService
 				}
 			}
 
+			await SeeAsync(c, msg.InvokerId);
 			var level = LevelOf(c, msg);
 			if (msg.InvokerUid?.Value is { } blockedUid && Bot.Blocked.Any(p => p.Uid == blockedUid)) return;
 			var command = Commands.Find(cmd);
@@ -1452,6 +1495,8 @@ public sealed partial class TsBot : BackgroundService
 		case "join":
 		{
 			if (!c.Book.Clients.TryGetValue(msg.InvokerId, out var invoker)) return Strings.Get(Lang, "join-failed");
+			// Already there: the server would refuse the move.
+			if (c.Book.Self()?.Channel == invoker.Channel) return Confirm(Strings.Get(Lang, "joined"));
 			var r = await c.ClientMove(c.ClientId, invoker.Channel);
 			NoteMove(r);
 			StatusChanged?.Invoke();

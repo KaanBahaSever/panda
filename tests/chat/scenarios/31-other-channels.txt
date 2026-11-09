@@ -1,0 +1,39 @@
+# Written from another channel (issue #6): the bot sees everyone, not only the people in its channel.
+A
+p !join
+e Coming!
+c !np
+e Nothing is playing.
+B
+p !follow
+e Following you
+c !np
+e Nothing is playing.
+A
+c !np
+e Nothing is playing.
+p !follow
+e Stopped following.
+B
+p !join
+e Coming!
+c !np
+e Nothing is playing.
+# A server group's chat level counts from another channel too.
+s everyoneCanUse=false djGroups=[$GROUP]
+A
+p !vol 40
+e Volume set to 40%
+B
+# Someone in a channel made after the bot connected is seen too.
+K Fresh
+p !join
+e Coming!
+c !np
+e Nothing is playing.
+B
+p !join
+e Coming!
+c !np
+e Nothing is playing.
+k Fresh

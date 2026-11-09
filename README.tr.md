@@ -187,8 +187,7 @@ birini sunucu başına tek bir botta aç.
 - **AFK taşıma**: TeamSpeak'te uzakta olan, sesini (hoparlörünü) kapatan ya da bir süredir hiçbir şey
   söylemeyen ve yazmayan kişiler, belirlediğin dakika sonra seçtiğin AFK kanalına taşınır, döndüklerinde de
   kendi kanallarına geri alınır. İşaretlediğin sunucu grupları hiç taşınmaz. Botun sunucuda
-  `i_client_move_power` izni olmalı (taşıdığı kişilerin gerektirdiği kadar). Herkesi görebilmek için bot o
-  zaman bütün kanallara abone olur.
+  `i_client_move_power` izni olmalı (taşıdığı kişilerin gerektirdiği kadar).
 
 ## İstatistikler ve Sistem ekranı
 
@@ -299,6 +298,10 @@ Botun kanalına ya da bota özel mesaj olarak yaz. İngilizce karşılıkları d
 | `!taşı <#> <#>` | `!move` | `!déplacer` | `!verschieben` | Sırada şarkının yerini değiştirir |
 | `!oyla` | `!voteskip` | `!voter` | `!abstimmen` | Başkasının şarkısını geçmek için oy verir (oylama açıksa) |
 | `!yardım` | `!help` | `!aide` | `!hilfe` | Komut listesi |
+
+Komutlar özel mesajla da, herhangi bir kanaldan çalışır (`!gel` botu yanına getirir). Bot başka kanallardaki
+kişileri görmek için TeamSpeak'in kendi istemcisi gibi bütün kanallara abone olur; sunucu buna izin vermezse
+(`i_channel_subscribe_power`) logda yazar.
 
 ### Kim ne yapabilir
 

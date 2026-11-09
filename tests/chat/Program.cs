@@ -33,6 +33,8 @@
 //                     can't be used twice); $OWNED is then the first bot the owner sees
 //   H <method> <path> <status> [text|!text]   a request as that owner: its status, and text in the answer (or not)
 //   U key=value ...   the owner changes $OWNED's settings (like s)
+//   K <name>          a new channel is made (through the server's HTTP query) and the test client goes there
+//   k <name>          that channel is removed
 // Exit code: the number of failed checks.
 using System.Globalization;
 using System.Net;
@@ -196,6 +198,24 @@ await scheduler.InvokeAsync(async () =>
 				case 'P': Console.WriteLine($"-> [panel] play {arg}"); await panel.PlayAsync(arg); await Task.Delay(1500); break;
 				case 'Y': Check(FakeYtDlp.Calls().Any(l => l.Contains(arg)), $"yt-dlp was called with \"{arg}\""); break;
 				case 'R': await panel.RemoveOtherBotsAsync(); break;
+				case 'K':
+				{
+					Console.WriteLine($"-> (makes channel {arg} and goes there)");
+					await Query.RunAsync($"channelcreate?channel_name={Uri.EscapeDataString(arg)}&channel_flag_semi_permanent=1");
+					await Task.Delay(1000);
+					var made = c.Book.Channels.Values.FirstOrDefault(ch => ch.Name == arg);
+					Check(made != null, $"channel {arg} was made");
+					if (made != null) await c.ClientMove(c.ClientId, made.Id);
+					await Task.Delay(1000);
+					break;
+				}
+				case 'k':
+				{
+					var gone = c.Book.Channels.Values.FirstOrDefault(ch => ch.Name == arg);
+					if (gone != null) await Query.RunAsync($"channeldelete?cid={gone.Id.Value}&force=1");
+					await Task.Delay(500);
+					break;
+				}
 				case 'C':
 				{
 					var names = await Query.ChannelNamesAsync();
@@ -362,6 +382,14 @@ static class Query
 {
 	static readonly string[]? Conf = Environment.GetEnvironmentVariable("PANDA_TEST_QUERY")?.Split(' ', 2);
 	static readonly HttpClient Http = new();
+
+	public static async Task RunAsync(string cmd)
+	{
+		if (Conf is not [var url, var key]) return;
+		using var req = new HttpRequestMessage(HttpMethod.Get, $"{url}/1/{cmd}");
+		req.Headers.Add("x-api-key", key);
+		using var _ = await Http.SendAsync(req);
+	}
 
 	public static async Task<List<string>> ChannelNamesAsync()
 	{
