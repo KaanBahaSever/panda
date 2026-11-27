@@ -28,6 +28,13 @@ h1, h2, h3, p { margin: 0; }
 button, input, select, textarea { font: inherit; color: inherit; }
 :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 8px; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.svg-sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
+.http-warn {
+  padding: 8px 12px; border-radius: var(--radius-sm); background: #fdf3dc; color: #7a5410;
+  font-size: 13px; font-weight: 600; text-align: left; border: 1px solid rgba(232,163,23,.35);
+}
+.http-warn.bar { margin: 0 16px 8px; }
+:root[data-theme="dark"] .http-warn { background: rgba(232,163,23,.14); color: #f2c66b; border-color: rgba(232,163,23,.28); }
 .muted { color: var(--muted); }
 .ic { width: 20px; height: 20px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .ic.sm { width: 14px; height: 14px; }
@@ -666,6 +673,7 @@ dialog::backdrop { background: rgba(22,22,30,.45); backdrop-filter: blur(2px); }
 
 /* schedule: Add on its own row, on the right */
 .settings .sch-actions { padding-top: 14px; border-top: 1px solid var(--border); }
+.settings #sch-list .check { flex: 1; min-width: 0; }
 
 /* chips: hovered = light green, picked = light green with a green border */
 .settings .sb-cats .check:hover:not(:has(input:disabled)), .settings .afk-groups .check:hover { background: var(--soft); color: var(--soft-text); }
@@ -707,9 +715,6 @@ dialog::backdrop { background: rgba(22,22,30,.45); backdrop-filter: blur(2px); }
 .find-none { padding: 8px 4px; text-align: left; color: var(--muted); font-weight: 600; }
 .settings .flash { animation: flash 2s ease-out; }
 @keyframes flash { from { background: color-mix(in srgb, var(--green) 30%, transparent); outline: 2px solid var(--green); outline-offset: 4px; } }
-@media (max-width: 760px) {
-  .set-side { width: auto; border-right: 0; border-bottom: 1px solid var(--border); }
-}
 
 /* texts in the settings and their dialogs start on the left, like everything else there */
 .settings .empty, .picker .empty { padding: 4px 2px; text-align: left; }

@@ -12,7 +12,7 @@ check() { if [ "$2" = "$3" ]; then echo "   PASS $1 ($2)"; else echo "   FAIL $1
 code() { curl -s -m 10 -o /dev/null -w '%{http_code}' "$@"; }
 json() { python3 -c "import sys,json; d=json.load(sys.stdin); print($1)"; }
 
-curl -s -c $J -H 'Content-Type: application/json' -d '{"name":"admin","password":"testpass123"}' $P/api/login -o /dev/null
+curl -s -c $J -H 'Content-Type: application/json' -d '{"name":"admin","password":"testpass1234"}' $P/api/login -o /dev/null
 ADMIN=$(curl -s -b $J -H 'Content-Type: application/json' -d '{"name":"script","role":"admin"}' $P/api/apikeys | json "d['secret']")
 DJ=$(curl -s -b $J -H 'Content-Type: application/json' -d '{"name":"dj script","role":"dj"}' $P/api/apikeys | json "d['secret']")
 check "keys look right" "$(echo "$ADMIN $DJ" | grep -cE '^pk_[A-Za-z0-9_-]{40,} pk_[A-Za-z0-9_-]{40,}$')" 1
@@ -204,20 +204,57 @@ check "...on the server too" "$(server_avatar)" "$(curl -s -b $J $P/api/bots/1/a
 curl -s -b $J -X PUT -H 'Content-Type: image/png' --data-binary @/tmp/panda-avatar.png $P/api/bots/1/avatar -o /dev/null
 
 echo "== a bot owner's account made by an admin"
-post /api/users '{"name":"ownerx","password":"ownerpass","role":"owner"}' > /tmp/panda-api-owner.json
+post /api/users '{"name":"ownerx","password":"ownerpass1234","role":"owner"}' > /tmp/panda-api-owner.json
 check "it needs their TeamSpeak id" "$(json "d['error']" < /tmp/panda-api-owner.json)" bad-uid
-check "made with it" "$(code -b $J -H 'Content-Type: application/json' -d '{"name":"ownerx","password":"ownerpass","role":"owner","uid":"TestUid123="}' $P/api/users)" 204
-check "one account per TeamSpeak id" "$(post /api/users '{"name":"ownery","password":"ownerpass","role":"owner","uid":"TestUid123="}' | json "d['error']")" uid-taken
+check "made with it" "$(code -b $J -H 'Content-Type: application/json' -d '{"name":"ownerx","password":"ownerpass1234","role":"owner","uid":"TestUid123="}' $P/api/users)" 204
+check "one account per TeamSpeak id" "$(post /api/users '{"name":"ownery","password":"ownerpass1234","role":"owner","uid":"TestUid123="}' | json "d['error']")" uid-taken
 check "the list shows it" "$(curl -s -b $J $P/api/users | json "[(u['role'], u['uid']) for u in d if u['name'] == 'ownerx']")" "[('owner', 'TestUid123=')]"
 check "an owner key can't be made" "$(post /api/apikeys '{"name":"ownerkey","role":"owner"}' | json "d['error']")" bad-role
 # Off: bot owners can't log in.
-check "owners can't log in while bot owners are off" "$(code -H 'Content-Type: application/json' -d '{"name":"ownerx","password":"ownerpass"}' $P/api/login)" 403
+check "owners can't log in while bot owners are off" "$(code -H 'Content-Type: application/json' -d '{"name":"ownerx","password":"ownerpass1234"}' $P/api/login)" 403
 check "remove it" "$(code -b $J -X DELETE $P/api/users/ownerx)" 204
 
 echo "== login behind a proxy (X-Forwarded-For from this machine is believed)"
 for i in 1 2 3 4 5; do code -H 'X-Forwarded-For: 203.0.113.7' -H 'Content-Type: application/json' -d '{"name":"admin","password":"wrong"}' $P/api/login >/dev/null; done
-check "5 wrong passwords lock that visitor out" "$(code -H 'X-Forwarded-For: 203.0.113.7' -H 'Content-Type: application/json' -d '{"name":"admin","password":"testpass123"}' $P/api/login)" 429
-check "...not the others behind the same proxy" "$(code -H 'X-Forwarded-For: 203.0.113.8' -H 'Content-Type: application/json' -d '{"name":"admin","password":"testpass123"}' $P/api/login)" 204
+check "5 wrong passwords lock that visitor out" "$(code -H 'X-Forwarded-For: 203.0.113.7' -H 'Content-Type: application/json' -d '{"name":"admin","password":"testpass1234"}' $P/api/login)" 429
+check "...not the others behind the same proxy" "$(code -H 'X-Forwarded-For: 203.0.113.8' -H 'Content-Type: application/json' -d '{"name":"admin","password":"testpass1234"}' $P/api/login)" 204
+
+echo "== security hardening"
+# Security headers on panel pages and API responses.
+hdrs=$(curl -s -D - -o /dev/null $P/)
+check "CSP header" "$(printf '%s' "$hdrs" | grep -ic "^content-security-policy:.*frame-ancestors 'none'")" 1
+check "X-Frame-Options header" "$(printf '%s' "$hdrs" | tr -d '\r' | grep -ic '^x-frame-options: deny$')" 1
+check "X-Content-Type-Options header" "$(printf '%s' "$hdrs" | tr -d '\r' | grep -ic '^x-content-type-options: nosniff$')" 1
+check "Referrer-Policy header" "$(printf '%s' "$hdrs" | tr -d '\r' | grep -ic '^referrer-policy: no-referrer$')" 1
+check "now.html assets load" "$(code $P/now.css) $(code $P/now.js) $(code $P/theme.js)" "200 200 200"
+# /api/version requires login.
+check "/api/version requires login" "$(code $P/api/version)" 401
+check "/api/version answers when logged in" "$(code -b $J $P/api/version)" 200
+# CSRF protection across plain-text, empty-body and DELETE endpoints.
+check "CSRF: cross-origin cookies POST refused" "$(code -b $J -H 'Content-Type: text/plain' -H 'Origin: https://evil.example' -d 'youtube.com' $P/api/cookies)" 403
+check "CSRF: cross-site control POST refused" "$(code -b $J -X POST -H 'Sec-Fetch-Site: cross-site' $P/api/bots/1/control/stop)" 403
+check "CSRF: same-site control POST refused" "$(code -b $J -X POST -H 'Sec-Fetch-Site: same-site' $P/api/bots/1/control/stop)" 403
+check "CSRF: other port Origin on DELETE refused" "$(code -b $J -X DELETE -H 'Origin: http://127.0.0.1:9999' $P/api/apikeys/nope)" 403
+check "CSRF: same-origin POST allowed" "$(code -b $J -X POST -H 'Sec-Fetch-Site: same-origin' -H "Origin: $P" $P/api/bots/1/control/stop)" 204
+# Password policy: min 12 chars + common password blocklist + PBKDF2 600,000 iterations.
+check "short password refused" "$(post /api/users '{"name":"shortpw","password":"12345678901","role":"dj"}' | json "d['error']")" password-too-short
+check "common password refused" "$(post /api/users '{"name":"commonpw","password":"password1234","role":"dj"}' | json "d['error']")" password-too-common
+check "PBKDF2 uses 600,000 rounds" "$(grep -q 'pbkdf2\$600000\$' "$HOME/panda-test-env/data/config.json" && echo yes)" yes
+check "no legacy 100,000-round hashes" "$(grep -c 'pbkdf2\$100000\$' "$HOME/panda-test-env/data/config.json")" 0
+# Server-side logout revocation: a copied session cookie stops working after /api/logout.
+J2=/tmp/panda-api-logout-1; J2C=/tmp/panda-api-logout-2
+curl -s -c $J2 -H 'Content-Type: application/json' -d '{"name":"admin","password":"testpass1234"}' $P/api/login -o /dev/null
+cp $J2 $J2C
+check "copied cookie works before logout" "$(code -b $J2C $P/api/me)" 200
+check "logout succeeds" "$(code -b $J2 -X POST $P/api/logout)" 204
+check "copied cookie rejected after logout" "$(code -b $J2C $P/api/me)" 401
+rm -f $J2 $J2C
+# Per-account brute-force guard across distinct IPs + logging.
+for i in $(seq 1 10); do
+	code -H "X-Forwarded-For: 198.51.100.$i" -H 'Content-Type: application/json' -d '{"name":"brutetest","password":"wrongpassword"}' $P/api/login >/dev/null
+done
+check "10 wrong tries across 10 IPs pause the account" "$(code -H 'X-Forwarded-For: 198.51.100.11' -H 'Content-Type: application/json' -d '{"name":"brutetest","password":"wrongpassword"}' $P/api/login)" 429
+check "failed logins are logged" "$(curl -s -b $J $P/api/system/logs.txt | grep -c 'Panel login paused for "brutetest"')" 1
 
 echo "== backup (last: restoring one stops Panda)"
 curl -s -b $J $P/api/backup -o /tmp/panda-backup.zip

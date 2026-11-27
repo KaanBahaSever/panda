@@ -14,10 +14,11 @@ failed=0
 check() { if [ "$2" = "$3" ]; then echo "   PASS $1 ($2)"; else echo "   FAIL $1: \"$2\", expected \"$3\""; failed=$((failed + 1)); fi; }
 api() { curl -s -m 10 -b $J -c $J -H 'Content-Type: application/json' "$@"; }
 json() { python3 -c "import sys,json; d=json.load(sys.stdin); print($1)"; }
-login() { api -d '{"name":"admin","password":"testpass123"}' $P/api/login -o /dev/null; }
-version() { curl -s -m 3 $P/api/version | json "d['version']" 2>/dev/null || echo "-"; }
+login() { api -d '{"name":"admin","password":"testpass1234"}' $P/api/login -o /dev/null; }
+version() { curl -s -m 3 -b $J $P/api/version | json "d['version']" 2>/dev/null || echo "-"; }
 latest() { printf '{"tag_name":"v%s","body":"test notes","html_url":"http://127.0.0.1:8099/v%s"}' "$1" "$1" > $REL/latest.json; }
 start() { PANDA_TEST_RELEASES=http://127.0.0.1:8099 setsid nohup "$T/panda" --data "$T/data" >> "$T/log.txt" 2>&1 < /dev/null & }
+wait_up() { for _ in $(seq 30); do curl -s -m 2 -o /dev/null $P/ && return 0; sleep 1; done; return 1; }
 wait_version() { for _ in $(seq "$2"); do [ "$(version)" = "$1" ] && return 0; sleep 1; done; return 1; }
 cleanup() { pkill -f "http.server 8099" || true; bash "$HERE/env.sh" stop >/dev/null 2>&1; }
 trap cleanup EXIT
@@ -32,7 +33,7 @@ pkill -f "http.server 8099" || true
 (cd $REL && setsid nohup python3 -m http.server 8099 --bind 127.0.0.1 > /tmp/panda-releases.log 2>&1 < /dev/null &)
 # The Panda from env.sh again, now asking the stand-in.
 pkill -f "$T/panda --data"; sleep 2; start
-wait_version "$FROM" 30; login
+wait_up; login; wait_version "$FROM" 30
 
 echo "== this Panda can update itself"
 latest 9.0.0

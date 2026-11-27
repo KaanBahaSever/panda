@@ -58,12 +58,16 @@ case "set-password":
 	var rest = args.SkipWhile(a => a != "set-password").Skip(1).ToArray();
 	var pw = rest.FirstOrDefault();
 	var name = rest.ElementAtOrDefault(1) ?? config.Panel.Users.FirstOrDefault(u => u.Role == Roles.Admin)?.Name ?? "admin";
-	if (pw is null || pw.Length < 6 || !PanelUser.IsValidName(name))
+	if (!PanelUser.IsValidName(name) || PasswordPolicy.Validate(pw, name) is { } pwErr)
 	{
-		Console.Error.WriteLine("usage: panda set-password <password> [user]   (at least 6 characters; default user: the first admin)");
+		var why = !PanelUser.IsValidName(name) ? "invalid user name"
+			: pw is null || pw.Length < PasswordPolicy.MinLength ? $"at least {PasswordPolicy.MinLength} characters"
+			: pw.Length > PasswordPolicy.MaxLength ? $"at most {PasswordPolicy.MaxLength} characters"
+			: "that password is too common";
+		Console.Error.WriteLine($"usage: panda set-password <password> [user]   ({why}; default user: the first admin)");
 		return 1;
 	}
-	var user = config.SetUser(name, pw);
+	var user = config.SetUser(name, pw!);
 	Console.WriteLine($"Panel password of \"{user.Name}\" updated.");
 	return 0;
 }
@@ -158,6 +162,7 @@ builder.Services.AddSingleton<RadioFavorites>();
 builder.Services.AddSingleton<RadioNames>();
 builder.Services.AddSingleton<OnAir>();
 builder.Services.AddSingleton<OwnerLinks>();
+builder.Services.AddSingleton<SessionRevocation>();
 builder.Services.AddSingleton<Sources>();
 builder.Services.AddSingleton<BotShared>();
 builder.Services.AddSingleton(logBuffer);
@@ -168,8 +173,12 @@ builder.Services.AddSingleton<Updates>();
 builder.Services.AddHostedService(sp => sp.GetRequiredService<BotManager>());
 builder.Services.AddHostedService<Scheduler>();
 
+var keysDir = new DirectoryInfo(Path.Combine(dataDir, "keys"));
+keysDir.Create();
+if (!OperatingSystem.IsWindows())
+	File.SetUnixFileMode(keysDir.FullName, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
 builder.Services.AddDataProtection()
-	.PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(dataDir, "keys")))
+	.PersistKeysToFileSystem(keysDir)
 	.SetApplicationName("panda");
 builder.Services.AddAuthentication("panda")
 	.AddPolicyScheme("panda", "cookie or API key", o =>
@@ -205,7 +214,7 @@ foreach (var proxy in config.Panel.TrustedProxies)
 		app.Logger.LogWarning("panel.trustedProxies: {Proxy} is not an address", proxy);
 	else if (parts.Length == 1) forwarded.KnownProxies.Add(address);
 	else if (parts.Length == 2 && int.TryParse(parts[1], out var bits) && bits >= 0 && bits <= (address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork ? 32 : 128))
-		forwarded.KnownNetworks.Add(new Microsoft.AspNetCore.HttpOverrides.IPNetwork(address, bits));
+		forwarded.KnownIPNetworks.Add(new System.Net.IPNetwork(address, bits));
 	else app.Logger.LogWarning("panel.trustedProxies: {Proxy} is not an address", proxy);
 }
 app.UseForwardedHeaders(forwarded);
@@ -239,6 +248,12 @@ if (certificate != null)
 		});
 }
 
+app.Use((ctx, next) =>
+{
+	SecurityHeaders.Apply(ctx.Response.Headers);
+	return next();
+});
+
 var panelFiles = new ManifestEmbeddedFileProvider(typeof(PanelApi).Assembly, "wwwroot");
 // The page asks for its script and styles by version, so a browser holding an older panel gets the
 // new one right after an update.
@@ -246,6 +261,7 @@ string indexHtml;
 using (var reader = new StreamReader(panelFiles.GetFileInfo("index.html").CreateReadStream()))
 	indexHtml = reader.ReadToEnd()
 		.Replace("href=\"style.css\"", $"href=\"style.css?v={PanelApi.Version}\"")
+		.Replace("src=\"theme.js\"", $"src=\"theme.js?v={PanelApi.Version}\"")
 		.Replace("src=\"app.js\"", $"src=\"app.js?v={PanelApi.Version}\"");
 app.Use(async (ctx, next) =>
 {

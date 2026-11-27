@@ -58,7 +58,7 @@ printf '{ "bots": [ { "id": "1", "server": { "address": "127.0.0.1" } } ], "pane
   "youTube": { "ytDlpPath": "%s", "sponsorBlockUrl": "http://127.0.0.1:8096/sb" },
   "sources": { "localLinks": true, "radioBrowserUrl": "http://127.0.0.1:8096/rb", "radioNamesUrl": "http://127.0.0.1:8096/rn" } }\n' \
 	"$T/fake-yt-dlp/yt-dlp" > "$T/data/config.json"
-"$T/panda" --data "$T/data" set-password testpass123 admin >/dev/null
+"$T/panda" --data "$T/data" set-password testpass1234 admin >/dev/null
 # Spotify and Deezer are asked at the web stand-in.
 PANDA_TEST_REWRITE="https://open.spotify.com/=http://127.0.0.1:8096/spotify/;https://api.deezer.com/=http://127.0.0.1:8096/deezer/" \
 	setsid nohup "$T/panda" --data "$T/data" > "$T/log.txt" 2>&1 < /dev/null &

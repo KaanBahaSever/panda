@@ -601,11 +601,13 @@ public sealed partial class YouTube(PandaConfig config, ILogger<YouTube> log)
 	// folder it runs in: a folder of its own, emptied when Panda starts.
 	static readonly Lazy<string> WorkDir = new(() =>
 	{
-		var dir = Path.Combine(Path.GetTempPath(), $"panda-ytdlp-{Environment.UserName}");
+		var dir = Path.Combine(Path.GetTempPath(), $"panda-ytdlp-{Environment.UserName}-{Environment.ProcessId}");
 		try
 		{
-			if (Directory.Exists(dir)) Directory.Delete(dir, recursive: true);
+			if (Directory.Exists(dir) && new DirectoryInfo(dir).LinkTarget is null) Directory.Delete(dir, recursive: true);
 			Directory.CreateDirectory(dir);
+			if (!OperatingSystem.IsWindows())
+				File.SetUnixFileMode(dir, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
 		}
 		catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
 		return dir;

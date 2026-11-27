@@ -1,5 +1,5 @@
 // Chat test: joins a TeamSpeak test server next to Panda, runs scenario files and checks Panda's replies.
-// usage: chattest <ts server> <panel url> <scenario>...    (panel login: admin / $PANDA_TEST_PASSWORD, default testpass123)
+// usage: chattest <ts server> <panel url> <scenario>...    (panel login: admin / $PANDA_TEST_PASSWORD, default testpass1234)
 //
 // Scenario lines (each file starts from the default settings below and a !stop):
 //   # text            heading, printed
@@ -64,7 +64,7 @@ var defaults = new Dictionary<string, string>
 	["sources.soundCloud"] = "true", ["sources.sites"] = "true", ["sources.services"] = "true", ["sources.pages"] = "true", ["sources.radio"] = "true", ["sources.radioNames"] = "true",
 	["normalizeVolume"] = "true", ["youTube.sponsorBlock"] = "false", ["youTube.searchResults"] = "5", ["youTube.hideLive"] = "false", ["youTube.hideShort"] = "false",
 };
-var panel = new Panel(args[1], Environment.GetEnvironmentVariable("PANDA_TEST_PASSWORD") ?? "testpass123");
+var panel = new Panel(args[1], Environment.GetEnvironmentVariable("PANDA_TEST_PASSWORD") ?? "testpass1234");
 await panel.LoginAsync();
 
 var scheduler = new DedicatedTaskScheduler(Id.Null);

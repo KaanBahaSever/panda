@@ -52,7 +52,7 @@ const I18N = {
     save: 'Save', reconnect: 'Reconnect bot',
     sCookies: 'YouTube cookies', sCookiesHelp: 'If YouTube says "confirm you\'re not a bot": open a private/incognito window, log in to YouTube, export cookies with a "cookies.txt" browser extension, paste them here, then close that window.',
     chooseFile: 'Choose file', saveCookies: 'Save cookies', removeCookies: 'Remove cookies', cookiesOn: 'Cookies set ✓', cookiesOff: 'No cookies',
-    pwRuleLen: n => `At least ${n} characters`, sCmds: 'Commands', sCmdsHint: 'Every chat command of this bot and who may use it. Admins can always use all of them.', sCmdsFilter: 'Find a command', findPh: 'Search settings', findNone: q => `Nothing found for “${q}”.`, sPanelPw: 'Panel password', pwCurrent: 'Current password', pwNew: 'New password (min 6)', pwChange: 'Change password',
+    pwRuleLen: n => `At least ${n} characters`, sCmds: 'Commands', sCmdsHint: 'Every chat command of this bot and who may use it. Admins can always use all of them.', sCmdsFilter: 'Find a command', findPh: 'Search settings', findNone: q => `Nothing found for “${q}”.`, httpWarn: 'This connection is not encrypted (HTTP) — your password is sent in plain text. Set up HTTPS or a reverse proxy.', sPanelPw: 'Panel password', pwCurrent: 'Current password', pwNew: 'New password', pwChange: 'Change password',
     cancel: 'Cancel', ok: 'OK', saved: 'Settings saved', reconnecting: 'Saved — the bot is reconnecting…', reconnectSent: 'Reconnecting the bot…',
     cookiesSaved: 'Cookies saved 🍪', cookiesRemoved: 'Cookies removed', cookiesEmpty: 'Paste or choose a cookies.txt first', pwChanged: 'Password changed',
     confirmStop: 'Stop playback and clear the queue?', confirmClear: 'Clear the whole queue?', confirmCookies: 'Remove the saved YouTube cookies?',
@@ -62,7 +62,7 @@ const I18N = {
     'err.too-long': 'That song is too long.', 'err.bot-check': 'YouTube wants a bot check — add cookies in Settings.',
     'err.unavailable': 'That video is unavailable.', 'err.age': 'That video is age-restricted — add cookies in Settings.',
     'err.queue-full': 'The queue is full.', 'err.wrong-password': 'Wrong password.', 'err.too-many-attempts': 'Too many attempts — wait a few minutes.',
-    'err.password-too-short': 'The new password needs at least 6 characters.', 'err.cookies-invalid': 'That doesn\'t look like a YouTube cookies.txt.',
+    'err.password-too-short': 'The new password needs at least 12 characters.', 'err.password-too-long': 'That password is too long (at most 256 characters).', 'err.password-too-common': 'That password is too common — choose a different one.', 'err.cookies-invalid': 'That doesn\'t look like a YouTube cookies.txt.',
     'err.too-large': 'That file is too large.', 'err.missing': 'Missing tool on the server: ',
     'err.timeout': 'No answer in time — try again.', 'err.no-bot': 'That bot no longer exists.',
     library: 'Library', savedBadge: 'saved', fromLibrary: 'From your library', libFilter: 'Filter saved songs',
@@ -80,7 +80,7 @@ const I18N = {
     userName: 'User name', role: 'Role', roleAdmin: 'Admin', roleDj: 'Can only add songs', sUsers2: 'Panel users',
     sUsersHint2: 'Admins can do everything. "Can only add songs" users can watch and add songs, nothing else.',
     addUser: 'Add user', userAdded: 'User added', userRemoved: 'User removed', roleChanged: 'Role changed', you: '(you)',
-    confirmUserRemove: x => `Remove the user "${x}"?`, resetPw: 'Set a new password', resetPwFor: x => `New password for "${x}" (min 6):`, pwReset: 'Password set',
+    confirmUserRemove: x => `Remove the user "${x}"?`, resetPw: 'Set a new password', resetPwFor: x => `New password for "${x}" (min 12):`, pwReset: 'Password set',
     forbidden: 'You are not allowed to do that.', 'err.bad-name': 'User names are 2–32 letters, digits, ".", "_" or "-".',
     'err.user-exists': 'That user name is taken.', 'err.bad-role': 'Unknown role.', 'err.last-admin': 'There must be at least one admin.',
     'err.self': 'You can\'t remove yourself.',
@@ -161,7 +161,7 @@ const I18N = {
     save: 'Kaydet', reconnect: 'Botu yeniden bağla',
     sCookies: 'YouTube çerezleri', sCookiesHelp: 'YouTube "bot olmadığınızı doğrulayın" derse: gizli/özel bir pencere açın, YouTube\'a giriş yapın, bir "cookies.txt" tarayıcı eklentisiyle çerezleri dışa aktarın, buraya yapıştırın ve o pencereyi kapatın.',
     chooseFile: 'Dosya seç', saveCookies: 'Çerezleri kaydet', removeCookies: 'Çerezleri kaldır', cookiesOn: 'Çerezler var ✓', cookiesOff: 'Çerez yok',
-    pwRuleLen: n => `En az ${n} karakter`, sCmds: 'Komutlar', sCmdsHint: 'Bu botun bütün sohbet komutları ve kimin kullanabileceği. Yöneticiler hepsini her zaman kullanabilir.', sCmdsFilter: 'Komut ara', findPh: 'Ayarlarda ara', findNone: q => `“${q}” için bir şey bulunamadı.`, sPanelPw: 'Panel şifresi', pwCurrent: 'Mevcut şifre', pwNew: 'Yeni şifre (en az 6)', pwChange: 'Şifreyi değiştir',
+    pwRuleLen: n => `En az ${n} karakter`, sCmds: 'Komutlar', sCmdsHint: 'Bu botun bütün sohbet komutları ve kimin kullanabileceği. Yöneticiler hepsini her zaman kullanabilir.', sCmdsFilter: 'Komut ara', findPh: 'Ayarlarda ara', findNone: q => `“${q}” için bir şey bulunamadı.`, httpWarn: 'Bu bağlantı şifreli değil (HTTP) — şifreniz açık metin olarak gider. HTTPS ya da ters vekil (reverse proxy) kurun.', sPanelPw: 'Panel şifresi', pwCurrent: 'Mevcut şifre', pwNew: 'Yeni şifre', pwChange: 'Şifreyi değiştir',
     cancel: 'Vazgeç', ok: 'Tamam', saved: 'Ayarlar kaydedildi', reconnecting: 'Kaydedildi — bot yeniden bağlanıyor…', reconnectSent: 'Bot yeniden bağlanıyor…',
     cookiesSaved: 'Çerezler kaydedildi 🍪', cookiesRemoved: 'Çerezler kaldırıldı', cookiesEmpty: 'Önce bir cookies.txt yapıştırın ya da seçin', pwChanged: 'Şifre değiştirildi',
     confirmStop: 'Çalma durdurulsun ve sıra temizlensin mi?', confirmClear: 'Tüm sıra temizlensin mi?', confirmCookies: 'Kayıtlı YouTube çerezleri kaldırılsın mı?',
@@ -171,7 +171,7 @@ const I18N = {
     'err.too-long': 'Bu şarkı çok uzun.', 'err.bot-check': 'YouTube bot doğrulaması istiyor — Ayarlar\'dan çerez ekleyin.',
     'err.unavailable': 'Bu video kullanılamıyor.', 'err.age': 'Bu video yaş sınırlı — Ayarlar\'dan çerez ekleyin.',
     'err.queue-full': 'Sıra dolu.', 'err.wrong-password': 'Şifre yanlış.', 'err.too-many-attempts': 'Çok fazla deneme — birkaç dakika bekleyin.',
-    'err.password-too-short': 'Yeni şifre en az 6 karakter olmalı.', 'err.cookies-invalid': 'Bu bir YouTube cookies.txt dosyasına benzemiyor.',
+    'err.password-too-short': 'Yeni şifre en az 12 karakter olmalı.', 'err.password-too-long': 'Bu şifre çok uzun (en fazla 256 karakter).', 'err.password-too-common': 'Bu şifre çok yaygın — başka bir şifre seçin.', 'err.cookies-invalid': 'Bu bir YouTube cookies.txt dosyasına benzemiyor.',
     'err.too-large': 'Dosya çok büyük.', 'err.missing': 'Sunucuda eksik araç: ',
     'err.timeout': 'Zamanında cevap gelmedi — tekrar dene.', 'err.no-bot': 'Bu bot artık yok.',
     library: 'Kütüphane', savedBadge: 'kayıtlı', fromLibrary: 'Kütüphanenden', libFilter: 'Kayıtlı şarkılarda ara',
@@ -189,7 +189,7 @@ const I18N = {
     userName: 'Kullanıcı adı', role: 'Rol', roleAdmin: 'Yönetici', roleDj: 'Sadece şarkı ekler', sUsers2: 'Panel kullanıcıları',
     sUsersHint2: 'Yöneticiler her şeyi yapabilir. "Sadece şarkı ekler" kullanıcıları izler ve şarkı ekler, başka bir şey yapamaz.',
     addUser: 'Kullanıcı ekle', userAdded: 'Kullanıcı eklendi', userRemoved: 'Kullanıcı silindi', roleChanged: 'Rol değişti', you: '(sen)',
-    confirmUserRemove: x => `"${x}" kullanıcısı silinsin mi?`, resetPw: 'Yeni şifre koy', resetPwFor: x => `"${x}" için yeni şifre (en az 6):`, pwReset: 'Şifre ayarlandı',
+    confirmUserRemove: x => `"${x}" kullanıcısı silinsin mi?`, resetPw: 'Yeni şifre koy', resetPwFor: x => `"${x}" için yeni şifre (en az 12):`, pwReset: 'Şifre ayarlandı',
     forbidden: 'Bunu yapma iznin yok.', 'err.bad-name': 'Kullanıcı adı 2–32 harf, rakam, ".", "_" ya da "-" olmalı.',
     'err.user-exists': 'Bu kullanıcı adı alınmış.', 'err.bad-role': 'Bilinmeyen rol.', 'err.last-admin': 'En az bir yönetici kalmalı.',
     'err.self': 'Kendini silemezsin.',
@@ -270,7 +270,7 @@ const I18N = {
     save: 'Enregistrer', reconnect: 'Reconnecter le bot',
     sCookies: 'Cookies YouTube', sCookiesHelp: 'Si YouTube demande de « confirmer que vous n\'êtes pas un robot » : ouvrez une fenêtre de navigation privée, connectez-vous à YouTube, exportez les cookies avec une extension « cookies.txt », collez-les ici, puis fermez cette fenêtre.',
     chooseFile: 'Choisir un fichier', saveCookies: 'Enregistrer les cookies', removeCookies: 'Supprimer les cookies', cookiesOn: 'Cookies présents ✓', cookiesOff: 'Aucun cookie',
-    pwRuleLen: n => `Au moins ${n} caractères`, sCmds: 'Commandes', sCmdsHint: 'Toutes les commandes de chat de ce bot et qui peut les utiliser. Les admins peuvent toujours toutes les utiliser.', sCmdsFilter: 'Chercher une commande', findPh: 'Chercher dans les paramètres', findNone: q => `Rien trouvé pour « ${q} ».`, sPanelPw: 'Mot de passe du panneau', pwCurrent: 'Mot de passe actuel', pwNew: 'Nouveau mot de passe (6 caractères min.)', pwChange: 'Changer le mot de passe',
+    pwRuleLen: n => `Au moins ${n} caractères`, sCmds: 'Commandes', sCmdsHint: 'Toutes les commandes de chat de ce bot et qui peut les utiliser. Les admins peuvent toujours toutes les utiliser.', sCmdsFilter: 'Chercher une commande', findPh: 'Chercher dans les paramètres', findNone: q => `Rien trouvé pour « ${q} ».`, httpWarn: 'Cette connexion n\'est pas chiffrée (HTTP) — votre mot de passe circule en clair. Activez HTTPS ou un proxy inverse.', sPanelPw: 'Mot de passe du panneau', pwCurrent: 'Mot de passe actuel', pwNew: 'Nouveau mot de passe', pwChange: 'Changer le mot de passe',
     cancel: 'Annuler', ok: 'OK', saved: 'Paramètres enregistrés', reconnecting: 'Enregistré — le bot se reconnecte…', reconnectSent: 'Reconnexion du bot…',
     cookiesSaved: 'Cookies enregistrés 🍪', cookiesRemoved: 'Cookies supprimés', cookiesEmpty: 'Collez ou choisissez d\'abord un cookies.txt', pwChanged: 'Mot de passe changé',
     confirmStop: 'Arrêter la lecture et vider la file ?', confirmClear: 'Vider toute la file ?', confirmCookies: 'Supprimer les cookies YouTube enregistrés ?',
@@ -280,7 +280,7 @@ const I18N = {
     'err.too-long': 'Ce morceau est trop long.', 'err.bot-check': 'YouTube demande une vérification anti-robot — ajoutez des cookies dans les Paramètres.',
     'err.unavailable': 'Cette vidéo n\'est pas disponible.', 'err.age': 'Cette vidéo est soumise à une limite d\'âge — ajoutez des cookies dans les Paramètres.',
     'err.queue-full': 'La file est pleine.', 'err.wrong-password': 'Mot de passe incorrect.', 'err.too-many-attempts': 'Trop de tentatives — patientez quelques minutes.',
-    'err.password-too-short': 'Le nouveau mot de passe doit faire au moins 6 caractères.', 'err.cookies-invalid': 'Ça ne ressemble pas à un cookies.txt de YouTube.',
+    'err.password-too-short': 'Le nouveau mot de passe doit faire au moins 12 caractères.', 'err.password-too-long': 'Ce mot de passe est trop long (256 caractères max.).', 'err.password-too-common': 'Ce mot de passe est trop courant — choisissez-en un autre.', 'err.cookies-invalid': 'Ça ne ressemble pas à un cookies.txt de YouTube.',
     'err.too-large': 'Ce fichier est trop volumineux.', 'err.missing': 'Outil manquant sur le serveur : ',
     'err.timeout': 'Pas de réponse à temps — réessayez.', 'err.no-bot': 'Ce bot n\'existe plus.',
     library: 'Bibliothèque', savedBadge: 'enregistré', fromLibrary: 'Dans votre bibliothèque', libFilter: 'Filtrer les morceaux enregistrés',
@@ -298,7 +298,7 @@ const I18N = {
     userName: 'Nom d\'utilisateur', role: 'Rôle', roleAdmin: 'Admin', roleDj: 'Peut seulement ajouter des morceaux', sUsers2: 'Utilisateurs du panneau',
     sUsersHint2: 'Les admins peuvent tout faire. Les utilisateurs « Peut seulement ajouter des morceaux » peuvent regarder et ajouter des morceaux, rien d\'autre.',
     addUser: 'Ajouter un utilisateur', userAdded: 'Utilisateur ajouté', userRemoved: 'Utilisateur supprimé', roleChanged: 'Rôle modifié', you: '(vous)',
-    confirmUserRemove: x => `Supprimer l'utilisateur « ${x} » ?`, resetPw: 'Définir un nouveau mot de passe', resetPwFor: x => `Nouveau mot de passe pour « ${x} » (6 caractères min.) :`, pwReset: 'Mot de passe défini',
+    confirmUserRemove: x => `Supprimer l'utilisateur « ${x} » ?`, resetPw: 'Définir un nouveau mot de passe', resetPwFor: x => `Nouveau mot de passe pour « ${x} » (12 caractères min.) :`, pwReset: 'Mot de passe défini',
     forbidden: 'Vous n\'avez pas le droit de faire ça.', 'err.bad-name': 'Un nom d\'utilisateur fait 2 à 32 caractères : lettres, chiffres, « . », « _ » ou « - ».',
     'err.user-exists': 'Ce nom d\'utilisateur est déjà pris.', 'err.bad-role': 'Rôle inconnu.', 'err.last-admin': 'Il doit rester au moins un admin.',
     'err.self': 'Vous ne pouvez pas vous supprimer vous-même.',
@@ -379,7 +379,7 @@ const I18N = {
     save: 'Speichern', reconnect: 'Bot neu verbinden',
     sCookies: 'YouTube-Cookies', sCookiesHelp: 'Wenn YouTube „Bestätige, dass du kein Bot bist“ sagt: Öffne ein privates Fenster, melde dich bei YouTube an, exportiere die Cookies mit einer „cookies.txt“-Browsererweiterung, füge sie hier ein und schließ das Fenster.',
     chooseFile: 'Datei wählen', saveCookies: 'Cookies speichern', removeCookies: 'Cookies entfernen', cookiesOn: 'Cookies gesetzt ✓', cookiesOff: 'Keine Cookies',
-    pwRuleLen: n => `Mindestens ${n} Zeichen`, sCmds: 'Befehle', sCmdsHint: 'Alle Chatbefehle dieses Bots und wer sie benutzen darf. Admins dürfen immer alle.', sCmdsFilter: 'Befehl suchen', findPh: 'Einstellungen durchsuchen', findNone: q => `Nichts gefunden für „${q}“.`, sPanelPw: 'Panel-Passwort', pwCurrent: 'Aktuelles Passwort', pwNew: 'Neues Passwort (min. 6)', pwChange: 'Passwort ändern',
+    pwRuleLen: n => `Mindestens ${n} Zeichen`, sCmds: 'Befehle', sCmdsHint: 'Alle Chatbefehle dieses Bots und wer sie benutzen darf. Admins dürfen immer alle.', sCmdsFilter: 'Befehl suchen', findPh: 'Einstellungen durchsuchen', findNone: q => `Nichts gefunden für „${q}“.`, httpWarn: 'Diese Verbindung ist unverschlüsselt (HTTP) — dein Passwort wird im Klartext übertragen. Richte HTTPS oder einen Reverse Proxy ein.', sPanelPw: 'Panel-Passwort', pwCurrent: 'Aktuelles Passwort', pwNew: 'Neues Passwort', pwChange: 'Passwort ändern',
     cancel: 'Abbrechen', ok: 'OK', saved: 'Einstellungen gespeichert', reconnecting: 'Gespeichert — der Bot verbindet sich neu…', reconnectSent: 'Bot verbindet sich neu…',
     cookiesSaved: 'Cookies gespeichert 🍪', cookiesRemoved: 'Cookies entfernt', cookiesEmpty: 'Füge zuerst eine cookies.txt ein oder wähle eine aus', pwChanged: 'Passwort geändert',
     confirmStop: 'Wiedergabe stoppen und Warteschlange leeren?', confirmClear: 'Die ganze Warteschlange leeren?', confirmCookies: 'Die gespeicherten YouTube-Cookies entfernen?',
@@ -389,7 +389,7 @@ const I18N = {
     'err.too-long': 'Dieser Song ist zu lang.', 'err.bot-check': 'YouTube will eine Bot-Prüfung — füg in den Einstellungen Cookies hinzu.',
     'err.unavailable': 'Dieses Video ist nicht verfügbar.', 'err.age': 'Dieses Video hat eine Altersbeschränkung — füg in den Einstellungen Cookies hinzu.',
     'err.queue-full': 'Die Warteschlange ist voll.', 'err.wrong-password': 'Falsches Passwort.', 'err.too-many-attempts': 'Zu viele Versuche — warte ein paar Minuten.',
-    'err.password-too-short': 'Das neue Passwort braucht mindestens 6 Zeichen.', 'err.cookies-invalid': 'Das sieht nicht nach einer YouTube-cookies.txt aus.',
+    'err.password-too-short': 'Das neue Passwort braucht mindestens 12 Zeichen.', 'err.password-too-long': 'Dieses Passwort ist zu lang (höchstens 256 Zeichen).', 'err.password-too-common': 'Dieses Passwort ist zu häufig — wähle ein anderes.', 'err.cookies-invalid': 'Das sieht nicht nach einer YouTube-cookies.txt aus.',
     'err.too-large': 'Die Datei ist zu groß.', 'err.missing': 'Fehlendes Programm auf dem Server: ',
     'err.timeout': 'Keine rechtzeitige Antwort — versuch es nochmal.', 'err.no-bot': 'Diesen Bot gibt es nicht mehr.',
     library: 'Bibliothek', savedBadge: 'gespeichert', fromLibrary: 'Aus deiner Bibliothek', libFilter: 'Gespeicherte Songs filtern',
@@ -407,7 +407,7 @@ const I18N = {
     userName: 'Benutzername', role: 'Rolle', roleAdmin: 'Admin', roleDj: 'Darf nur Songs hinzufügen', sUsers2: 'Panel-Nutzer',
     sUsersHint2: 'Admins dürfen alles. Nutzer mit „Darf nur Songs hinzufügen“ können zusehen und Songs hinzufügen, sonst nichts.',
     addUser: 'Nutzer hinzufügen', userAdded: 'Nutzer hinzugefügt', userRemoved: 'Nutzer entfernt', roleChanged: 'Rolle geändert', you: '(du)',
-    confirmUserRemove: x => `Den Nutzer „${x}“ entfernen?`, resetPw: 'Neues Passwort setzen', resetPwFor: x => `Neues Passwort für „${x}“ (min. 6):`, pwReset: 'Passwort gesetzt',
+    confirmUserRemove: x => `Den Nutzer „${x}“ entfernen?`, resetPw: 'Neues Passwort setzen', resetPwFor: x => `Neues Passwort für „${x}“ (min. 12):`, pwReset: 'Passwort gesetzt',
     forbidden: 'Das darfst du nicht.', 'err.bad-name': 'Benutzernamen haben 2–32 Buchstaben, Ziffern, „.“, „_“ oder „-“.',
     'err.user-exists': 'Dieser Benutzername ist schon vergeben.', 'err.bad-role': 'Unbekannte Rolle.', 'err.last-admin': 'Es muss mindestens einen Admin geben.',
     'err.self': 'Du kannst dich nicht selbst entfernen.',
@@ -467,6 +467,7 @@ function el(tag, props = {}, ...kids) {
     if (v == null || v === false) continue;
     if (k === 'text') e.textContent = v;
     else if (k === 'class') e.className = v;
+    else if (k === 'style' && typeof v === 'object') Object.assign(e.style, v);
     else if (k.startsWith('on')) e.addEventListener(k.slice(2), v);
     else e.setAttribute(k, v === true ? '' : v);
   }
@@ -586,7 +587,7 @@ darkMq.addEventListener?.('change', applyTheme);
 
 function applyLang() {
   document.documentElement.lang = lang;
-  for (const f of pwRuleUpdates) f();
+  updatePwRules();
   document.querySelectorAll('[data-i18n]').forEach(e => { e.textContent = t(e.dataset.i18n); });
   document.querySelectorAll('[data-i18n-ph]').forEach(e => { e.placeholder = t(e.dataset.i18nPh); });
   document.querySelectorAll('[data-i18n-aria]').forEach(e => setLabel(e, t(e.dataset.i18nAria)));
@@ -1160,7 +1161,7 @@ async function openSettings() {
   if (!$('settings').open) $('settings').showModal();
   $('set-find').value = ''; findSettings();
   showPane(store.get('panda.setPane'));
-  for (const f of pwRuleUpdates) f();
+  updatePwRules();
   $('set-bot').textContent = canManage() ? botName() : '';
   const v = api('GET', '/api/version').then(v => { $('version').textContent = 'v' + v.version; }).catch(() => {});
   if (canManage()) {
@@ -1178,8 +1179,9 @@ $('open-settings').addEventListener('click', openSettings);
 
 /* What a new password needs, under the field, ticked off while it's typed. PW_MIN is what the server checks
    (PanelApi: password-too-short). */
-const PW_MIN = 6;
+const PW_MIN = 12;
 const pwRuleUpdates = [];
+const updatePwRules = () => { for (const f of pwRuleUpdates) f(); };
 function pwRules(input) {
   const list = el('ul', { class: 'pw-rules', 'aria-live': 'polite' });
   const rule = (ok, text) => el('li', { class: ok ? 'ok' : null }, icon(ok ? 'check' : 'dot', 'ic sm'), el('span', { text }));
@@ -1191,9 +1193,11 @@ function pwRules(input) {
 }
 pwRules($('pw-form').elements.new);
 pwRules($('user-form').elements.password);
+pwRules($('owner-pw'));
 
 /* The settings show one section at a time, picked in the side menu (the last one comes back next time).
    A section is every element in the settings with its data-pane; the menu shows only what the role may see. */
+const SHARED_PANES = new Set(['sources', 'youtube', 'library', 'users']);
 function showPane(name) {
   const items = [...$('set-nav').querySelectorAll('[data-pane]')];
   const shown = items.filter(b => b.offsetParent !== null);
@@ -1202,8 +1206,9 @@ function showPane(name) {
   const pane = item.dataset.pane;
   for (const b of items) { if (b === item) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); }
   for (const e of $('set-body').querySelectorAll('[data-pane]')) e.classList.toggle('pane-off', e.dataset.pane !== pane);
-  // Save and Reconnect belong to the bot's settings form, not to users, keys, backups or the password.
+  // Save belongs to the bot's settings form; Reconnect only to the bot's own sections.
   $('set-actions').classList.toggle('pane-off', !$('set-form').querySelector(`[data-pane="${pane}"]`));
+  $('set-reconnect').classList.toggle('pane-off', SHARED_PANES.has(pane));
   $('set-body').scrollTop = 0;
   if (name !== pane || store.get('panda.setPane') !== pane) store.set('panda.setPane', pane);
 }
@@ -1212,8 +1217,12 @@ $('set-nav').addEventListener('click', e => {
   if (b) { showPane(b.dataset.pane); b.scrollIntoView({ block: 'nearest', inline: 'nearest' }); }
 });
 // Changed but not saved yet: said next to the title until it's saved or the settings are closed.
+// Inputs that don't save with the form (the command filter, the avatar upload, the schedule draft) don't count.
 const markDirty = on => { $('set-dirty').hidden = !on; };
-for (const ev of ['input', 'change']) $('set-form').addEventListener(ev, () => { if (settings) markDirty(true); });
+for (const ev of ['input', 'change']) $('set-form').addEventListener(ev, e => {
+  if (!settings || e.target.closest('#cmd-filter, #avatar-file, .sch-add')) return;
+  markDirty(true);
+});
 $('settings').addEventListener('close', () => markDirty(false));
 
 /* ---------------- panel users (admins) ---------------- */
@@ -1238,7 +1247,7 @@ async function loadUsers() {
     pw.addEventListener('click', async () => {
       const v = await promptBox(t('resetPwFor', u.name));
       if (v == null) return;
-      if (v.length < 6) return toast(t('err.password-too-short'), 'err');
+      if (v.length < PW_MIN) return toast(t('err.password-too-short'), 'err');
       await act(() => api('PUT', '/api/users/' + encodeURIComponent(u.name), { password: v }), t('pwReset'));
     });
     const del = el('button', { class: 'icon-btn sm del', type: 'button', title: t('delete'), 'aria-label': `${t('delete')}: ${u.name}`, disabled: self }, icon('trash'));
@@ -1289,7 +1298,7 @@ $('user-form').addEventListener('submit', async e => {
   const f = e.target.elements;
   await busy(e.submitter || e.target.querySelector('[type=submit]'), async () => {
     const ok = await act(() => api('POST', '/api/users', { name: f.name.value.trim(), password: f.password.value, role: f.role.value, uid: f.uid.value.trim() }).then(() => true), t('userAdded'));
-    if (ok) { e.target.reset(); showUserUid(); loadUsers(); }
+    if (ok) { e.target.reset(); updatePwRules(); showUserUid(); loadUsers(); }
   });
 });
 
@@ -1428,7 +1437,7 @@ $('set-form').addEventListener('submit', async e => {
   const form = $('set-form'), f = form.elements;
   if (!settings) return;
   if (!isAdmin()) {
-    if (!f.nickname.checkValidity()) { f.nickname.reportValidity(); return toast(t('invalid'), 'err'); }
+    if (!f.nickname.checkValidity()) { showPane('name'); f.nickname.reportValidity(); return toast(t('invalid'), 'err'); }
     const body = { nickname: f.nickname.value.trim(), description: f.description.value.trim() };
     await busy($('set-save'), async () => {
       const s = await act(() => api('PUT', SB('/settings'), body), t(body.nickname !== settings.nickname ? 'reconnecting' : 'saved'));
@@ -1438,7 +1447,16 @@ $('set-form').addEventListener('submit', async e => {
   }
   const gb = +f.libraryMaxGb.value;
   f.libraryMaxGb.setCustomValidity(gb === 0 || gb >= 0.1 ? '' : t('sLibMaxBad'));
-  if (!form.checkValidity()) { form.reportValidity(); return toast(t('invalid'), 'err'); }
+  if (!form.checkValidity()) {
+    const bad = form.querySelector(':invalid');
+    if (bad) {
+      if ($('settings').classList.contains('searching')) { $('set-find').value = ''; findSettings(); }
+      const pane = bad.closest('[data-pane]')?.dataset.pane;
+      if (pane) showPane(pane);
+      bad.reportValidity();
+    } else form.reportValidity();
+    return toast(t('invalid'), 'err');
+  }
   const body = {
     ...settings,
     serverAddress: f.serverAddress.value.trim(), serverPassword: pwValue('serverPassword'),
@@ -1543,7 +1561,7 @@ $('restore-file').addEventListener('change', async e => {
   // Panda restarts: wait for it, then load the panel again (the restored users may differ).
   for (let i = 0; i < 60; i++) {
     await new Promise(res => setTimeout(res, 2000));
-    if (await fetch('api/version', { cache: 'no-store' }).then(x => x.ok).catch(() => false)) { location.reload(); return; }
+    if (await fetch('api/me', { cache: 'no-store' }).then(x => x.ok || x.status === 401).catch(() => false)) { location.reload(); return; }
   }
   toast(t('backupStart'), 'err');
 });
@@ -1590,7 +1608,7 @@ function renderSchedule() {
     const on = el('input', { type: 'checkbox', checked: e.enabled !== false, 'aria-label': t('schOn') });
     on.addEventListener('change', () => { e.enabled = on.checked; });
     const del = el('button', { class: 'icon-btn sm del', type: 'button', title: t('remove'), 'aria-label': t('remove') }, icon('trash'));
-    del.addEventListener('click', () => { sched.splice(i, 1); renderSchedule(); });
+    del.addEventListener('click', () => { sched.splice(i, 1); renderSchedule(); markDirty(true); });
     return el('li', {}, el('label', { class: 'check' }, on, el('span', { text: schText(e) })), del);
   }) : [el('li', { class: 'empty muted', text: t('schNone') })]));
 }
@@ -1602,6 +1620,7 @@ $('sch-add').addEventListener('click', () => {
   sched.push({ time: $('sch-time').value, days: days.length === 7 ? [] : days, action, target: action === 'stop' ? '' : $('sch-target').value,
     shuffle: action === 'playlist' && $('sch-shuffle').checked, enabled: true });
   renderSchedule();
+  markDirty(true);
   toast(t('schAdded'));
 });
 
@@ -1726,6 +1745,7 @@ function findSettings() {
     if (counts[b.dataset.pane]) b.dataset.count = counts[b.dataset.pane]; else b.classList.add('nohit');
   }
   $('set-actions').classList.remove('pane-off');
+  $('set-reconnect').classList.remove('pane-off');
   none.hidden = total > 0;
   none.textContent = total ? '' : t('findNone', $('set-find').value.trim());
   $('set-body').scrollTop = 0;
@@ -1751,6 +1771,7 @@ function permChip(list, groups, it) {
     if (it.id != null) perm[groups] = perm[groups].filter(g => g !== it.id);
     else perm[list] = perm[list].filter(p => p.uid !== it.p.uid);
     renderPerm();
+    markDirty(true);
   });
   return el('li', { title: it.id != null ? `#${it.id}` : it.p.uid }, el('span', { text: label }), x);
 }
@@ -1768,8 +1789,10 @@ async function openPicker(box) {
 }
 function addPicked(item) {
   if (!pickFor || !perm || !$('picker').open) return;
-  if (item.id != null) { if (!perm[pickFor.groups].includes(item.id)) perm[pickFor.groups].push(item.id); }
-  else if (!perm[pickFor.list].some(p => p.uid === item.uid)) perm[pickFor.list].push({ uid: item.uid, name: item.name || '' });
+  let added = false;
+  if (item.id != null) { if (!perm[pickFor.groups].includes(item.id)) { perm[pickFor.groups].push(item.id); added = true; } }
+  else if (!perm[pickFor.list].some(p => p.uid === item.uid)) { perm[pickFor.list].push({ uid: item.uid, name: item.name || '' }); added = true; }
+  if (added) markDirty(true);
   renderPerm();
   renderPicker();
 }
@@ -1817,6 +1840,7 @@ $('cmd-recommended').addEventListener('click', () => {
   Object.assign(perm.commandLevels, perm.recommended);
   F().othersSongs.value = 'dj'; F().voteSkip.checked = true;
   renderPerm();
+  markDirty(true);
   toast(t('sRecommendedHint'));
 });
 // A vote is for the people below "other people's songs"; with everyone allowed there'd be nobody to vote.
@@ -1868,10 +1892,10 @@ $('cookie-remove').addEventListener('click', async e => {
 $('pw-form').addEventListener('submit', async e => {
   e.preventDefault();
   const f = e.target.elements;
-  if (f.new.value.length < 6) return toast(t('err.password-too-short'), 'err');
+  if (f.new.value.length < PW_MIN) return toast(t('err.password-too-short'), 'err');
   await busy(e.submitter || e.target.querySelector('[type=submit]'), async () => {
     const ok = await act(() => api('POST', '/api/password', { current: f.current.value, new: f.new.value }).then(() => true), t('pwChanged'));
-    if (ok) e.target.reset();
+    if (ok) { e.target.reset(); updatePwRules(); }
   });
 });
 
@@ -2178,7 +2202,7 @@ function renderStats(r) {
     const max = Math.max(1, ...items.map(x => x.plays));
     return el('section', { class: 'chart' }, el('h4', { class: 'eyebrow', text: title }),
       el('div', { class: 'bars', role: 'img', 'aria-label': title },
-        ...items.map(x => el('i', { class: x.plays ? '' : 'zero', style: `height:${Math.max(2, x.plays / max * 100)}%`, title: `${tip(x)}: ${t('plays', x.plays)}` }))),
+        ...items.map(x => el('i', { class: x.plays ? '' : 'zero', style: { height: `${Math.max(2, x.plays / max * 100)}%` }, title: `${tip(x)}: ${t('plays', x.plays)}` }))),
       el('div', { class: 'bar-labels' }, ...labels.map(l => el('span', { text: l }))));
   };
   const dayLabel = k => new Date(k + 'T12:00').toLocaleDateString(lang, { day: 'numeric', month: 'short' });
@@ -2203,7 +2227,7 @@ function renderStats(r) {
       el('ol', { class: 'people' }, ...r.topPeople.map((p, i) => el('li', {},
         el('span', { class: 'num', text: i + 1 }), el('span', { class: 'nm', text: p.name, title: p.name }),
         el('span', { class: 'val', text: `${t('requests', p.plays)} · ${fmtListened(p.listened)}` }),
-        el('div', { class: 'meter' }, el('span', { style: `width:${p.plays / maxPerson * 100}%` })))))));
+        el('div', { class: 'meter' }, el('span', { style: { width: `${p.plays / maxPerson * 100}%` } })))))));
 }
 
 /* ---------------- system: health + logs (admins) ---------------- */
@@ -2518,11 +2542,16 @@ $('owner-form').addEventListener('submit', async e => {
       // The link is used up: it leaves the address (and the history).
       history.replaceState(null, '', location.pathname + location.search);
       $('owner-pw').value = $('owner-pw2').value = '';
+      updatePwRules();
       $('owner-form').hidden = true; $('login-form').hidden = false;
       await boot();
     } catch (err) { $('owner-err').textContent = errText(err); }
   });
 });
+
+// Plain HTTP over the network: passwords travel unencrypted unless HTTPS or a proxy is in front.
+const plainHttp = location.protocol === 'http:' && !/^(localhost|127\.0\.0\.1|\[::1\]|.*\.localhost)$/i.test(location.hostname);
+document.querySelectorAll('.js-http-warn').forEach(e => { e.hidden = !plainHttp; });
 
 applyTheme();
 applyLang();

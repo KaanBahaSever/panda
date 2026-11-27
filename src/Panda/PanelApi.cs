@@ -30,18 +30,26 @@ public static class PanelApi
 		});
 
 		var api = app.MapGroup("/api");
+		// CSRF guard on every state-changing API call (POST/PUT/DELETE), including plain-text and empty-body ones.
+		api.AddEndpointFilter(async (fc, next) =>
+			CsrfGuard.IsAllowed(fc.HttpContext.Request) ? await next(fc) : Results.StatusCode(StatusCodes.Status403Forbidden));
 		// Any logged-in user ("dj" too): watch, search, add songs, change their own password.
 		var authed = api.MapGroup("").RequireAuthorization();
 		// Everything else is for admins.
 		var admin = authed.MapGroup("").RequireAuthorization(Roles.Admin);
 
 		api.MapPost("/login", Login);
-		api.MapPost("/logout", async (HttpContext ctx) =>
+		api.MapPost("/logout", async (HttpContext ctx, SessionRevocation revoked, PandaConfig config) =>
 		{
+			if (ctx.User.FindFirst("sid")?.Value is { Length: > 0 } sid)
+			{
+				revoked.Revoke(sid, DateTime.UtcNow.AddDays(31));
+				config.NotifyUsersChanged();
+			}
 			await ctx.SignOutAsync(Scheme);
 			return Results.NoContent();
 		});
-		api.MapGet("/version", () => new { version = Version });
+		authed.MapGet("/version", () => new { version = Version });
 		// The public "now playing" page (when turned on): titles only, nobody's name.
 		api.MapGet("/public/now", (PandaConfig config, BotManager bots) =>
 		{
@@ -332,10 +340,23 @@ public static class PanelApi
 
 		admin.MapPost("/cookies", async (HttpContext ctx, PandaConfig config, DataPaths paths) =>
 		{
-			if (ctx.Request.ContentLength > 2_000_000) return Problem("too-large");
-			using var reader = new StreamReader(ctx.Request.Body);
-			var text = await reader.ReadToEndAsync();
-			if (text.Length > 2_000_000) return Problem("too-large");
+			const int maxBytes = 2_000_000;
+			if (ctx.Features.Get<Microsoft.AspNetCore.Http.Features.IHttpMaxRequestBodySizeFeature>() is { IsReadOnly: false } limit)
+				limit.MaxRequestBodySize = maxBytes;
+			if (ctx.Request.ContentLength > maxBytes) return Problem("too-large");
+			var buf = new MemoryStream();
+			var chunk = new byte[16 * 1024];
+			int n;
+			try
+			{
+				while ((n = await ctx.Request.Body.ReadAsync(chunk, ctx.RequestAborted)) > 0)
+				{
+					if (buf.Length + n > maxBytes) return Problem("too-large");
+					buf.Write(chunk, 0, n);
+				}
+			}
+			catch (Microsoft.AspNetCore.Http.BadHttpRequestException) { return Problem("too-large"); }
+			var text = System.Text.Encoding.UTF8.GetString(buf.ToArray());
 			var path = Path.Combine(paths.Data, "cookies.txt");
 			if (text.Trim().Length == 0)
 			{
@@ -438,10 +459,11 @@ public static class PanelApi
 			var name = ctx.User.Identity?.Name ?? "";
 			if (config.CheckLogin(name, req.Current ?? "") is null)
 				return Problem("wrong-password");
-			if ((req.New ?? "").Length < 6)
-				return Problem("password-too-short");
+			if (PasswordPolicy.Validate(req.New, name) is { } err)
+				return Problem(err);
 			// A new password logs out the user's other sessions; this one gets a fresh cookie.
 			if (config.SetPassword(name, req.New!) is not { } user) return Results.Unauthorized(); // removed meanwhile
+			AccountFailures.TryRemove(name.ToLowerInvariant(), out _);
 			await SignIn(ctx, user);
 			return Results.NoContent();
 		});
@@ -464,7 +486,7 @@ public static class PanelApi
 		{
 			var name = (req.Name ?? "").Trim();
 			if (!PanelUser.IsValidName(name)) return Problem("bad-name");
-			if ((req.Password ?? "").Length < 6) return Problem("password-too-short");
+			if (PasswordPolicy.Validate(req.Password, name) is { } err) return Problem(err);
 			// A bot owner: by their TeamSpeak unique id, the bots whose owner it is are theirs.
 			var uid = (req.Uid ?? "").Trim();
 			if (req.Role == Roles.Owner)
@@ -479,9 +501,13 @@ public static class PanelApi
 		admin.MapPut("/users/{name}", (string name, UserRequest req, PandaConfig config) =>
 		{
 			if (config.FindUser(name) is null) return Results.NotFound();
-			if (req.Password is { Length: > 0 and < 6 }) return Problem("password-too-short");
+			if (req.Password is { Length: > 0 } && PasswordPolicy.Validate(req.Password, name) is { } err) return Problem(err);
 			if (req.Role != null && (!Roles.IsValid(req.Role) || !config.SetRole(name, req.Role))) return Problem("last-admin");
-			if (req.Password is { Length: >= 6 } && config.SetPassword(name, req.Password) is null) return Results.NotFound();
+			if (req.Password is { Length: > 0 })
+			{
+				if (config.SetPassword(name, req.Password) is null) return Results.NotFound();
+				AccountFailures.TryRemove(name.ToLowerInvariant(), out _);
+			}
 			return Results.NoContent();
 		});
 		admin.MapDelete("/users/{name}", (string name, PandaConfig config, HttpContext ctx) =>
@@ -546,30 +572,76 @@ public static class PanelApi
 		}));
 	}
 
-	// --- login with a small brute-force guard ---
+	// --- login with per-IP and per-account brute-force guards ---
 
 	static readonly ConcurrentDictionary<string, (int Fails, DateTime Until)> Failures = new();
+	// Per-account guard against distributed guessing (many IPs against one user): after 10 wrong tries
+	// within 15 minutes the account pauses briefly (2 min, then 5, then 10), so an attacker can't keep
+	// guessing forever and can't lock an admin out for hours either.
+	sealed record AccountGuard(int Fails, DateTime WindowUntil, DateTime LockedUntil, int Locks);
+	static readonly ConcurrentDictionary<string, AccountGuard> AccountFailures = new(StringComparer.Ordinal);
+	const int AccountMaxFails = 10;
 
-	static async Task<IResult> Login(LoginRequest req, HttpContext ctx, PandaConfig config)
+	static async Task<IResult> Login(LoginRequest req, HttpContext ctx, PandaConfig config, ILoggerFactory logs)
 	{
+		var now = DateTime.UtcNow;
 		var ip = Visitor(ctx.Connection.RemoteIpAddress);
-		if (Failures.TryGetValue(ip, out var f) && f.Fails >= 5 && f.Until > DateTime.UtcNow)
+		var rawName = (req.Name ?? "").Trim();
+		var loginName = rawName.Length > 0 ? rawName : "admin";
+		var acctKey = loginName.Length <= 64 ? loginName.ToLowerInvariant() : loginName[..64].ToLowerInvariant();
+		var log = logs.CreateLogger("Panda.Auth");
+
+		if (Failures.TryGetValue(ip, out var f) && f.Fails >= 5 && f.Until > now)
+			return Results.Json(new { error = "too-many-attempts" }, statusCode: 429);
+		if (AccountFailures.TryGetValue(acctKey, out var af) && af.LockedUntil > now)
 			return Results.Json(new { error = "too-many-attempts" }, statusCode: 429);
 
-		var name = (req.Name ?? "").Trim();
-		var user = config.CheckLogin(name.Length > 0 ? name : "admin", req.Password ?? "");
+		var user = config.CheckLogin(loginName, req.Password ?? "");
 		// Bot owners can't log in while the panel isn't open to them.
 		if (user is { Role: Roles.Owner } && !config.Panel.BotOwners) return Results.Json(new { error = "owners-off" }, statusCode: 403);
 		if (user is null)
 		{
 			if (Failures.Count > 1000) // forget old entries so a flood of addresses can't grow this forever
 				foreach (var (key, old) in Failures)
-					if (old.Until < DateTime.UtcNow) Failures.TryRemove(key, out _);
-			Failures.AddOrUpdate(ip, (1, DateTime.UtcNow.AddMinutes(10)), (_, old) => (old.Fails + 1, DateTime.UtcNow.AddMinutes(10)));
+					if (old.Until < now) Failures.TryRemove(key, out _);
+			var ipState = Failures.AddOrUpdate(ip, (1, now.AddMinutes(10)), (_, old) =>
+				old.Until < now ? (1, now.AddMinutes(10)) : (old.Fails + 1, now.AddMinutes(10)));
+
+			if (AccountFailures.Count > 1000)
+				foreach (var (key, old) in AccountFailures)
+					if (old.WindowUntil < now && old.LockedUntil < now) AccountFailures.TryRemove(key, out _);
+			var acctState = AccountFailures.AddOrUpdate(acctKey,
+				_ => new AccountGuard(1, now.AddMinutes(15), DateTime.MinValue, 0),
+				(_, old) =>
+				{
+					var fails = old.WindowUntil < now ? 1 : old.Fails + 1;
+					var locks = old.WindowUntil < now ? 0 : old.Locks;
+					var lockedUntil = old.LockedUntil;
+					if (fails >= AccountMaxFails)
+					{
+						locks++;
+						var pause = locks switch { 1 => 2, 2 => 5, _ => 10 };
+						lockedUntil = now.AddMinutes(pause);
+						fails = 0; // next burst after the pause counts toward the next escalation
+					}
+					return new AccountGuard(fails, now.AddMinutes(15), lockedUntil, locks);
+				});
+
+			if (acctState.LockedUntil > now)
+				log.LogWarning("Panel login paused for \"{User}\" until {Until:HH:mm:ss} UTC after repeated wrong passwords (last from {Ip})",
+					loginName, acctState.LockedUntil, ip);
+			else if (ipState.Fails >= 5)
+				log.LogWarning("Panel login blocked for {Ip} (10 min) after {Fails} wrong passwords (user \"{User}\")",
+					ip, ipState.Fails, loginName);
+			else
+				log.LogWarning("Failed panel login for \"{User}\" from {Ip} ({IpFails}/5 from IP, {AcctFails}/{AcctMax} for account)",
+					loginName, ip, ipState.Fails, acctState.Fails, AccountMaxFails);
+
 			await Task.Delay(700);
 			return Results.Json(new { error = "wrong-password" }, statusCode: 401);
 		}
 		Failures.TryRemove(ip, out _);
+		AccountFailures.TryRemove(acctKey, out _);
 		await SignIn(ctx, user);
 		return Results.NoContent();
 	}
@@ -586,28 +658,34 @@ public static class PanelApi
 		return new System.Net.IPAddress(bytes) + "/64";
 	}
 
-	static ClaimsPrincipal Principal(PanelUser u) => new(new ClaimsIdentity(
-		[new Claim(ClaimTypes.Name, u.Name), new Claim(ClaimTypes.Role, u.Role), new Claim("stamp", u.Stamp)], Scheme));
+	static string NewSessionId() =>
+		Convert.ToBase64String(System.Security.Cryptography.RandomNumberGenerator.GetBytes(16)).TrimEnd('=').Replace('+', '-').Replace('/', '_');
+
+	static ClaimsPrincipal Principal(PanelUser u, string? sid = null) => new(new ClaimsIdentity(
+		[new Claim(ClaimTypes.Name, u.Name), new Claim(ClaimTypes.Role, u.Role), new Claim("stamp", u.Stamp), new Claim("sid", sid ?? NewSessionId())], Scheme));
 
 	static Task SignIn(HttpContext ctx, PanelUser u) =>
 		ctx.SignInAsync(Scheme, Principal(u), new AuthenticationProperties { IsPersistent = true });
 
 	/// <summary>
-	/// Runs for every request with a session cookie: a removed user or a changed password ends the
-	/// session, and the role is taken from the settings so a change applies right away.
+	/// Runs for every request with a session cookie: a removed user, a changed password or a logged-out
+	/// session ends the cookie, and the role is taken from the settings so a change applies right away.
 	/// </summary>
 	public static Task ValidateSession(CookieValidatePrincipalContext ctx)
 	{
 		var config = ctx.HttpContext.RequestServices.GetRequiredService<PandaConfig>();
+		var revoked = ctx.HttpContext.RequestServices.GetRequiredService<SessionRevocation>();
+		var sid = ctx.Principal?.FindFirst("sid")?.Value;
 		var user = ctx.Principal?.Identity?.Name is { } name ? config.FindUser(name) : null;
-		if (user is null || user.Stamp != ctx.Principal!.FindFirst("stamp")?.Value || user.Role == Roles.Owner && !config.Panel.BotOwners)
+		if (user is null || user.Stamp != ctx.Principal!.FindFirst("stamp")?.Value || revoked.IsRevoked(sid)
+			|| user.Role == Roles.Owner && !config.Panel.BotOwners)
 		{
 			ctx.RejectPrincipal();
 			return ctx.HttpContext.SignOutAsync(Scheme);
 		}
-		if (ctx.Principal.FindFirst(ClaimTypes.Role)?.Value != user.Role || ctx.Principal.Identity?.Name != user.Name)
+		if (string.IsNullOrEmpty(sid) || ctx.Principal.FindFirst(ClaimTypes.Role)?.Value != user.Role || ctx.Principal.Identity?.Name != user.Name)
 		{
-			ctx.ReplacePrincipal(Principal(user));
+			ctx.ReplacePrincipal(Principal(user, string.IsNullOrEmpty(sid) ? null : sid));
 			ctx.ShouldRenew = true;
 		}
 		return Task.CompletedTask;
@@ -649,6 +727,7 @@ public static class PanelApi
 	static PanelUser? Me(HttpContext ctx, PandaConfig config)
 	{
 		if (ctx.User.FindFirst("apikey") != null || ctx.User.Identity?.Name is not { } name) return null;
+		if (ctx.RequestServices.GetRequiredService<SessionRevocation>().IsRevoked(ctx.User.FindFirst("sid")?.Value)) return null;
 		var user = config.FindUser(name);
 		return user != null && user.Stamp == ctx.User.FindFirst("stamp")?.Value ? user : null;
 	}
@@ -691,10 +770,10 @@ public static class PanelApi
 		var ip = Visitor(ctx.Connection.RemoteIpAddress);
 		if (await OwnerLinkAsync(req, ctx, config, links) is not { } who) return NoLink(ctx);
 		if (!bots.All.Any(b => b.Config.Owner == who.Uid)) return Problem("no-bot");
-		if ((req.Password ?? "").Length < 6) return Problem("password-too-short");
 		// One who has an account keeps its name.
 		var name = config.FindOwner(who.Uid)?.Name ?? (req.Name ?? "").Trim();
 		if (!PanelUser.IsValidName(name)) return Problem("bad-name");
+		if (PasswordPolicy.Validate(req.Password, name) is { } pwErr) return Problem(pwErr);
 		// Used up first, so two tries at once can't both use it; given back when the name is taken.
 		if (!links.Take(req.Token!)) return Results.NotFound(new { error = "link-expired" });
 		if (config.ClaimOwner(who.Uid, name, req.Password!, out var error) is not { } user)
@@ -703,6 +782,7 @@ public static class PanelApi
 			return Problem(error ?? "bad-name");
 		}
 		Failures.TryRemove(ip, out _);
+		AccountFailures.TryRemove(user.Name.ToLowerInvariant(), out _);
 		await SignIn(ctx, user);
 		return Results.NoContent();
 	}

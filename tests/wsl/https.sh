@@ -18,7 +18,7 @@ served() { echo | openssl s_client -connect 127.0.0.1:8094 2>/dev/null | openssl
 rm -rf "$T"; mkdir -p "$T/data"
 cp "$1" "$T/panda"; chmod +x "$T/panda"
 printf '{ "bots": [ { "id": "1", "server": { "address": "127.0.0.1:1" } } ], "panel": { "port": 8094, "trustCloudflare": true, "https": { "enabled": true } } }\n' > "$T/data/config.json"
-"$T/panda" --data "$T/data" set-password testpass123 admin >/dev/null
+"$T/panda" --data "$T/data" set-password testpass1234 admin >/dev/null
 start
 check "a self-signed pair is made" "$(ls "$T/data" | grep -c -E '^(cert|key)\.pem$')" 2
 check "...its key only for Panda" "$(stat -c %a "$T/data/key.pem")" 600
@@ -29,7 +29,7 @@ hsts() { curl -sk -D - -o /dev/null $P/ | tr -d '\r' | grep -i '^strict-transpor
 check "no HSTS unless asked" "$(hsts)" ""
 check "no plain HTTP on that port" "$(curl -s -m 5 -o /dev/null -w '%{http_code}' http://127.0.0.1:8094/)" 000
 check "the session cookie is Secure" "$(curl -sk -D - -o /dev/null -H 'Content-Type: application/json' \
-	-d '{"name":"admin","password":"testpass123"}' $P/api/login | grep -i '^set-cookie: panda_session' | grep -c -i '; secure')" 1
+	-d '{"name":"admin","password":"testpass1234"}' $P/api/login | grep -i '^set-cookie: panda_session' | grep -c -i '; secure')" 1
 # This machine isn't Cloudflare: a CF-Connecting-IP from here names nobody, the five tries are this machine's.
 for n in 1 2 3 4 5; do
 	curl -sk -o /dev/null -H "CF-Connecting-IP: 203.0.113.$n" -H 'Content-Type: application/json' -d '{"name":"admin","password":"wrong"}' $P/api/login
@@ -39,11 +39,11 @@ check "CF-Connecting-IP is believed only from Cloudflare" "$(curl -sk -o /dev/nu
 # From Cloudflare through a proxy on this machine (X-Forwarded-For names a Cloudflare address): the visitor is
 # the one in CF-Connecting-IP. Five tries lock that visitor out, not the next one.
 cf() { curl -sk -o /dev/null -w '%{http_code}' -H 'X-Forwarded-For: 173.245.48.1' -H "CF-Connecting-IP: $1" \
-	-H 'Content-Type: application/json' -d '{"name":"admin","password":"wrong"}' $P/api/login; }
-for _ in 1 2 3 4 5; do cf 198.51.100.1 >/dev/null; done
-check "from Cloudflare, five tries lock out that visitor" "$(cf 198.51.100.1)" 429
-check "...not the next one" "$(cf 198.51.100.2)" 401
-check "...an IPv6 visitor is counted by its /64" "$(for n in 1 2 3 4 5; do cf 2001:db8:1:2::$n >/dev/null; done; cf 2001:db8:1:2::99)" 429
+	-H 'Content-Type: application/json' -d "{\"name\":\"${2:-cfuser1}\",\"password\":\"wrong\"}" $P/api/login; }
+for _ in 1 2 3 4 5; do cf 198.51.100.1 cfuser1 >/dev/null; done
+check "from Cloudflare, five tries lock out that visitor" "$(cf 198.51.100.1 cfuser1)" 429
+check "...not the next one" "$(cf 198.51.100.2 cfuser1)" 401
+check "...an IPv6 visitor is counted by its /64" "$(for n in 1 2 3 4 5; do cf 2001:db8:1:2::$n cfuser2 >/dev/null; done; cf 2001:db8:1:2::99 cfuser2)" 429
 kill $PID; wait $PID 2>/dev/null
 
 sed -i 's/"hsts": false/"hsts": true/' "$T/data/config.json"

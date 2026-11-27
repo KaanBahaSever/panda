@@ -22,7 +22,7 @@ wait_for() { for _ in $(seq "$1"); do [ "$($2)" = "$3" ] && return 0; sleep 1; d
 
 bash "$HERE/env.sh" "$1" || exit 1
 PID=$(pgrep -f "$T/panda --data" | head -1)
-api -d '{"name":"admin","password":"testpass123"}' $P/api/login -o /dev/null
+api -d '{"name":"admin","password":"testpass1234"}' $P/api/login -o /dev/null
 # A playlist of 20 songs (the yt-dlp stand-in plays the test tone for each), looped.
 python3 -c "
 import json
@@ -36,7 +36,7 @@ check "playing" "$(playing)" yes
 echo "== 1. the TeamSpeak server is gone for a minute"
 pkill -f "tsserver --accept-license"
 sleep 60
-check "Panda still answers" "$(curl -s -m 5 -o /dev/null -w '%{http_code}' $P/api/version)" 200
+check "Panda still answers" "$(curl -s -m 5 -b $J -o /dev/null -w '%{http_code}' $P/api/version)" 200
 (cd "$TS" && setsid nohup ./tsserver --accept-license --query-http-enable --query-admin-api-key testkey-local-only \
 	>> "$TS/../server.out" 2>&1 < /dev/null &)
 wait_for 120 connected connected; check "reconnected" "$(connected)" connected
@@ -47,7 +47,7 @@ echo "== 2. YouTube refuses everything for a while"
 echo "403 30" > $T/fake-yt-dlp/fail
 api -X POST $P/api/bots/1/control/skip -o /dev/null
 sleep 25
-check "Panda still answers" "$(curl -s -m 5 -o /dev/null -w '%{http_code}' $P/api/version)" 200
+check "Panda still answers" "$(curl -s -m 5 -b $J -o /dev/null -w '%{http_code}' $P/api/version)" 200
 echo "" > $T/fake-yt-dlp/fail
 api -X POST $P/api/bots/1/control/skip -o /dev/null
 wait_for 30 playing yes; check "plays again when YouTube works" "$(playing)" yes
@@ -70,7 +70,7 @@ kill -9 "$PID"; sleep 2
 setsid nohup "$T/panda" --data "$T/data" >> "$T/log.txt" 2>&1 < /dev/null &
 wait_for 60 connected connected
 PID=$(pgrep -f "$T/panda --data" | head -1)
-api -d '{"name":"admin","password":"testpass123"}' $P/api/login -o /dev/null
+api -d '{"name":"admin","password":"testpass1234"}' $P/api/login -o /dev/null
 sleep 5
 check "the same song, queue and loop after a kill" "$(title)" "$BEFORE"
 check "...and it plays" "$(playing)" yes

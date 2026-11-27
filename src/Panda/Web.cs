@@ -247,7 +247,7 @@ public static class LinkProxy
 			}
 			else
 			{
-				if (!Uri.TryCreate(parts[1], UriKind.Absolute, out var url) || url.Scheme != "http") { await Reply(local, "400 Bad Request"); return; }
+				if (!Uri.TryCreate(parts[1], UriKind.Absolute, out var url) || url.Scheme != "http" || url.Port is not (80 or 443 or > 1023)) { await Reply(local, "400 Bad Request"); return; }
 				remote = await Web.ConnectAsync(url.IdnHost, url.Port, head.Token);
 				// The request as the server wants it: its own path, no proxy headers, one request per connection.
 				var kept = lines.Skip(1).Where(l => l.Length > 0 && !l.StartsWith("Proxy-", StringComparison.OrdinalIgnoreCase)

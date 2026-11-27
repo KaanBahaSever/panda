@@ -18,9 +18,9 @@ J=$W/cookies
 failed=0
 check() { if [ "$2" = "$3" ]; then echo "   PASS $1 ($2)"; else echo "   FAIL $1: \"$2\", expected \"$3\""; failed=$((failed + 1)); fi; }
 api() { curl -s -m 10 -b $J -c $J -H 'Content-Type: application/json' "$@"; }
-login() { api -d '{"name":"admin","password":"testpass123"}' $P/api/login -o /dev/null -w '%{http_code}'; }
+login() { api -d '{"name":"admin","password":"testpass1234"}' $P/api/login -o /dev/null -w '%{http_code}'; }
 state() { api $P/api/bots/1/state | python3 -c "import sys,json; p=json.load(sys.stdin)['player']; c=p['current']; print(c['track']['title'] if c else '-', len(p['queue']), p['loop'], p['volume'])"; }
-wait_up() { for _ in $(seq 60); do curl -s -m 2 $P/api/version >/dev/null && return 0; sleep 1; done; return 1; }
+wait_up() { for _ in $(seq 60); do curl -s -m 2 -o /dev/null $P/ && return 0; sleep 1; done; return 1; }
 
 echo "== clean"
 [ -x /opt/panda/install.sh ] && bash /opt/panda/install.sh --uninstall --purge >/dev/null
@@ -44,7 +44,7 @@ echo "   $FROM -> $TO"
 
 echo "== give it data"
 systemctl stop panda
-runuser -u panda -- env HOME=/var/lib/panda /opt/panda/panda --data /var/lib/panda set-password testpass123 admin >/dev/null
+runuser -u panda -- env HOME=/var/lib/panda /opt/panda/panda --data /var/lib/panda set-password testpass1234 admin >/dev/null
 mkdir -p /var/lib/panda/library
 ffmpeg -loglevel error -y -f lavfi -i "sine=frequency=440:duration=90" -c:a libopus -b:a 48k -f webm /var/lib/panda/library/tstTone0001.audio
 SIZE=$(stat -c %s /var/lib/panda/library/tstTone0001.audio)
@@ -81,7 +81,7 @@ check "update starts" "$(api -X POST $P/api/update -o /dev/null -w '%{http_code}
 start=$(date +%s); now=$FROM
 while [ $(( $(date +%s) - start )) -lt 960 ]; do
 	sleep 3
-	v=$(curl -s -m 3 $P/api/version | python3 -c "import sys,json; print(json.load(sys.stdin)['version'])" 2>/dev/null) || continue
+	v=$(api -m 3 $P/api/version | python3 -c "import sys,json; print(json.load(sys.stdin)['version'])" 2>/dev/null) || continue
 	now=$v; [ "$v" = "$FROM" ] || break
 	[ "$(api $P/api/update/progress | grep -c failed)" = 0 ] || { echo "   the update failed"; break; }
 done

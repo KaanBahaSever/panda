@@ -1,0 +1,19 @@
+:root { --bg: #f4f7f5; --card: #fff; --ink: #26262e; --muted: #6b6b78; --green: #2bbf6f; --border: #e3e8e5; }
+@media (prefers-color-scheme: dark) { :root { --bg: #17171c; --card: #22222a; --ink: #f1f1f4; --muted: #a0a0ad; --border: #33333d; } }
+* { box-sizing: border-box; }
+body { margin: 0; font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; background: var(--bg); color: var(--ink); }
+main { max-width: 640px; margin: 0 auto; padding: 24px 16px; display: grid; gap: 16px; }
+h1 { font-size: 22px; margin: 0; display: flex; align-items: center; gap: 10px; }
+h1 img { width: 36px; height: 36px; }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 18px; padding: 16px; }
+.bot { font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.now { display: grid; grid-template-columns: 96px 1fr; gap: 14px; align-items: center; margin-top: 8px; }
+.now img { width: 96px; height: 96px; object-fit: cover; border-radius: 12px; background: var(--border); }
+.title { font-size: 18px; font-weight: 800; overflow-wrap: anywhere; }
+.meta { color: var(--muted); font-size: 13.5px; overflow-wrap: anywhere; }
+.live { color: #fff; background: #d6455d; border-radius: 999px; padding: 0 8px; font-size: 11px; font-weight: 800; }
+.bar { height: 6px; border-radius: 3px; background: var(--border); margin-top: 8px; overflow: hidden; }
+.bar span { display: block; height: 100%; background: var(--green); }
+ol { margin: 10px 0 0; padding-left: 22px; color: var(--muted); }
+ol li { overflow-wrap: anywhere; }
+.idle, .off { color: var(--muted); }

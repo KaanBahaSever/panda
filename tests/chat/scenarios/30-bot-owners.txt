@@ -11,7 +11,7 @@ w 4
 c !panel
 e I sent you the link in a private message
 e #owner=
-O owner1 ownerpass1
+O owner1 ownerpass1234
 # The owner sees only their own bot: they play music on it and steer it.
 H GET /api/me 200 "role":"owner"
 H GET /api/bots 200 "id":"$OWNED"
@@ -57,7 +57,7 @@ s botOwners=true
 # !panel again: a new link; the account keeps its name, with a new password.
 c !panel
 e #owner=
-O someone_else ownerpass2
+O someone_else ownerpass5678
 H GET /api/me 200 "name":"owner1"
 # The bot gone, they have none.
 R

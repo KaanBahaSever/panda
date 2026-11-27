@@ -74,7 +74,7 @@ public static partial class Backup
 		var tmp = Path.Combine(paths.Data, ".restore-check.json");
 		try
 		{
-			File.WriteAllBytes(tmp, config);
+			SafeFile.Write(tmp, config, ownerOnly: true);
 			var c = PandaConfig.Load(tmp);
 			if (c.Bots.Count == 0 || !c.Panel.Users.Any(u => u.Role == Roles.Admin && u.PasswordHash.Length > 0)) return "bad-backup";
 		}
@@ -89,7 +89,8 @@ public static partial class Backup
 		{
 			var full = Path.Combine(staging, name.Replace('/', Path.DirectorySeparatorChar));
 			Directory.CreateDirectory(Path.GetDirectoryName(full)!);
-			File.WriteAllBytes(full, data);
+			var secret = name is "config.json" or "cookies.txt" || name.EndsWith("/identity.json", StringComparison.Ordinal);
+			SafeFile.Write(full, data, ownerOnly: secret);
 		}
 		if (Directory.Exists(pending)) Directory.Delete(pending, true);
 		Directory.Move(staging, pending);

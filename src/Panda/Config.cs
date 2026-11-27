@@ -127,6 +127,7 @@ public sealed class PandaConfig
 
 	/// <summary>A user was added, removed or got a new role or password here (open panel streams recheck theirs).</summary>
 	public event Action? UsersChanged;
+	public void NotifyUsersChanged() => UsersChanged?.Invoke();
 
 	public PanelUser? FindUser(string name)
 	{
@@ -134,12 +135,15 @@ public sealed class PandaConfig
 	}
 
 	/// <summary>The user when the password is right. Also tries again after picking up a password
-	/// that `panda set-password` just wrote to the file.</summary>
+	/// that `panda set-password` just wrote to the file, and quietly upgrades older password hashes.</summary>
 	public PanelUser? CheckLogin(string name, string password)
 	{
-		if (Check() is { } user) return user;
-		ReloadUsers();
-		return Check();
+		if (password.Length > PasswordPolicy.MaxLength) return null;
+		var user = Check();
+		if (user is null && ReloadUsers()) user = Check();
+		if (user != null && PasswordHasher.NeedsUpgrade(user.PasswordHash))
+			UpgradePasswordHash(user, password);
+		return user;
 
 		PanelUser? Check()
 		{
@@ -148,6 +152,17 @@ public sealed class PandaConfig
 			var ok = PasswordHasher.Verify(password, u?.PasswordHash ?? DummyHash);
 			return ok ? u : null;
 		}
+	}
+
+	void UpgradePasswordHash(PanelUser user, string password)
+	{
+		var fresh = PasswordHasher.Hash(password);
+		lock (saveLock)
+		{
+			if (!PasswordHasher.NeedsUpgrade(user.PasswordHash)) return;
+			user.PasswordHash = fresh;
+		}
+		Save();
 	}
 
 	static readonly string DummyHash = PasswordHasher.Hash(PasswordHasher.Generate());
@@ -345,15 +360,16 @@ public sealed class PandaConfig
 		}
 	}
 
-	/// <summary>Picks up users or passwords changed with `panda set-password` while the bot is running.</summary>
-	public void ReloadUsers()
+	/// <summary>Picks up users or passwords changed with `panda set-password` while the bot is running.
+	/// Returns true when the file held a different user list than what was in memory.</summary>
+	public bool ReloadUsers()
 	{
-		lock (saveLock) AdoptUsersFromFileLocked();
+		lock (saveLock) return AdoptUsersFromFileLocked();
 	}
 
-	void AdoptUsersFromFileLocked()
+	bool AdoptUsersFromFileLocked()
 	{
-		if (UsersJson() != knownUsers) return; // changed here (e.g. in the panel): ours wins
+		if (UsersJson() != knownUsers) return false; // changed here (e.g. in the panel): ours wins
 		try
 		{
 			var onDisk = Load(Path).Panel.Users;
@@ -361,9 +377,11 @@ public sealed class PandaConfig
 			{
 				Panel.Users = onDisk;
 				knownUsers = UsersJson();
+				return true;
 			}
 		}
 		catch (Exception ex) when (ex is IOException or JsonException) { }
+		return false;
 	}
 }
 
@@ -685,7 +703,7 @@ public sealed class SourcesSettings
 
 public static class PasswordHasher
 {
-	const int Iterations = 100_000;
+	public const int Iterations = 600_000;
 
 	public static string Hash(string password)
 	{
@@ -694,8 +712,15 @@ public static class PasswordHasher
 		return $"pbkdf2${Iterations}${Convert.ToBase64String(salt)}${Convert.ToBase64String(hash)}";
 	}
 
+	public static bool NeedsUpgrade(string stored)
+	{
+		var parts = stored.Split('$');
+		return parts.Length != 4 || parts[0] != "pbkdf2" || !int.TryParse(parts[1], out var iterations) || iterations < Iterations;
+	}
+
 	public static bool Verify(string password, string stored)
 	{
+		if (password.Length > PasswordPolicy.MaxLength) return false;
 		var parts = stored.Split('$');
 		if (parts.Length != 4 || parts[0] != "pbkdf2" || !int.TryParse(parts[1], out var iterations) || iterations <= 0)
 			return false;
