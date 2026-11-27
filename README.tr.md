@@ -433,6 +433,7 @@ Opus'a çevrilir.
 ## Lisans
 
 Panda, üzerine kurulduğu TSLib gibi [Open Software License 3.0](LICENSE) ile lisanslanmıştır.
+Ayarlar arayüzü tasarımı ve güvenlik incelemesi için [Florian Kierski'ye (@NennMichSchinken)](https://github.com/NennMichSchinken) teşekkürler.
 Panda'nın TeamSpeak veya YouTube ile bir bağlantısı yoktur.
 
 Panda, bir yapay zekâ asistanı olan [Claude](https://claude.ai)'un yardımıyla geliştirildi ve gerçek bir

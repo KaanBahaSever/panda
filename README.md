@@ -479,6 +479,7 @@ Panda is licensed under the [Open Software License 3.0](LICENSE), like the TSLib
 
 Thanks to TS3AudioBot/TSLib, [tsclientlib](https://github.com/ReSpeak/tsclientlib), [yt-dlp](https://github.com/yt-dlp/yt-dlp),
 [Concentus](https://github.com/lostromb/concentus) and [ffmpeg](https://ffmpeg.org/).
+Thanks also to [Florian Kierski (@NennMichSchinken)](https://github.com/NennMichSchinken) for the Settings UI redesign and security review.
 Panda is not affiliated with TeamSpeak or YouTube.
 
 Panda was built with the help of [Claude](https://claude.ai) (an AI assistant) and tested on a real
