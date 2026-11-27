@@ -62,6 +62,12 @@
     <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></symbol>
     <symbol id="i-key" viewBox="0 0 24 24"><circle cx="7.5" cy="15.5" r="4.5"/><path d="M10.7 12.3L20 3"/><path d="M16 7l3 3"/><path d="M14 9l2 2"/></symbol>
     <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="i-gear" viewBox="0 0 24 24"><path d="M19.07 9.81L21.46 10.38L21.46 13.62L19.07 14.19L18.55 15.45L19.84 17.54L17.54 19.84L15.45 18.55L14.19 19.07L13.62 21.46L10.38 21.46L9.81 19.07L8.55 18.55L6.46 19.84L4.16 17.54L5.45 15.45L4.93 14.19L2.54 13.62L2.54 10.38L4.93 9.81L5.45 8.55L4.16 6.46L6.46 4.16L8.55 5.45L9.81 4.93L10.38 2.54L13.62 2.54L14.19 4.93L15.45 5.45L17.54 4.16L19.84 6.46L18.55 8.55z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24"><path d="M4.5 4.5h15a1.5 1.5 0 0 1 1.5 1.5v9.5a1.5 1.5 0 0 1-1.5 1.5H11l-5 4v-4H4.5A1.5 1.5 0 0 1 3 15.5V6a1.5 1.5 0 0 1 1.5-1.5z"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 2.8l7.5 2.8v6c0 4.6-3.2 8.1-7.5 9.6-4.3-1.5-7.5-5-7.5-9.6v-6z"/><path d="M9 12l2.2 2.2L15.5 10"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4.5" y="10.5" width="15" height="10.5" rx="2.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></symbol>
+    <symbol id="i-cmd" viewBox="0 0 24 24"><rect x="2.5" y="4" width="19" height="16" rx="3"/><path d="M7 9.5l3 2.5-3 2.5"/><path d="M12.5 15h4.5"/></symbol>
+    <symbol id="i-dot" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" fill="currentColor" stroke="none"/></symbol>
   </defs>
 </svg>
 
@@ -129,7 +135,7 @@
       <button class="icon-btn js-lang" type="button" data-i18n-aria="language"><svg class="ic"><use href="#i-globe"/></svg><span class="js-lang-label">EN</span></button>
       <button class="icon-btn js-theme" type="button" data-i18n-aria="theme"><svg class="ic"><use href="#i-moon"/></svg></button>
       <button id="open-system" class="icon-btn admin-only" type="button" data-i18n-aria="system"><svg class="ic"><use href="#i-pulse"/></svg></button>
-      <button id="open-settings" class="icon-btn" type="button" data-i18n-aria="settings"><svg class="ic"><use href="#i-sliders"/></svg></button>
+      <button id="open-settings" class="icon-btn" type="button" data-i18n-aria="settings"><svg class="ic"><use href="#i-gear"/></svg></button>
       <button id="logout" class="icon-btn" type="button" data-i18n-aria="logout"><svg class="ic"><use href="#i-logout"/></svg></button>
     </nav>
   </header>
@@ -266,18 +272,47 @@
   </main>
 </div>
 
-<!-- ============ Settings ============ -->
-<dialog id="settings" class="sheet" aria-labelledby="set-title">
+<!-- ============ Settings: an overlay with a side menu, one section at a time ============ -->
+<dialog id="settings" class="sheet settings" aria-labelledby="set-title">
   <div class="sheet-head">
-    <h2 id="set-title"><span data-i18n="settings">Settings</span> <span id="set-bot" class="muted sum"></span></h2>
+    <div class="set-title-row">
+      <h2 id="set-title" data-i18n="settings">Settings</h2>
+      <span id="set-bot" class="set-bot"></span>
+      <span id="set-dirty" class="set-dirty" role="status" hidden><span class="dot" aria-hidden="true"></span><span data-i18n="unsaved">Unsaved changes</span></span>
+    </div>
     <button class="icon-btn" type="button" data-close data-i18n-aria="close"><svg class="ic"><use href="#i-x"/></svg></button>
   </div>
-  <div class="sheet-body">
+  <div class="set-wrap">
+    <div class="set-side">
+    <label class="set-find"><svg class="ic"><use href="#i-search"/></svg><input id="set-find" type="search" autocomplete="off" spellcheck="false" data-i18n-ph="findPh" data-i18n-aria="findPh"></label>
+    <nav id="set-nav" class="set-nav" data-i18n-aria="setSections">
+      <p class="set-nav-label manage-only" data-i18n="gThisBot">This bot</p>
+      <button class="set-nav-item admin-only" type="button" data-pane="conn"><svg class="ic"><use href="#i-globe"/></svg><span data-i18n="sConn">Connection</span></button>
+      <button class="set-nav-item manage-only" type="button" data-pane="name"><svg class="ic"><use href="#i-pencil"/></svg><span data-i18n="sNameDesc">Name and description</span></button>
+      <button class="set-nav-item admin-only" type="button" data-pane="chat"><svg class="ic"><use href="#i-chat"/></svg><span data-i18n="sChatQueue">Chat and queue</span></button>
+      <button class="set-nav-item admin-only" type="button" data-pane="perm"><svg class="ic"><use href="#i-shield"/></svg><span data-i18n="sPerm">Chat permissions</span></button>
+      <button class="set-nav-item admin-only" type="button" data-pane="commands"><svg class="ic"><use href="#i-cmd"/></svg><span data-i18n="sCmds">Commands</span></button>
+      <button class="set-nav-item admin-only" type="button" data-pane="schedule"><svg class="ic"><use href="#i-clock"/></svg><span data-i18n="sSchedule">Schedule</span></button>
+      <button class="set-nav-item admin-only" type="button" data-pane="tools"><svg class="ic"><use href="#i-sliders"/></svg><span data-i18n="sTools">Server tools</span></button>
+      <p class="set-nav-label admin-only" data-i18n="gAllBots">All bots</p>
+      <button class="set-nav-item admin-only" type="button" data-pane="sources"><svg class="ic"><use href="#i-search"/></svg><span data-i18n="sSources">Sources</span></button>
+      <button class="set-nav-item admin-only" type="button" data-pane="youtube"><svg class="ic"><use href="#i-play"/></svg><span>YouTube</span></button>
+      <button class="set-nav-item admin-only" type="button" data-pane="library"><svg class="ic"><use href="#i-lib"/></svg><span data-i18n="sLib">Library</span></button>
+      <p class="set-nav-label" data-i18n="gPanel">Panel</p>
+      <button class="set-nav-item admin-only" type="button" data-pane="users"><svg class="ic"><use href="#i-user"/></svg><span data-i18n="sUsers2">Panel users</span></button>
+      <button class="set-nav-item admin-only" type="button" data-pane="keys"><svg class="ic"><use href="#i-key"/></svg><span data-i18n="sKeys">API keys</span></button>
+      <button class="set-nav-item admin-only" type="button" data-pane="backup"><svg class="ic"><use href="#i-download"/></svg><span data-i18n="sBackup">Backup</span></button>
+      <button class="set-nav-item" type="button" data-pane="password"><svg class="ic"><use href="#i-lock"/></svg><span data-i18n="sPanelPw">Panel password</span></button>
+      <button class="set-nav-item danger js-many admin-only" type="button" data-pane="remove" hidden><svg class="ic"><use href="#i-trash"/></svg><span data-i18n="sRemoveBot">Remove this bot</span></button>
+    </nav>
+    </div>
+
+    <div id="set-body" class="sheet-body set-body">
+    <p id="find-none" class="find-none" hidden></p>
     <form id="set-form" class="manage-only" novalidate>
-      <fieldset class="group">
-        <legend>🔌 <span data-i18n="sConn">Connection</span></legend>
+      <fieldset class="group admin-only" data-pane="conn">
+        <legend data-i18n="sConn">Connection</legend>
         <p class="hint" data-i18n="sConnHint">Changing these makes the bot reconnect.</p>
-        <div class="admin-only">
         <label class="field"><span data-i18n="sAddress">Server address</span>
           <input name="serverAddress" type="text" placeholder="ts.example.com" autocomplete="off" spellcheck="false" required></label>
         <label class="field"><span data-i18n="sServerPw">Server password</span>
@@ -289,83 +324,149 @@
         <label class="field"><span data-i18n="sChannelPw">Channel password</span>
           <input name="channelPassword" type="password" autocomplete="new-password"></label>
         <label class="check" data-has="hasChannelPassword"><input type="checkbox" name="channelPasswordRemove"><span data-i18n="removePw">Remove password</span></label>
-        </div>
+      </fieldset>
+
+      <fieldset class="group" data-pane="name">
+        <legend data-i18n="sNameDesc">Name and description</legend>
         <label class="field"><span data-i18n="sNick">Nickname</span>
           <input name="nickname" type="text" minlength="3" maxlength="30" required></label>
         <label class="field"><span data-i18n="sDescription">Description</span>
           <input name="description" type="text" maxlength="200" autocomplete="off"></label>
         <p class="hint" data-i18n="sDescriptionHint"></p>
+        <div class="admin-only stack">
+          <label class="switch"><input type="checkbox" name="showSongInDescription"><span class="track" aria-hidden="true"></span><span data-i18n="sDesc">Show song in bot description</span></label>
+          <label class="switch"><input type="checkbox" name="songInNickname"><span class="track" aria-hidden="true"></span><span data-i18n="sNickSong">Show song in the bot's name</span></label>
+          <label class="field js-nick-song"><span data-i18n="sNickFormat">The bot's name while playing</span><input name="songNicknameFormat" type="text" maxlength="60"></label>
+          <p class="hint js-nick-song" data-i18n="sNickSongHint"></p>
+        </div>
       </fieldset>
 
-      <fieldset class="group admin-only">
-        <legend>🤖 <span data-i18n="sBot">Bot</span></legend>
+      <fieldset class="group admin-only" data-pane="name">
+        <legend data-i18n="sAvatar">Picture on TeamSpeak</legend>
         <div class="avatar-row">
           <img id="avatar-img" alt="" width="72" height="72">
-          <div>
-            <span class="avatar-label" data-i18n="sAvatar">Picture on TeamSpeak</span>
-            <div class="avatar-acts">
-              <label class="btn ghost sm file-btn"><svg class="ic"><use href="#i-upload"/></svg><span data-i18n="avatarPick">Choose a picture</span><input id="avatar-file" type="file" accept="image/png,image/jpeg,image/gif,image/webp"></label>
-              <button type="button" class="btn ghost sm" id="avatar-reset" hidden data-i18n="avatarReset">Use Panda's</button>
-            </div>
+          <div class="avatar-acts">
+            <label class="btn ghost sm file-btn"><svg class="ic"><use href="#i-upload"/></svg><span data-i18n="avatarPick">Choose a picture</span><input id="avatar-file" type="file" accept="image/png,image/jpeg,image/gif,image/webp"></label>
+            <button type="button" class="btn ghost sm" id="avatar-reset" hidden data-i18n="avatarReset">Use Panda's</button>
           </div>
         </div>
         <p class="hint" data-i18n="sAvatarHint">PNG, JPG or GIF; it's made small before it's sent. Saved right away. The bot needs i_client_max_avatar_filesize on the server.</p>
-        <div class="row2">
-          <label class="field"><span data-i18n="sLang">Chat language</span>
-            <select name="language"><option value="en">English</option><option value="tr">Türkçe</option><option value="fr">Français</option><option value="de">Deutsch</option></select></label>
-          <label class="field"><span data-i18n="sPrefix">Command prefix</span>
-            <input name="commandPrefix" type="text" maxlength="3" required></label>
-        </div>
-        <p class="hint js-many" hidden data-i18n="sPrefixHint">Bots in the same channel need different prefixes.</p>
-        <label class="switch"><input type="checkbox" name="announce"><span class="track" aria-hidden="true"></span><span data-i18n="sAnnounce">Announce each song in chat</span></label>
-        <label class="switch"><input type="checkbox" name="confirmCommands"><span class="track" aria-hidden="true"></span><span data-i18n="sConfirm">Confirm chat commands</span></label>
-        <p class="hint" data-i18n="sChatHint">Announcing posts every song as it starts. Confirmations are the short replies to commands like !play and !skip. Questions (!np, !queue, !help) and errors are always answered.</p>
-        <label class="switch"><input type="checkbox" name="showSongInDescription"><span class="track" aria-hidden="true"></span><span data-i18n="sDesc">Show song in bot description</span></label>
-        <label class="switch"><input type="checkbox" name="songInNickname"><span class="track" aria-hidden="true"></span><span data-i18n="sNickSong">Show song in the bot's name</span></label>
-        <label class="field js-nick-song"><span data-i18n="sNickFormat">The bot's name while playing</span><input name="songNicknameFormat" type="text" maxlength="60"></label>
-        <p class="hint js-nick-song" data-i18n="sNickSongHint"></p>
-        <div class="admin-only">
-        <label class="field"><span data-i18n="sSongChannel">Channel named after the song</span>
+      </fieldset>
+
+      <fieldset class="group admin-only" data-pane="name">
+        <legend data-i18n="sSongChannel">Channel named after the song</legend>
+        <label class="field"><span data-i18n="sChannel">Channel</span>
           <input name="songChannel" type="text" maxlength="200" placeholder="Music/Now playing  ·  /12" autocomplete="off" spellcheck="false"></label>
         <div class="row2">
           <label class="field"><span data-i18n="sSongFormat">Its name while playing</span><input name="songChannelFormat" type="text" maxlength="60"></label>
           <label class="field"><span data-i18n="sSongIdle">When nothing plays</span><input name="songChannelIdle" type="text" maxlength="40"></label>
         </div>
         <p class="hint" data-i18n="sSongChannelHint"></p>
-        <label class="switch"><input type="checkbox" name="publicPage"><span class="track" aria-hidden="true"></span><span data-i18n="sPublic">Public "now playing" page</span></label>
-        <p class="hint"><span data-i18n="sPublicHint"></span> <a id="public-link" href="now.html" target="_blank" rel="noopener">now.html</a></p>
-        <label class="switch"><input type="checkbox" name="botOwners"><span class="track" aria-hidden="true"></span><span data-i18n="sBotOwners">Bot owners run their bots in the panel</span></label>
-        <p class="hint" data-i18n="sBotOwnersHint"></p>
-        <label class="field"><span data-i18n="sOwner">Owner</span>
+      </fieldset>
+
+      <fieldset class="group admin-only" data-pane="chat">
+        <legend data-i18n="sChatQueue">Chat and queue</legend>
+        <label class="field inline"><span data-i18n="sLang">Chat language</span>
+          <select name="language"><option value="en">English</option><option value="tr">Türkçe</option><option value="fr">Français</option><option value="de">Deutsch</option></select></label>
+        <label class="switch"><input type="checkbox" name="announce"><span class="track" aria-hidden="true"></span><span data-i18n="sAnnounce">Announce each song in chat</span></label>
+        <label class="switch"><input type="checkbox" name="confirmCommands"><span class="track" aria-hidden="true"></span><span data-i18n="sConfirm">Confirm chat commands</span></label>
+        <p class="hint" data-i18n="sChatHint">Announcing posts every song as it starts. Confirmations are the short replies to commands like !play and !skip. Questions (!np, !queue, !help) and errors are always answered.</p>
+        <label class="field inline"><span data-i18n="sMaxQueue">Max queue length</span>
+          <input name="maxQueueLength" type="number" min="1" max="1000" required></label>
+        <label class="field inline"><span data-i18n="sPerUser">Songs per person</span>
+          <input name="maxSongsPerUser" type="number" min="0" max="1000" required></label>
+        <p class="hint" data-i18n="sPerUserHint">How many songs one person can have waiting in the queue. 0 = no limit. Panel admins aren't limited.</p>
+        <label class="field inline"><span data-i18n="sLeave">Leave when nobody listens for (min)</span>
+          <input name="leaveWhenEmpty" type="number" min="0" max="1440" required></label>
+        <p class="hint" data-i18n="sLeaveHint"></p>
+      </fieldset>
+
+      <fieldset class="group admin-only" data-pane="perm">
+        <legend data-i18n="sPerm">Chat permissions</legend>
+        <label class="switch"><input type="checkbox" name="everyoneCanUse"><span class="track" aria-hidden="true"></span><span data-i18n="sEveryone">Everyone on the server can use the bot</span></label>
+        <p class="hint" data-i18n="sEveryoneHint">When off, only the people below, DJs and admins can.</p>
+        <div class="people js-members" data-list="members" data-groups="memberGroups">
+          <div class="people-head"><span data-i18n="sMembers">Who may use the bot</span></div>
+          <ul class="pchips"></ul>
+        </div>
+        <div class="people" data-list="admins" data-groups="adminGroups">
+          <div class="people-head"><span data-i18n="sAdmins">Admins</span></div>
+          <ul class="pchips"></ul>
+        </div>
+        <div class="people" data-list="djs" data-groups="djGroups">
+          <div class="people-head"><span data-i18n="sDjs">DJs</span></div>
+          <ul class="pchips"></ul>
+        </div>
+        <div class="people" data-list="blocked">
+          <div class="people-head"><span data-i18n="sBlocked">Blocked</span></div>
+          <ul class="pchips"></ul>
+        </div>
+        <p class="hint" data-i18n="sPeopleHint"></p>
+        <label class="field inline"><span data-i18n="sOthers">Who may skip, remove or move other people's songs</span>
+          <select name="othersSongs"><option value="everyone" data-i18n="lvlEveryone">Everyone</option><option value="dj" data-i18n="lvlDj">DJs and admins</option><option value="admin" data-i18n="lvlAdmin">Admins only</option></select></label>
+        <label class="switch"><input type="checkbox" name="voteSkip"><span class="track" aria-hidden="true"></span><span data-i18n="sVoteSkip">The others can vote to skip</span></label>
+        <p class="hint" data-i18n="sVoteSkipHint"></p>
+        <label class="switch"><input type="checkbox" name="onlyFromChannel"><span class="track" aria-hidden="true"></span><span data-i18n="sOnlyChannel">Only people in the bot's channel can give commands</span></label>
+        <p class="hint" data-i18n="sOnlyChannelHint"></p>
+      </fieldset>
+
+      <fieldset class="group admin-only" data-pane="perm">
+        <legend data-i18n="sOwner">Owner</legend>
+        <label class="field"><span class="sr-only" data-i18n="sOwner">Owner</span>
           <input name="owner" type="text" maxlength="100" autocomplete="off" spellcheck="false" placeholder="—" list="owner-list"></label>
         <datalist id="owner-list"></datalist>
         <p class="hint" id="owner-hint"></p>
+      </fieldset>
+
+      <fieldset class="group admin-only" data-pane="perm">
+        <legend data-i18n="sChecks">The bot's permissions on the server</legend>
+        <p class="hint" data-i18n="sChecksHint"></p>
+        <ul id="perm-checks" class="checks"></ul>
+        <div class="save-row"><button id="checks-refresh" class="btn ghost sm" type="button"><svg class="ic"><use href="#i-refresh"/></svg><span data-i18n="refresh">Refresh</span></button></div>
+      </fieldset>
+
+      <fieldset class="group admin-only" data-pane="commands">
+        <legend data-i18n="sCmds">Commands</legend>
+        <label class="field inline"><span data-i18n="sPrefix">Command prefix</span>
+          <input name="commandPrefix" type="text" maxlength="3" required></label>
+        <p class="hint js-many" hidden data-i18n="sPrefixHint">Bots in the same channel need different prefixes.</p>
+      </fieldset>
+
+      <fieldset class="group admin-only" data-pane="commands">
+        <legend data-i18n="sCmdLevels">Who may use each command</legend>
+        <p class="hint" data-i18n="sCmdsHint"></p>
+        <div class="cmd-tools">
+          <input id="cmd-filter" type="search" autocomplete="off" data-i18n-ph="sCmdsFilter">
+          <button id="cmd-recommended" class="btn ghost" type="button"><span data-i18n="sRecommended">Use the recommended setup</span></button>
         </div>
-        <div class="row2">
-          <label class="field"><span data-i18n="sMaxQueue">Max queue length</span>
-            <input name="maxQueueLength" type="number" min="1" max="1000" required></label>
-          <label class="field"><span data-i18n="sPerUser">Songs per person</span>
-            <input name="maxSongsPerUser" type="number" min="0" max="1000" required></label>
-        </div>
-        <p class="hint" data-i18n="sPerUserHint">How many songs one person can have waiting in the queue. 0 = no limit. Panel admins aren't limited.</p>
-        <div class="admin-only">
-        <label class="field"><span data-i18n="sLeave">Leave when nobody listens for (min)</span>
-          <input name="leaveWhenEmpty" type="number" min="0" max="1440" required></label>
-        <p class="hint" data-i18n="sLeaveHint"></p>
+        <p class="hint" data-i18n="sRecommendedHint"></p>
+        <div id="cmd-levels" class="cmd-grid"></div>
+      </fieldset>
+
+      <fieldset class="group admin-only" data-pane="schedule">
+        <legend data-i18n="sSchedule">Schedule</legend>
+        <p id="sch-hint" class="hint"></p>
+        <ul id="sch-list" class="users"></ul>
+        <div class="sch-add">
+          <label class="field inline"><span data-i18n="schTime">Time</span><input id="sch-time" type="time" value="09:00"></label>
+          <label class="field inline"><span data-i18n="schDo">Do</span>
+            <select id="sch-action"><option value="playlist" data-i18n="schPlaylist">Play a playlist</option><option value="station" data-i18n="schStation">Play a radio station</option><option value="stop" data-i18n="schStop">Stop</option></select></label>
+          <label class="field inline" id="sch-target-f"><span data-i18n="schWhat">Which</span><select id="sch-target"></select></label>
+          <label class="check" id="sch-shuffle-f"><input id="sch-shuffle" type="checkbox"><span data-i18n="schShuffle">Shuffled</span></label>
+          <div id="sch-days" class="sb-cats"></div>
+          <div class="save-row end sch-actions"><button id="sch-add" class="btn soft" type="button"><svg class="ic"><use href="#i-plus"/></svg><span data-i18n="schAdd">Add</span></button></div>
         </div>
       </fieldset>
 
-      <fieldset class="group admin-only">
-        <legend>🛡️ <span data-i18n="sTools">Server tools</span></legend>
+      <fieldset class="group admin-only" data-pane="tools">
+        <legend data-i18n="sTools">Server tools</legend>
         <p class="hint" data-i18n="sToolsHint">Things beyond music. All of them are off until you turn them on; turn each on for one bot per server.</p>
         <label class="switch"><input type="checkbox" name="afkEnabled"><span class="track" aria-hidden="true"></span><span data-i18n="sAfk">Move people who are away to an AFK channel</span></label>
         <div class="js-afk">
-          <div class="row2">
-            <label class="field"><span data-i18n="sAfkChannel">AFK channel</span>
-              <input name="afkChannel" type="text" maxlength="200" placeholder="Lobby/AFK  ·  /7" autocomplete="off" spellcheck="false"></label>
-            <label class="field"><span data-i18n="sAfkMinutes">After (min)</span>
-              <input name="afkMinutes" type="number" min="0" max="1440" required></label>
-          </div>
+          <label class="field"><span data-i18n="sAfkChannel">AFK channel</span>
+            <input name="afkChannel" type="text" maxlength="200" placeholder="Lobby/AFK  ·  /7" autocomplete="off" spellcheck="false"></label>
+          <label class="field inline"><span data-i18n="sAfkMinutes">After (min)</span>
+            <input name="afkMinutes" type="number" min="0" max="1440" required></label>
           <p class="hint" data-i18n="sAfkWhen">Who counts as away:</p>
           <label class="check"><input type="checkbox" name="afkAway"><span data-i18n="sAfkAway">Set as away in TeamSpeak</span></label>
           <label class="check"><input type="checkbox" name="afkMuted"><span data-i18n="sAfkMuted">Sound (speakers) turned off</span></label>
@@ -377,135 +478,103 @@
         </div>
       </fieldset>
 
-      <fieldset class="group admin-only">
-        <legend>⏰ <span data-i18n="sSchedule">Schedule</span></legend>
-        <p id="sch-hint" class="hint"></p>
-        <ul id="sch-list" class="users"></ul>
-        <div class="sch-add">
-          <div class="row2">
-            <label class="field"><span data-i18n="schTime">Time</span><input id="sch-time" type="time" value="09:00"></label>
-            <label class="field"><span data-i18n="schDo">Do</span>
-              <select id="sch-action"><option value="playlist" data-i18n="schPlaylist">Play a playlist</option><option value="station" data-i18n="schStation">Play a radio station</option><option value="stop" data-i18n="schStop">Stop</option></select></label>
-          </div>
-          <label class="field" id="sch-target-f"><span data-i18n="schWhat">Which</span><select id="sch-target"></select></label>
-          <label class="check" id="sch-shuffle-f"><input id="sch-shuffle" type="checkbox"><span data-i18n="schShuffle">Shuffled</span></label>
-          <div id="sch-days" class="sb-cats"></div>
-          <div class="save-row"><button id="sch-add" class="btn soft sm" type="button"><svg class="ic"><use href="#i-plus"/></svg><span data-i18n="schAdd">Add</span></button></div>
-        </div>
-      </fieldset>
-
-      <fieldset class="group admin-only">
-        <legend>🛡️ <span data-i18n="sPerm">Chat permissions</span></legend>
-        <label class="switch"><input type="checkbox" name="everyoneCanUse"><span class="track" aria-hidden="true"></span><span data-i18n="sEveryone">Everyone on the server can use the bot</span></label>
-        <p class="hint" data-i18n="sEveryoneHint">When off, only the people below, DJs and admins can.</p>
-        <div class="people js-members" data-list="members" data-groups="memberGroups">
-          <div class="people-head"><span data-i18n="sMembers">Who may use the bot</span><button class="btn ghost sm js-pick" type="button"><svg class="ic"><use href="#i-plus"/></svg><span data-i18n="addPerson">Add</span></button></div>
-          <ul class="pchips"></ul>
-        </div>
-        <div class="people" data-list="admins" data-groups="adminGroups">
-          <div class="people-head"><span data-i18n="sAdmins">Admins</span><button class="btn ghost sm js-pick" type="button"><svg class="ic"><use href="#i-plus"/></svg><span data-i18n="addPerson">Add</span></button></div>
-          <ul class="pchips"></ul>
-        </div>
-        <div class="people" data-list="djs" data-groups="djGroups">
-          <div class="people-head"><span data-i18n="sDjs">DJs</span><button class="btn ghost sm js-pick" type="button"><svg class="ic"><use href="#i-plus"/></svg><span data-i18n="addPerson">Add</span></button></div>
-          <ul class="pchips"></ul>
-        </div>
-        <div class="people" data-list="blocked">
-          <div class="people-head"><span data-i18n="sBlocked">Blocked</span><button class="btn ghost sm js-pick" type="button"><svg class="ic"><use href="#i-plus"/></svg><span data-i18n="addPerson">Add</span></button></div>
-          <ul class="pchips"></ul>
-        </div>
-        <p class="hint" data-i18n="sPeopleHint"></p>
-        <label class="field"><span data-i18n="sOthers">Who may skip, remove or move other people's songs</span>
-          <select name="othersSongs"><option value="everyone" data-i18n="lvlEveryone">Everyone</option><option value="dj" data-i18n="lvlDj">DJs and admins</option><option value="admin" data-i18n="lvlAdmin">Admins only</option></select></label>
-        <label class="switch"><input type="checkbox" name="voteSkip"><span class="track" aria-hidden="true"></span><span data-i18n="sVoteSkip">The others can vote to skip</span></label>
-        <p class="hint" data-i18n="sVoteSkipHint"></p>
-        <label class="switch"><input type="checkbox" name="onlyFromChannel"><span class="track" aria-hidden="true"></span><span data-i18n="sOnlyChannel">Only people in the bot's channel can give commands</span></label>
-        <p class="hint" data-i18n="sOnlyChannelHint"></p>
-        <details class="cmd-levels">
-          <summary data-i18n="sCmdLevels">Who may use each command</summary>
-          <div id="cmd-levels" class="cmd-grid"></div>
-          <div class="save-row"><button id="cmd-recommended" class="btn ghost sm" type="button"><span data-i18n="sRecommended">Use the recommended setup</span></button></div>
-        </details>
-      </fieldset>
-
-      <fieldset class="group admin-only">
-        <legend>🔍 <span data-i18n="sChecks">The bot's permissions on the server</span></legend>
-        <p class="hint" data-i18n="sChecksHint"></p>
-        <ul id="perm-checks" class="checks"></ul>
-        <div class="save-row"><button id="checks-refresh" class="btn ghost sm" type="button"><svg class="ic"><use href="#i-refresh"/></svg><span data-i18n="refresh">Refresh</span></button></div>
-      </fieldset>
-      <fieldset class="group admin-only">
-        <legend>📚 <span data-i18n="sLib">Library</span></legend>
-        <p class="hint js-many" hidden data-i18n="sShared">Shared by all bots.</p>
-        <label class="switch"><input type="checkbox" name="libraryEnabled"><span class="track" aria-hidden="true"></span><span data-i18n="sLibOn">Save every requested song</span></label>
-        <p class="hint" data-i18n="sLibOnHint"></p>
-        <label class="field"><span data-i18n="sLibMax">Size limit (GB)</span>
-          <input name="libraryMaxGb" type="number" min="0" max="976" step="any" inputmode="decimal" required></label>
-        <p class="hint" data-i18n="sLibMaxHint"></p>
-        <label class="switch"><input type="checkbox" name="normalizeVolume"><span class="track" aria-hidden="true"></span><span data-i18n="sNorm">Play songs equally loud</span></label>
-        <p class="hint" data-i18n="sNormHint"></p>
-        <label class="field"><span data-i18n="sTarget">How loud</span>
-          <select name="targetLufs"><option value="-18" data-i18n="tNatural">Natural</option><option value="-14" data-i18n="tStandard">Standard</option><option value="-11" data-i18n="tLoud">Loud</option></select></label>
-        <p class="hint" data-i18n="sTargetHint"></p>
-      </fieldset>
-
-      <fieldset class="group admin-only">
-        <legend>🎵 <span data-i18n="sSources">Sources</span></legend>
-        <p class="hint js-many" hidden data-i18n="sShared">Shared by all bots.</p>
-        <label class="field"><span data-i18n="sSearchIn">Search on</span>
+      <fieldset class="group admin-only" data-pane="sources">
+        <legend data-i18n="gSearch">Search</legend>
+        <label class="field inline"><span data-i18n="sSearchIn">Search on</span>
           <select name="srcSearch"><option value="youtube">YouTube</option><option value="youtubeMusic">YouTube Music</option><option value="soundcloud">SoundCloud</option></select></label>
         <label class="switch"><input type="checkbox" name="srcFallback"><span class="track" aria-hidden="true"></span><span data-i18n="sFallback">When nothing is found there, try the others</span></label>
         <p id="src-warn" class="hint warn" hidden data-i18n="sSearchWarn"></p>
         <p class="hint" data-i18n="sPrefixes"></p>
+      </fieldset>
+
+      <fieldset class="group admin-only" data-pane="sources">
+        <legend data-i18n="gLinks">Links and services</legend>
         <label class="switch"><input type="checkbox" name="srcYouTubeMusic"><span class="track" aria-hidden="true"></span><span>YouTube Music</span></label>
         <label class="switch"><input type="checkbox" name="srcSoundCloud"><span class="track" aria-hidden="true"></span><span>SoundCloud</span></label>
         <label class="switch"><input type="checkbox" name="srcSites"><span class="track" aria-hidden="true"></span><span data-i18n="srcSites">Other sites and audio files</span></label>
         <label class="switch"><input type="checkbox" name="srcServices"><span class="track" aria-hidden="true"></span><span data-i18n="srcServices">Spotify, Apple Music, Deezer and Tidal links</span></label>
         <label class="switch"><input type="checkbox" name="srcPages"><span class="track" aria-hidden="true"></span><span data-i18n="srcPages">Any other link: look up the page's title</span></label>
+      </fieldset>
+
+      <fieldset class="group admin-only" data-pane="sources">
+        <legend data-i18n="gRadio">Radio</legend>
         <label class="switch"><input type="checkbox" name="srcRadio"><span class="track" aria-hidden="true"></span><span data-i18n="srcRadio">Internet radio</span></label>
         <label class="switch"><input type="checkbox" name="srcRadioNames"><span class="track" aria-hidden="true"></span><span data-i18n="srcRadioNames">Song names from radio.net</span></label>
+      </fieldset>
+
+      <fieldset class="group admin-only" data-pane="sources">
+        <legend data-i18n="gLocal">Local network</legend>
         <label class="switch"><input type="checkbox" name="srcLocal"><span class="track" aria-hidden="true"></span><span data-i18n="srcLocal">Links into the local network</span></label>
         <p class="hint" data-i18n="sSourcesHint"></p>
       </fieldset>
 
-      <fieldset class="group admin-only">
-        <legend>▶️ <span>YouTube</span></legend>
-        <p class="hint js-many" hidden data-i18n="sShared">Shared by all bots.</p>
-        <div class="row2">
-          <label class="field"><span data-i18n="sMaxDur">Max song length (min)</span>
-            <input name="maxDurationMinutes" type="number" min="0" max="1440" required></label>
-          <label class="field"><span data-i18n="sSearchCount">Results of !search</span>
-            <input name="ytSearchResults" type="number" min="1" max="10" required></label>
-        </div>
-        <p class="hint" data-i18n="sMaxDurHint">0 = unlimited.</p>
+      <fieldset class="group admin-only" data-pane="youtube">
+        <legend data-i18n="gSearch">Search</legend>
+        <label class="field inline"><span data-i18n="sSearchCount">Results of !search</span>
+          <input name="ytSearchResults" type="number" min="1" max="10" required></label>
         <label class="switch"><input type="checkbox" name="ytHideLive"><span class="track" aria-hidden="true"></span><span data-i18n="ytHideLive">Leave live streams out of searches</span></label>
         <label class="switch"><input type="checkbox" name="ytHideShort"><span class="track" aria-hidden="true"></span><span data-i18n="ytHideShort">Leave videos under a minute out of searches</span></label>
-        <label class="field"><span data-i18n="sQuality">Audio quality</span>
+      </fieldset>
+
+      <fieldset class="group admin-only" data-pane="youtube">
+        <legend data-i18n="gPlayback">Playback</legend>
+        <label class="field inline"><span data-i18n="sMaxDur">Max song length (min)</span>
+          <input name="maxDurationMinutes" type="number" min="0" max="1440" required></label>
+        <p class="hint" data-i18n="sMaxDurHint">0 = unlimited.</p>
+        <label class="field inline"><span data-i18n="sQuality">Audio quality</span>
           <select name="ytQuality"><option value="best" data-i18n="qBest">Best</option><option value="saver" data-i18n="qSaver">Save data</option></select></label>
+      </fieldset>
+
+      <fieldset class="group admin-only" data-pane="youtube">
+        <legend>SponsorBlock</legend>
         <label class="switch"><input type="checkbox" name="ytSponsorBlock"><span class="track" aria-hidden="true"></span><span data-i18n="ytSponsorBlock">Skip the parts that aren't music (SponsorBlock)</span></label>
         <div id="sb-cats" class="sb-cats"></div>
         <p class="hint" data-i18n="sSponsorHint"></p>
-        <div class="row2">
-          <label class="field"><span data-i18n="sAttempts">Tries when YouTube refuses a song</span>
-            <input name="ytPlayAttempts" type="number" min="1" max="10" required></label>
-          <label class="field"><span data-i18n="sClients">YouTube clients from the third try</span>
-            <input name="ytRetryClients" type="text" maxlength="200" autocomplete="off" spellcheck="false"></label>
-        </div>
-        <p class="hint" data-i18n="sRetryHint"></p>
-        <h4 class="eyebrow sub" data-i18n="sAutoplay">Autoplay</h4>
-        <label class="field"><span data-i18n="sNoRepeat">Don't repeat any of the last … songs</span>
+      </fieldset>
+
+      <fieldset class="group admin-only" data-pane="youtube">
+        <legend data-i18n="sAutoplay">Autoplay</legend>
+        <label class="field inline"><span data-i18n="sNoRepeat">Don't repeat any of the last … songs</span>
           <input name="ytNoRepeat" type="number" min="0" max="30" required></label>
         <label class="switch"><input type="checkbox" name="ytSameArtist"><span class="track" aria-hidden="true"></span><span data-i18n="ytSameArtist">The same artist may come again</span></label>
         <p class="hint" data-i18n="sAutoplayHint"></p>
       </fieldset>
-      <div class="save-row">
-        <button id="set-save" class="btn primary" type="submit"><svg class="ic"><use href="#i-check"/></svg><span data-i18n="save">Save</span></button>
-        <button id="set-reconnect" class="btn ghost admin-only" type="button"><svg class="ic"><use href="#i-refresh"/></svg><span data-i18n="reconnect">Reconnect bot</span></button>
-      </div>
+
+      <fieldset class="group admin-only" data-pane="youtube">
+        <legend data-i18n="gRetry">When YouTube refuses a song</legend>
+        <label class="field inline"><span data-i18n="sAttempts">Tries when YouTube refuses a song</span>
+          <input name="ytPlayAttempts" type="number" min="1" max="10" required></label>
+        <label class="field"><span data-i18n="sClients">YouTube clients from the third try</span>
+          <input name="ytRetryClients" type="text" maxlength="200" autocomplete="off" spellcheck="false"></label>
+        <p class="hint" data-i18n="sRetryHint"></p>
+      </fieldset>
+
+      <fieldset class="group admin-only" data-pane="library">
+        <legend data-i18n="sLib">Library</legend>
+        <label class="switch"><input type="checkbox" name="libraryEnabled"><span class="track" aria-hidden="true"></span><span data-i18n="sLibOn">Save every requested song</span></label>
+        <p class="hint" data-i18n="sLibOnHint"></p>
+        <label class="field inline"><span data-i18n="sLibMax">Size limit (GB)</span>
+          <input name="libraryMaxGb" type="number" min="0" max="976" step="any" inputmode="decimal" required></label>
+        <p class="hint" data-i18n="sLibMaxHint"></p>
+        <label class="switch"><input type="checkbox" name="normalizeVolume"><span class="track" aria-hidden="true"></span><span data-i18n="sNorm">Play songs equally loud</span></label>
+        <p class="hint" data-i18n="sNormHint"></p>
+        <label class="field inline"><span data-i18n="sTarget">How loud</span>
+          <select name="targetLufs"><option value="-18" data-i18n="tNatural">Natural</option><option value="-14" data-i18n="tStandard">Standard</option><option value="-11" data-i18n="tLoud">Loud</option></select></label>
+        <p class="hint" data-i18n="sTargetHint"></p>
+      </fieldset>
+
+      <fieldset class="group admin-only" data-pane="users">
+        <legend data-i18n="sAccess">Access</legend>
+        <label class="switch"><input type="checkbox" name="botOwners"><span class="track" aria-hidden="true"></span><span data-i18n="sBotOwners">Bot owners run their bots in the panel</span></label>
+        <p class="hint" data-i18n="sBotOwnersHint"></p>
+        <label class="switch"><input type="checkbox" name="publicPage"><span class="track" aria-hidden="true"></span><span data-i18n="sPublic">Public "now playing" page</span></label>
+        <p class="hint"><span data-i18n="sPublicHint"></span> <a id="public-link" href="now.html" target="_blank" rel="noopener">now.html</a></p>
+      </fieldset>
+
     </form>
 
-    <section class="group admin-only">
-      <h3 class="legend">🍪 <span data-i18n="sCookies">YouTube cookies</span> <span id="cookie-status" class="chip"></span></h3>
+    <section class="group admin-only" data-pane="youtube">
+      <h3 class="legend"><span data-i18n="sCookies">YouTube cookies</span> <span id="cookie-status" class="chip"></span></h3>
       <p class="hint" data-i18n="sCookiesHelp">If YouTube says "confirm you're not a bot": open a private/incognito window, log in to YouTube, export cookies with a "cookies.txt" browser extension, paste them here, then close that window.</p>
       <textarea id="cookie-text" rows="4" spellcheck="false" placeholder="# Netscape HTTP Cookie File" aria-label="cookies.txt"></textarea>
       <div class="save-row">
@@ -515,8 +584,8 @@
       </div>
     </section>
 
-    <section class="group admin-only">
-      <h3 class="legend">👥 <span data-i18n="sUsers2">Panel users</span></h3>
+    <section class="group admin-only" data-pane="users">
+      <h3 class="legend" data-i18n="sUsers2">Panel users</h3>
       <p class="hint" data-i18n="sUsersHint2">Admins can do everything. "Can only add songs" users can watch and add songs, nothing else.</p>
       <ul id="user-list" class="users"></ul>
       <form id="user-form" class="user-add">
@@ -535,8 +604,8 @@
       </form>
     </section>
 
-    <section class="group admin-only">
-      <h3 class="legend">🔌 <span data-i18n="sKeys">API keys</span></h3>
+    <section class="group admin-only" data-pane="keys">
+      <h3 class="legend" data-i18n="sKeys">API keys</h3>
       <p class="hint" data-i18n="sKeysHint"></p>
       <ul id="key-list" class="users"></ul>
       <div id="key-new" class="key-new" hidden>
@@ -554,8 +623,8 @@
       </form>
     </section>
 
-    <section class="group admin-only">
-      <h3 class="legend">💾 <span data-i18n="sBackup">Backup</span></h3>
+    <section class="group admin-only" data-pane="backup">
+      <h3 class="legend" data-i18n="sBackup">Backup</h3>
       <p class="hint" data-i18n="sBackupHint"></p>
       <div class="save-row">
         <a class="btn ghost" href="api/backup" download><svg class="ic"><use href="#i-download"/></svg><span data-i18n="backupDl">Download a backup</span></a>
@@ -563,8 +632,8 @@
       </div>
     </section>
 
-    <form id="pw-form" class="group">
-      <h3 class="legend">🔑 <span data-i18n="sPanelPw">Panel password</span> <span id="pw-user" class="chip"></span></h3>
+    <form id="pw-form" class="group" data-pane="password">
+      <h3 class="legend"><span data-i18n="sPanelPw">Panel password</span> <span id="pw-user" class="chip"></span></h3>
       <input type="text" name="username" autocomplete="username" hidden>
       <div class="row2">
         <label class="field"><span data-i18n="pwCurrent">Current password</span><input name="current" type="password" autocomplete="current-password" required></label>
@@ -573,8 +642,8 @@
       <div class="save-row"><button class="btn primary" type="submit"><span data-i18n="pwChange">Change password</span></button></div>
     </form>
 
-    <section id="remove-sec" class="group js-many admin-only" hidden>
-      <h3 class="legend">🗑️ <span data-i18n="sRemoveBot">Remove this bot</span></h3>
+    <section id="remove-sec" class="group js-many admin-only" data-pane="remove" hidden>
+      <h3 class="legend" data-i18n="sRemoveBot">Remove this bot</h3>
       <p class="hint" data-i18n="sRemoveBotHint">Disconnects it and deletes its TeamSpeak identity and play history.</p>
       <div class="save-row"><button id="bot-remove" class="btn ghost danger" type="button"><svg class="ic"><use href="#i-trash"/></svg><span data-i18n="removeBot">Remove bot</span></button></div>
     </section>
@@ -584,6 +653,11 @@
       <span>Panda <span id="version"></span></span>
       <a href="https://github.com/KaanBahaSever/panda" target="_blank" rel="noopener noreferrer">GitHub <svg class="ic sm"><use href="#i-ext"/></svg></a>
     </footer>
+    </div>
+  </div>
+  <div id="set-actions" class="set-actions manage-only">
+    <button id="set-reconnect" class="btn ghost admin-only" type="button"><svg class="ic"><use href="#i-refresh"/></svg><span data-i18n="reconnect">Reconnect bot</span></button>
+    <button id="set-save" class="btn primary" type="submit" form="set-form"><svg class="ic"><use href="#i-check"/></svg><span data-i18n="save">Save</span></button>
   </div>
 </dialog>
 
@@ -686,11 +760,11 @@
     <p id="picker-title" data-i18n="pickTitle">Add from the server</p>
     <input id="picker-search" type="search" autocomplete="off" enterkeyhint="search" data-i18n-ph="pickSearch">
     <div id="picker-list" class="picker-list"></div>
-    <div class="picker-uid">
-      <input id="picker-uid" type="text" autocomplete="off" spellcheck="false" data-i18n-ph="pickUid">
-      <button id="picker-uid-add" class="btn soft sm" type="button" data-i18n="addPerson">Add</button>
+    <input id="picker-uid" type="text" autocomplete="off" spellcheck="false" data-i18n-ph="pickUid">
+    <div class="dlg-actions">
+      <button class="btn ghost" value="close" data-i18n="close">Close</button>
+      <button id="picker-uid-add" class="btn primary" type="button"><svg class="ic"><use href="#i-plus"/></svg><span data-i18n="addPerson">Add</span></button>
     </div>
-    <div class="save-row end"><button class="btn ghost" value="close" data-i18n="close">Close</button></div>
   </form>
 </dialog>
 

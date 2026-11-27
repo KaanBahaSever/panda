@@ -109,7 +109,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 
 /* ---------- fields ---------- */
 .field { display: grid; gap: 6px; text-align: left; font-size: 13.5px; font-weight: 700; color: var(--muted); }
-input[type=text], input[type=search], input[type=password], input[type=number], select, textarea {
+input[type=text], input[type=search], input[type=password], input[type=number], input[type=time], select, textarea {
   width: 100%; min-height: 44px; padding: 10px 14px; border: 1.5px solid var(--border); border-radius: var(--radius-sm);
   background: var(--surface); color: var(--text); font-size: 15px; font-weight: 500; transition: border-color .15s, box-shadow .15s;
 }
@@ -535,3 +535,181 @@ dialog::backdrop { background: rgba(22,22,30,.45); backdrop-filter: blur(2px); }
 .upd-auto .hint { margin: 6px 0 0; }
 .onair { font-size: 12.5px; color: var(--green-d); margin-top: 2px; overflow-wrap: anywhere; }
 .afk-groups { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 4px 0 8px; }
+
+/* ---------- settings: an overlay in the middle, a side menu, one section at a time ---------- */
+.settings {
+  margin: auto; width: min(1180px, calc(100vw - 48px)); height: min(780px, calc(100dvh - 48px)); max-height: none;
+  border-radius: var(--radius); background: var(--surface); box-shadow: 0 24px 64px rgba(0,0,0,.28);
+}
+.settings[open] { animation: pop .18s ease-out; }
+.settings .sheet-head { gap: 12px; padding: 10px 12px 10px 24px; }
+.settings .sheet-head h2 { font-size: 20px; font-weight: 700; }
+.set-title-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; min-width: 0; }
+.set-bot { font-size: 14px; font-weight: 600; color: var(--muted); }
+.set-dirty {
+  display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border-radius: 999px;
+  background: #fdf3dc; color: #7a5410; font-size: 13px; font-weight: 700;
+}
+.set-dirty .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--warn); }
+:root[data-theme="dark"] .set-dirty { background: rgba(232,163,23,.16); color: #f2c66b; }
+.set-wrap { flex: 1; min-height: 0; display: flex; }
+.set-nav {
+  flex: none; width: 272px; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 2px;
+  background: var(--bg); border-right: 1px solid var(--border);
+}
+.set-nav-label { flex: none; margin: 16px 12px 6px; font-size: 12px; font-weight: 600; color: var(--muted); }
+.set-nav-label:first-child { margin-top: 4px; }
+.set-nav-item {
+  display: flex; flex: none; align-items: center; gap: 10px; width: 100%; min-height: 38px; padding: 8px 12px; line-height: 1.25; border: 0; border-radius: 10px;
+  background: transparent; color: var(--text); font-size: 14.5px; font-weight: 600; text-align: left; white-space: nowrap; cursor: pointer;
+  transition: background-color .15s, color .15s;
+}
+.set-nav-item .ic { width: 18px; height: 18px; color: var(--muted); }
+.set-nav-item:hover { background: var(--surface-2); }
+.set-nav-item[aria-current="page"] { background: var(--soft); color: var(--soft-text); }
+.set-nav-item[aria-current="page"] .ic, .set-nav-item.danger .ic { color: currentColor; }
+.set-nav-item.danger { margin-top: auto; color: var(--danger); }
+.set-body { flex: 1; min-width: 0; padding: 24px; background: var(--surface); }
+.settings .group { box-shadow: none; border: 1px solid var(--border); }
+.settings .group legend, .settings .legend { font-size: 17px; font-weight: 700; }
+.settings .btn.primary { box-shadow: none; }
+.settings .stack { display: grid; gap: 12px; }
+.set-actions { display: flex; justify-content: flex-end; gap: 8px; padding: 12px 20px; background: var(--surface); border-top: 1px solid var(--border); }
+.pane-off { display: none !important; }
+@media (max-width: 760px) {
+  .settings { width: 100vw; height: 100dvh; max-width: 100vw; border-radius: 0; }
+  .settings .sheet-head { padding: 8px 8px 8px 16px; }
+  .set-wrap { flex-direction: column; }
+  .set-nav {
+    width: auto; flex-direction: row; overflow-x: auto; overflow-y: hidden; gap: 4px; padding: 8px 12px;
+    border-right: 0; border-bottom: 1px solid var(--border); scrollbar-width: none;
+  }
+  .set-nav-label { display: none; }
+  .set-side { width: auto; border-right: 0; border-bottom: 1px solid var(--border); }
+  .set-side .set-nav { border-bottom: 0; }
+  .set-find { margin: 8px 12px 0; }
+  .set-nav-item { width: auto; flex: none; white-space: nowrap; min-height: 36px; border-radius: 999px; }
+  .set-nav-item.danger { margin-top: 0; }
+  .set-body { padding: 16px; }
+  .set-actions { padding: 12px 16px; }
+}
+
+/* scrollbars in the theme's colours */
+.settings, .settings * { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--muted) 45%, transparent) transparent; }
+
+/* One kind of row everywhere in the settings: what it is on the left (its hint right below), the control on the
+   right, a hairline between rows. */
+.settings .group { gap: 14px; padding: 20px; }
+.settings .switch { flex-direction: row-reverse; justify-content: space-between; gap: 16px; min-height: 40px; font-size: 15px; }
+.settings .switch > span:last-child { flex: 1; min-width: 0; }
+.settings .field.inline { grid-template-columns: minmax(0, 1fr) minmax(140px, 240px); align-items: center; gap: 16px; font-size: 15px; font-weight: 600; color: var(--text); }
+.settings .check { flex-direction: row-reverse; justify-content: space-between; gap: 16px; min-height: 40px; margin: 0; font-size: 15px; font-weight: 600; color: var(--text); }
+.settings .check > span { flex: 1; min-width: 0; }
+.settings .check input {
+  appearance: none; flex: none; width: 44px; height: 26px; margin: 0; border-radius: 999px; cursor: pointer;
+  background: radial-gradient(circle at 13px 50%, #fff 9px, transparent 9.5px), var(--track); transition: background-color .2s;
+}
+.settings .check input:checked { background: radial-gradient(circle at 31px 50%, #fff 9px, transparent 9.5px), var(--green); }
+.settings .check input:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.settings :where(.switch, .check, .field.inline, .hint) + :where(.switch, .check, .field.inline) { padding-top: 14px; border-top: 1px solid var(--border); }
+.settings :where(.switch, .check, .field.inline) + .hint { margin-top: -8px; padding-right: 64px; }
+
+/* lists to pick several from (days, SponsorBlock's parts, AFK groups): chips that turn green */
+.settings .sb-cats, .settings .afk-groups { display: flex; flex-wrap: wrap; gap: 8px; margin: 2px 0 0; }
+.settings .sb-cats .check, .settings .afk-groups .check {
+  position: relative; flex-direction: row; gap: 6px; min-height: 34px; padding: 0 14px; border: 0; border-radius: 999px;
+  background: var(--surface-2); box-shadow: inset 0 0 0 1.5px var(--border); font-size: 14px; font-weight: 600; color: var(--text);
+  transition: background-color .15s, box-shadow .15s, color .15s;
+}
+.settings .sb-cats .check input, .settings .afk-groups .check input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; border-radius: 999px; }
+.settings .sb-cats .check:has(input:checked), .settings .afk-groups .check:has(input:checked) { background: var(--soft); color: var(--soft-text); box-shadow: inset 0 0 0 1.5px var(--green); }
+.settings .sb-cats .check:has(input:disabled) { opacity: .5; }
+.settings .sb-cats .check:has(input:focus-visible), .settings .afk-groups .check:has(input:focus-visible) { outline: 3px solid var(--focus); outline-offset: 2px; }
+.settings .sch-add { display: grid; gap: 14px; margin-top: 4px; padding-top: 14px; border-top: 1px solid var(--border); }
+
+/* people for the chat permissions: "+ Add" when there's nobody, a small "+" after the last one */
+.pchips li.add-li { padding: 0; background: transparent; }
+.pchips .add {
+  display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 14px 0 10px; border: 0; border-radius: 999px;
+  background: transparent; box-shadow: inset 0 0 0 1.5px var(--border); color: var(--text); font-size: 13.5px; font-weight: 650; cursor: pointer;
+  transition: background-color .15s, box-shadow .15s, color .15s;
+}
+.pchips .add:hover { background: var(--soft); color: var(--soft-text); box-shadow: inset 0 0 0 1.5px var(--green); }
+.pchips .add.small { width: 32px; padding: 0; justify-content: center; }
+.pchips .add .ic { width: 16px; height: 16px; }
+
+/* drop-downs: Panda's own list where the browser allows it, else at least the theme's colours */
+.settings select option { background: var(--surface); color: var(--text); }
+@supports (appearance: base-select) {
+  .settings select, .settings select::picker(select) { appearance: base-select; }
+  .settings select { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .settings select::picker-icon { color: var(--muted); transition: rotate .2s; }
+  .settings select:open::picker-icon { rotate: 180deg; }
+  .settings select::picker(select) {
+    margin-top: 6px; padding: 4px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+    background: var(--surface); color: var(--text); box-shadow: var(--shadow);
+  }
+  .settings select option { padding: 8px 12px; border-radius: 8px; font-size: 14.5px; font-weight: 600; }
+  .settings select option:hover, .settings select option:focus-visible { background: var(--surface-2); outline: none; }
+  .settings select option:checked { background: var(--soft); color: var(--soft-text); }
+  .settings select option::checkmark { display: none; }
+}
+@media (max-width: 520px) {
+  .settings .field.inline { grid-template-columns: 1fr; gap: 6px; }
+  .settings :where(.switch, .check, .field.inline) + .hint { padding-right: 0; }
+}
+
+/* dialogs' own buttons: at the bottom, apart from the rest */
+.dlg-actions { display: flex; justify-content: flex-end; gap: 8px; margin: 6px -22px -22px; padding: 14px 22px; border-top: 1px solid var(--border); }
+.picker form { gap: 12px; }
+.btn.soft:hover:not(:disabled) { background: color-mix(in srgb, var(--green) 26%, var(--surface)); }
+
+/* schedule: Add on its own row, on the right */
+.settings .sch-actions { padding-top: 14px; border-top: 1px solid var(--border); }
+
+/* chips: hovered = light green, picked = light green with a green border */
+.settings .sb-cats .check:hover:not(:has(input:disabled)), .settings .afk-groups .check:hover { background: var(--soft); color: var(--soft-text); }
+
+/* what a new password needs */
+.pw-rules { list-style: none; margin: -6px 0 0; padding: 0; display: grid; gap: 4px; font-size: 13px; font-weight: 600; color: var(--muted); }
+.pw-rules li { display: flex; align-items: center; gap: 6px; }
+.pw-rules li.ok { color: var(--accent-text); }
+
+/* commands: one row each, like every other setting */
+.settings .cmd-tools { display: flex; flex-wrap: wrap; gap: 8px; }
+.settings .cmd-tools input { flex: 1 1 220px; min-width: 0; }
+.settings .cmd-grid { gap: 0; margin: 0; }
+.settings .cmd-row {
+  grid-template-columns: minmax(0, 1fr) minmax(160px, 220px); gap: 2px 16px; padding: 12px 0; border-radius: 0;
+  background: transparent; border-top: 1px solid var(--border);
+}
+.settings .cmd-row code { font-size: 15px; font-weight: 700; color: var(--text); }
+.settings .cmd-row .desc { font-size: 13px; }
+.settings .cmd-row select { width: 100%; min-height: 40px; padding: 6px 12px; font-size: 14px; }
+
+/* the search over all settings, above the menu */
+.set-side { flex: none; width: 272px; min-height: 0; display: flex; flex-direction: column; background: var(--bg); border-right: 1px solid var(--border); }
+.set-side .set-nav { flex: 1; width: auto; min-height: 0; background: transparent; border-right: 0; }
+.set-find { position: relative; display: block; margin: 12px 12px 0; }
+.set-find input { min-height: 40px; padding: 8px 12px 8px 38px; font-size: 14.5px; }
+.set-find .ic { position: absolute; left: 12px; top: 50%; translate: 0 -50%; width: 18px; height: 18px; color: var(--muted); pointer-events: none; }
+.searching .set-nav-item[data-count]::after {
+  content: attr(data-count); margin-left: auto; min-width: 22px; padding: 1px 7px; border-radius: 999px;
+  background: var(--soft); color: var(--soft-text); font-size: 12px; font-weight: 700; text-align: center;
+}
+.searching .set-nav-item.nohit { opacity: .45; }
+.settings .hit { outline: 2px solid color-mix(in srgb, var(--green) 60%, transparent); outline-offset: 4px; border-radius: 6px; background: color-mix(in srgb, var(--green) 7%, transparent); }
+.settings mark.hl { padding: 0 2px; border-radius: 4px; background: color-mix(in srgb, var(--green) 38%, transparent); color: inherit; }
+.find-where {
+  display: inline-flex; align-items: center; gap: 6px; width: fit-content; padding: 3px 10px; border-radius: 999px;
+  background: var(--soft); color: var(--soft-text); font-size: 12.5px; font-weight: 700;
+}
+.find-none { padding: 8px 4px; text-align: left; color: var(--muted); font-weight: 600; }
+.settings .flash { animation: flash 2s ease-out; }
+@keyframes flash { from { background: color-mix(in srgb, var(--green) 30%, transparent); outline: 2px solid var(--green); outline-offset: 4px; } }
+@media (max-width: 760px) {
+  .set-side { width: auto; border-right: 0; border-bottom: 1px solid var(--border); }
+}
+
+/* texts in the settings and their dialogs start on the left, like everything else there */
+.settings .empty, .picker .empty { padding: 4px 2px; text-align: left; }

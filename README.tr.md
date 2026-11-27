@@ -252,7 +252,7 @@ Oradaki **Güncellemeleri kendisi kursun** ayarını açarsan Panda bunu hiçbir
 
 1. Paneli aç (`http://sunucun:8080`) ve kurulumun yazdığı şifreyle `admin` olarak giriş yap.
 2. **Ayarlar → Bağlantı**: sunucu adresi (`ts.ornek.com` ya da `1.2.3.4:9987`), sunucu şifresi, kanal.
-   Kaydedince bot yeniden bağlanır. Sohbet dilini **Ayarlar → Bot** kısmından Türkçe yap.
+   Kaydedince bot yeniden bağlanır. Sohbet dilini **Ayarlar → Sohbet ve sıra** kısmından Türkçe yap.
 3. Panel şifresini **Ayarlar**'dan değiştir; istersen arkadaşların için kullanıcı ekle.
 4. TeamSpeak'te botun kanalına `!çal tarkan şımarık` yaz. 🎶
 
@@ -311,8 +311,9 @@ Varsayılan olarak herkes her komutu kullanabilir. **Ayarlar → Sohbet yetkiler
 - **Sunucudaki herkes botu kullanabilir**: kapatırsan sadece **Botu kullanabilenler** listesindeki kişilere
   ve gruplara, DJ'lere ve yöneticilere cevap verilir.
 - **Engellenenler**: botun hiç cevap vermediği kişiler (hata mesajı bile yok).
-- **Hangi komutu kim kullanabilir**: her komut için herkes, DJ'ler ya da yöneticiler. **Önerilen ayarı kullan**
-  şarkı eklemeyi ve oylamayı herkese, duraklatma, ses, sıra ve geri kalanı DJ'lere bırakır.
+- **Hangi komutu kim kullanabilir** (**Ayarlar → Komutlar** kısmında, komut önekiyle ve bir aramayla): her komut
+  için herkes, DJ'ler ya da yöneticiler. **Önerilen ayarı kullan** şarkı eklemeyi ve oylamayı herkese,
+  duraklatma, ses, sıra ve geri kalanı DJ'lere bırakır.
 - **Başkalarının şarkıları**: başkasının istediği şarkıyı kim geçebilir, silebilir, taşıyabilir. Bu seviyenin
   altındakiler için `!geç` bir oy olabilir (**Diğerleri geçmek için oy verebilir**): botun kanalındakilerin
   yarısı oy verince şarkı geçilir. Şarkıyı isteyen kişi her zaman geçebilir.
@@ -322,11 +323,11 @@ Aynı penceredeki **Botun sunucudaki izinleri** bölümü, botun sunucu grubunun
 gösterir: kanalda duyulmak, sohbete yazmak, şarkıyı açıklamasında göstermek, kanal değiştirmek, sunucu
 gruplarını görmek. Eksik olan varsa hangi iznin verilmesi gerektiği yazar.
 
-Kanal sessiz kalsın istersen **Ayarlar → Bot** kısmında **Her şarkıyı sohbette duyur** (her şarkı
+Kanal sessiz kalsın istersen **Ayarlar → Sohbet ve sıra** kısmında **Her şarkıyı sohbette duyur** (her şarkı
 başlarken bir mesaj) ve **Sohbet komutlarını onayla** (“Sıraya eklendi …”, “Geçildi.” gibi kısa cevaplar)
 seçeneklerini kapat. `!şimdi` gibi sorular ve hatalar yine cevaplanır.
 
-Yine **Ayarlar → Bot** kısmında: **Kişi başı şarkı** bir kişinin sırada aynı anda kaç şarkısı
+Yine **Ayarlar → Sohbet ve sıra** kısmında: **Kişi başı şarkı** bir kişinin sırada aynı anda kaç şarkısı
 bekleyebileceğini sınırlar (DJ'ler ve yöneticiler sınırlanmaz).
 
 YouTube bir şarkıyı anlık olarak reddederse (HTTP 403, bot kontrolü, yarıda kopan akış) Panda sessizce
@@ -339,7 +340,7 @@ YouTube bazen sunucu IP'lerini engeller. Bir YouTube hesabının cookies'iyle ç
 1. **Gizli/özel** bir pencere aç ve YouTube'a giriş yap.
 2. Cookies'i bir `cookies.txt` eklentisiyle dışa aktar (örneğin *Get cookies.txt LOCALLY*).
 3. Gizli pencereyi hemen kapat (böylece cookies geçerli kalır).
-4. Dosyayı **Ayarlar → YouTube cookies** kısmına yapıştır.
+4. Dosyayı **Ayarlar → YouTube** içindeki **YouTube çerezleri** kısmına yapıştır.
 
 Bunun için yan bir hesap kullanmak iyi fikir.
 

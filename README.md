@@ -311,8 +311,9 @@ By default everyone can use every command. **Settings → Chat permissions** cha
 - **Everyone on the server can use the bot**: turn it off and only the people and groups under
   **Who may use the bot**, DJs and admins are answered.
 - **Blocked**: people the bot never answers, not even with an error.
-- **Who may use each command**: everyone, DJs or admins, per command. **Use the recommended setup** leaves
-  adding songs and voting to everyone and gives pausing, volume, the queue and the rest to DJs.
+- **Who may use each command** (in **Settings → Commands**, with the command prefix and a search): everyone,
+  DJs or admins, per command. **Use the recommended setup** leaves adding songs and voting to everyone and
+  gives pausing, volume, the queue and the rest to DJs.
 - **Other people's songs**: who may skip, remove or move songs someone else asked for. Below that level,
   `!skip` can be a vote (**The others can vote to skip**): the song is skipped when half of the people in
   the bot's channel voted. Whoever asked for a song can always skip it.
@@ -324,10 +325,10 @@ permissions: be heard in the channel, write in the chat, show the song in its de
 channels, see the server groups. Anything missing is named, with the permission to grant.
 
 For a quiet channel, turn off **Announce each song in chat** (a message whenever a song starts) and
-**Confirm chat commands** (short replies like "Added to the queue …" or "Skipped.") under **Settings → Bot**.
+**Confirm chat commands** (short replies like "Added to the queue …" or "Skipped.") under **Settings → Chat and queue**.
 Questions such as `!np` and errors are still answered.
 
-Also under **Settings → Bot**: **Songs per person** limits how many songs one person can have waiting
+Also under **Settings → Chat and queue**: **Songs per person** limits how many songs one person can have waiting
 (DJs and admins aren't limited).
 
 When YouTube turns a song down for a moment (an HTTP 403, a bot check, a stream that breaks off), Panda
@@ -340,7 +341,7 @@ YouTube sometimes blocks server IPs. Fix it with cookies from a YouTube account:
 1. Open a **private/incognito** window and log in to YouTube.
 2. Export the cookies with a `cookies.txt` extension (for example *Get cookies.txt LOCALLY*).
 3. Close the private window right away (so the cookies stay valid).
-4. Paste the file in **Settings → YouTube cookies**.
+4. Paste the file in **Settings → YouTube**, under **YouTube cookies**.
 
 Using a secondary account is a good idea.
 
