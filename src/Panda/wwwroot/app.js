@@ -52,7 +52,7 @@ const I18N = {
     save: 'Save', reconnect: 'Reconnect bot',
     sCookies: 'YouTube cookies', sCookiesHelp: 'If YouTube says "confirm you\'re not a bot": open a private/incognito window, log in to YouTube, export cookies with a "cookies.txt" browser extension, paste them here, then close that window.',
     chooseFile: 'Choose file', saveCookies: 'Save cookies', removeCookies: 'Remove cookies', cookiesOn: 'Cookies set ✓', cookiesOff: 'No cookies',
-    sPanelPw: 'Panel password', pwCurrent: 'Current password', pwNew: 'New password (min 6)', pwChange: 'Change password',
+    pwRuleLen: n => `At least ${n} characters`, sCmds: 'Commands', sCmdsHint: 'Every chat command of this bot and who may use it. Admins can always use all of them.', sCmdsFilter: 'Find a command', findPh: 'Search settings', findNone: q => `Nothing found for “${q}”.`, sPanelPw: 'Panel password', pwCurrent: 'Current password', pwNew: 'New password (min 6)', pwChange: 'Change password',
     cancel: 'Cancel', ok: 'OK', saved: 'Settings saved', reconnecting: 'Saved — the bot is reconnecting…', reconnectSent: 'Reconnecting the bot…',
     cookiesSaved: 'Cookies saved 🍪', cookiesRemoved: 'Cookies removed', cookiesEmpty: 'Paste or choose a cookies.txt first', pwChanged: 'Password changed',
     confirmStop: 'Stop playback and clear the queue?', confirmClear: 'Clear the whole queue?', confirmCookies: 'Remove the saved YouTube cookies?',
@@ -74,7 +74,7 @@ const I18N = {
     sNorm: 'Play songs equally loud', sNormHint: 'Every song is brought to the same loudness (-14 LUFS, like YouTube and Spotify): saved songs from their first second, new ones and radio within a few seconds as they play. A limiter keeps raised songs from distorting.',
     bots: 'Bots', addBot: 'Add a bot', botAdded: 'Bot added — now set its channel', idle: 'Idle',
     sPrefixHint: 'Bots in the same channel need different prefixes, or they all answer.', sShared: 'Shared by all bots.',
-    sRemoveBot: 'Remove this bot', sRemoveBotHint: 'Disconnects it and deletes its TeamSpeak identity and play history.', removeBot: 'Remove bot',
+    gSearch: 'Search', gLinks: 'Links and services', gRadio: 'Radio', gLocal: 'Local network', gPlayback: 'Playback', gRetry: 'When YouTube refuses a song', gThisBot: 'This bot', gAllBots: 'All bots', gPanel: 'Panel', setSections: 'Settings sections', sNameDesc: 'Name and description', sChatQueue: 'Chat and queue', sAccess: 'Access', unsaved: 'Unsaved changes', sRemoveBot: 'Remove this bot', sRemoveBotHint: 'Disconnects it and deletes its TeamSpeak identity and play history.', removeBot: 'Remove bot',
     confirmBotRemove: x => `Remove "${x}"? Its identity and play history are deleted.`, botRemoved: 'Bot removed',
     roleOwner: "Bot owner", sBotOwners: "Whoever makes a bot with !create can run it in the panel", sBotOwnersHint: "They type !panel in TeamSpeak and get a private link to make their account (it needs the panel's address: panel.publicUrl), or an admin makes one below with their TeamSpeak unique id. They see only their own bots: they play music and steer it, change the volume and the bot's name and description (also with !name and !description in the chat). Nothing else. For all bots.", sOwner: "Owner (TeamSpeak unique id)", ownerHintNone: "Nobody: made in the panel, or the owner was taken away.", ownerHintName: n => "Made by " + n + " with !create. Empty this to take it away from them.", sDescription: "Description", sDescriptionHint: "Shown on TeamSpeak under the bot's name. With \"Show song in bot description\" on, the song takes its place while one plays. In the chat: !description <text>.", userUid: "TeamSpeak unique id", userUidHint: "The bots whose owner it is (Settings of a bot, Owner) are theirs. They can play, steer and change the volume of them, and change their name and description.", "err.bad-uid": "Write the person's TeamSpeak unique id.", "err.uid-taken": "That TeamSpeak id has an account already.", "err.not-owner": "That account isn't a bot owner's.", ownerTitle: "Your panel account", ownerIntro: "Choose a name and a password. You'll see only your own bots: you can play music, steer it, change the volume and the bot's name and description.", ownerHas: n => "You have an account already (" + n + "): choose a new password.", passwordAgain: "Password again", ownerGo: "Save and log in", ownerMismatch: "The two passwords aren't the same.", noBots: "You have no bot right now. Make one in TeamSpeak with !create.", "err.link-expired": "This link has run out or was used already. Type !panel in TeamSpeak for a new one.", "err.name-taken": "That name is taken; choose another.", "err.owners-off": "The panel isn't open to bot owners right now.", 
     userName: 'User name', role: 'Role', roleAdmin: 'Admin', roleDj: 'Can only add songs', sUsers2: 'Panel users',
@@ -161,7 +161,7 @@ const I18N = {
     save: 'Kaydet', reconnect: 'Botu yeniden bağla',
     sCookies: 'YouTube çerezleri', sCookiesHelp: 'YouTube "bot olmadığınızı doğrulayın" derse: gizli/özel bir pencere açın, YouTube\'a giriş yapın, bir "cookies.txt" tarayıcı eklentisiyle çerezleri dışa aktarın, buraya yapıştırın ve o pencereyi kapatın.',
     chooseFile: 'Dosya seç', saveCookies: 'Çerezleri kaydet', removeCookies: 'Çerezleri kaldır', cookiesOn: 'Çerezler var ✓', cookiesOff: 'Çerez yok',
-    sPanelPw: 'Panel şifresi', pwCurrent: 'Mevcut şifre', pwNew: 'Yeni şifre (en az 6)', pwChange: 'Şifreyi değiştir',
+    pwRuleLen: n => `En az ${n} karakter`, sCmds: 'Komutlar', sCmdsHint: 'Bu botun bütün sohbet komutları ve kimin kullanabileceği. Yöneticiler hepsini her zaman kullanabilir.', sCmdsFilter: 'Komut ara', findPh: 'Ayarlarda ara', findNone: q => `“${q}” için bir şey bulunamadı.`, sPanelPw: 'Panel şifresi', pwCurrent: 'Mevcut şifre', pwNew: 'Yeni şifre (en az 6)', pwChange: 'Şifreyi değiştir',
     cancel: 'Vazgeç', ok: 'Tamam', saved: 'Ayarlar kaydedildi', reconnecting: 'Kaydedildi — bot yeniden bağlanıyor…', reconnectSent: 'Bot yeniden bağlanıyor…',
     cookiesSaved: 'Çerezler kaydedildi 🍪', cookiesRemoved: 'Çerezler kaldırıldı', cookiesEmpty: 'Önce bir cookies.txt yapıştırın ya da seçin', pwChanged: 'Şifre değiştirildi',
     confirmStop: 'Çalma durdurulsun ve sıra temizlensin mi?', confirmClear: 'Tüm sıra temizlensin mi?', confirmCookies: 'Kayıtlı YouTube çerezleri kaldırılsın mı?',
@@ -183,7 +183,7 @@ const I18N = {
     sNorm: 'Şarkıları aynı yükseklikte çal', sNormHint: 'Her şarkı aynı yüksekliğe getirilir (-14 LUFS, YouTube ve Spotify gibi): kayıtlı şarkılar ilk saniyeden, yeni şarkılar ve radyo çalarken birkaç saniyede. Bir sınırlayıcı, yükseltilen şarkıların bozulmasını önler.',
     bots: 'Botlar', addBot: 'Bot ekle', botAdded: 'Bot eklendi — şimdi kanalını ayarla', idle: 'Boşta',
     sPrefixHint: 'Aynı kanaldaki botların önekleri farklı olmalı, yoksa hepsi cevap verir.', sShared: 'Tüm botlar için geçerli.',
-    sRemoveBot: 'Bu botu kaldır', sRemoveBotHint: 'Bağlantısını keser, TeamSpeak kimliğini ve çalma geçmişini siler.', removeBot: 'Botu kaldır',
+    gSearch: 'Arama', gLinks: 'Linkler ve servisler', gRadio: 'Radyo', gLocal: 'Yerel ağ', gPlayback: 'Çalma', gRetry: 'YouTube bir şarkıyı reddedince', gThisBot: 'Bu bot', gAllBots: 'Tüm botlar', gPanel: 'Panel', setSections: 'Ayar bölümleri', sNameDesc: 'Ad ve açıklama', sChatQueue: 'Sohbet ve sıra', sAccess: 'Erişim', unsaved: 'Kaydedilmemiş değişiklikler', sRemoveBot: 'Bu botu kaldır', sRemoveBotHint: 'Bağlantısını keser, TeamSpeak kimliğini ve çalma geçmişini siler.', removeBot: 'Botu kaldır',
     confirmBotRemove: x => `"${x}" kaldırılsın mı? Kimliği ve çalma geçmişi silinir.`, botRemoved: 'Bot kaldırıldı',
     roleOwner: "Bot sahibi", sBotOwners: "!oluştur ile bot yapan, onu panelden yönetebilsin", sBotOwnersHint: "TeamSpeak'te !panel yazar ve hesabını açmak için özelden bir link alır (panelin adresi gerekir: panel.publicUrl) ya da bir yönetici aşağıdan TeamSpeak kimliğiyle hesap açar. Sadece kendi botlarını görür: müzik çalar ve yönetir, sesi ve botun adını, açıklamasını değiştirir (sohbette !isim ve !açıklama ile de). Başka bir şey değil. Bütün botlar için.", sOwner: "Sahibi (TeamSpeak kimliği)", ownerHintNone: "Yok: panelden eklendi ya da sahipliği alındı.", ownerHintName: n => "" + n + " tarafından !oluştur ile yapıldı. Sahipliği almak için boşalt.", sDescription: "Açıklama", sDescriptionHint: "TeamSpeak'te botun adının altında görünür. \"Şarkıyı bot açıklamasında göster\" açıksa çalarken yerine şarkı yazar. Sohbette: !açıklama <yazı>.", userUid: "TeamSpeak kimliği", userUidHint: "Sahibi bu kimlik olan botlar (botun ayarları, Sahibi) onundur. Onları çalabilir, yönetebilir, sesini, adını ve açıklamasını değiştirebilir.", "err.bad-uid": "Kişinin TeamSpeak kimliğini yaz.", "err.uid-taken": "Bu TeamSpeak kimliğinin zaten bir hesabı var.", "err.not-owner": "Bu hesap bir bot sahibinin değil.", ownerTitle: "Panel hesabın", ownerIntro: "Bir ad ve şifre seç. Sadece kendi botlarını göreceksin: müzik çalabilir, yönetebilir, sesi ve botun adını, açıklamasını değiştirebilirsin.", ownerHas: n => "Zaten bir hesabın var (" + n + "): yeni bir şifre seç.", passwordAgain: "Şifre (tekrar)", ownerGo: "Kaydet ve giriş yap", ownerMismatch: "İki şifre aynı değil.", noBots: "Şu an hiç botun yok. TeamSpeak'te !oluştur ile bir tane yap.", "err.link-expired": "Bu linkin süresi doldu ya da kullanıldı. Yenisi için TeamSpeak'te !panel yaz.", "err.name-taken": "Bu ad alınmış; başka bir ad seç.", "err.owners-off": "Panel şu an bot sahiplerine açık değil.", 
     userName: 'Kullanıcı adı', role: 'Rol', roleAdmin: 'Yönetici', roleDj: 'Sadece şarkı ekler', sUsers2: 'Panel kullanıcıları',
@@ -270,7 +270,7 @@ const I18N = {
     save: 'Enregistrer', reconnect: 'Reconnecter le bot',
     sCookies: 'Cookies YouTube', sCookiesHelp: 'Si YouTube demande de « confirmer que vous n\'êtes pas un robot » : ouvrez une fenêtre de navigation privée, connectez-vous à YouTube, exportez les cookies avec une extension « cookies.txt », collez-les ici, puis fermez cette fenêtre.',
     chooseFile: 'Choisir un fichier', saveCookies: 'Enregistrer les cookies', removeCookies: 'Supprimer les cookies', cookiesOn: 'Cookies présents ✓', cookiesOff: 'Aucun cookie',
-    sPanelPw: 'Mot de passe du panneau', pwCurrent: 'Mot de passe actuel', pwNew: 'Nouveau mot de passe (6 caractères min.)', pwChange: 'Changer le mot de passe',
+    pwRuleLen: n => `Au moins ${n} caractères`, sCmds: 'Commandes', sCmdsHint: 'Toutes les commandes de chat de ce bot et qui peut les utiliser. Les admins peuvent toujours toutes les utiliser.', sCmdsFilter: 'Chercher une commande', findPh: 'Chercher dans les paramètres', findNone: q => `Rien trouvé pour « ${q} ».`, sPanelPw: 'Mot de passe du panneau', pwCurrent: 'Mot de passe actuel', pwNew: 'Nouveau mot de passe (6 caractères min.)', pwChange: 'Changer le mot de passe',
     cancel: 'Annuler', ok: 'OK', saved: 'Paramètres enregistrés', reconnecting: 'Enregistré — le bot se reconnecte…', reconnectSent: 'Reconnexion du bot…',
     cookiesSaved: 'Cookies enregistrés 🍪', cookiesRemoved: 'Cookies supprimés', cookiesEmpty: 'Collez ou choisissez d\'abord un cookies.txt', pwChanged: 'Mot de passe changé',
     confirmStop: 'Arrêter la lecture et vider la file ?', confirmClear: 'Vider toute la file ?', confirmCookies: 'Supprimer les cookies YouTube enregistrés ?',
@@ -292,7 +292,7 @@ const I18N = {
     sNorm: 'Jouer les morceaux au même volume', sNormHint: 'Chaque morceau est amené au même volume (-14 LUFS, comme YouTube et Spotify) : les morceaux enregistrés dès la première seconde, les nouveaux et la radio en quelques secondes pendant la lecture. Un limiteur évite que les morceaux remontés saturent.',
     bots: 'Bots', addBot: 'Ajouter un bot', botAdded: 'Bot ajouté — choisissez maintenant son canal', idle: 'Inactif',
     sPrefixHint: 'Les bots d\'un même canal doivent avoir des préfixes différents, sinon ils répondent tous.', sShared: 'Commun à tous les bots.',
-    sRemoveBot: 'Supprimer ce bot', sRemoveBotHint: 'Le déconnecte et supprime son identité TeamSpeak et son historique.', removeBot: 'Supprimer le bot',
+    gSearch: 'Recherche', gLinks: 'Liens et services', gRadio: 'Radio', gLocal: 'Réseau local', gPlayback: 'Lecture', gRetry: 'Quand YouTube refuse un morceau', gThisBot: 'Ce bot', gAllBots: 'Tous les bots', gPanel: 'Panneau', setSections: 'Sections des paramètres', sNameDesc: 'Nom et description', sChatQueue: 'Chat et file', sAccess: 'Accès', unsaved: 'Modifications non enregistrées', sRemoveBot: 'Supprimer ce bot', sRemoveBotHint: 'Le déconnecte et supprime son identité TeamSpeak et son historique.', removeBot: 'Supprimer le bot',
     confirmBotRemove: x => `Supprimer « ${x} » ? Son identité et son historique seront effacés.`, botRemoved: 'Bot supprimé',
     roleOwner: "Propriétaire de bot", sBotOwners: "Qui crée un bot avec !créer peut le gérer dans le panneau", sBotOwnersHint: "Il tape !panel dans TeamSpeak et reçoit en privé un lien pour créer son compte (il faut l'adresse du panneau : panel.publicUrl), ou un admin le crée plus bas avec son identifiant unique TeamSpeak. Il ne voit que ses propres bots : il joue de la musique et la pilote, change le volume et le nom et la description du bot (aussi avec !nom et !description dans le chat). Rien d'autre. Pour tous les bots.", sOwner: "Propriétaire (identifiant unique TeamSpeak)", ownerHintNone: "Personne : ajouté dans le panneau, ou on le lui a retiré.", ownerHintName: n => "Créé par " + n + " avec !créer. Vide ce champ pour le lui retirer.", sDescription: "Description", sDescriptionHint: "Affichée sur TeamSpeak sous le nom du bot. Avec « Afficher le morceau dans la description du bot », le morceau prend sa place pendant la lecture. Dans le chat : !description <texte>.", userUid: "Identifiant unique TeamSpeak", userUidHint: "Les bots dont c'est le propriétaire (réglages d'un bot, Propriétaire) sont à lui. Il peut y jouer de la musique, les piloter, changer le volume, leur nom et leur description.", "err.bad-uid": "Écris l'identifiant unique TeamSpeak de la personne.", "err.uid-taken": "Cet identifiant TeamSpeak a déjà un compte.", "err.not-owner": "Ce compte n'est pas celui d'un propriétaire de bot.", ownerTitle: "Ton compte du panneau", ownerIntro: "Choisis un nom et un mot de passe. Tu ne verras que tes propres bots : tu peux jouer de la musique, la piloter, changer le volume et le nom et la description du bot.", ownerHas: n => "Tu as déjà un compte (" + n + ") : choisis un nouveau mot de passe.", passwordAgain: "Mot de passe (encore)", ownerGo: "Enregistrer et se connecter", ownerMismatch: "Les deux mots de passe ne sont pas les mêmes.", noBots: "Tu n'as aucun bot pour l'instant. Crées-en un dans TeamSpeak avec !créer.", "err.link-expired": "Ce lien a expiré ou a déjà servi. Tape !panel dans TeamSpeak pour en avoir un nouveau.", "err.name-taken": "Ce nom est déjà pris ; choisis-en un autre.", "err.owners-off": "Le panneau n'est pas ouvert aux propriétaires de bots pour l'instant.", 
     userName: 'Nom d\'utilisateur', role: 'Rôle', roleAdmin: 'Admin', roleDj: 'Peut seulement ajouter des morceaux', sUsers2: 'Utilisateurs du panneau',
@@ -379,7 +379,7 @@ const I18N = {
     save: 'Speichern', reconnect: 'Bot neu verbinden',
     sCookies: 'YouTube-Cookies', sCookiesHelp: 'Wenn YouTube „Bestätige, dass du kein Bot bist“ sagt: Öffne ein privates Fenster, melde dich bei YouTube an, exportiere die Cookies mit einer „cookies.txt“-Browsererweiterung, füge sie hier ein und schließ das Fenster.',
     chooseFile: 'Datei wählen', saveCookies: 'Cookies speichern', removeCookies: 'Cookies entfernen', cookiesOn: 'Cookies gesetzt ✓', cookiesOff: 'Keine Cookies',
-    sPanelPw: 'Panel-Passwort', pwCurrent: 'Aktuelles Passwort', pwNew: 'Neues Passwort (min. 6)', pwChange: 'Passwort ändern',
+    pwRuleLen: n => `Mindestens ${n} Zeichen`, sCmds: 'Befehle', sCmdsHint: 'Alle Chatbefehle dieses Bots und wer sie benutzen darf. Admins dürfen immer alle.', sCmdsFilter: 'Befehl suchen', findPh: 'Einstellungen durchsuchen', findNone: q => `Nichts gefunden für „${q}“.`, sPanelPw: 'Panel-Passwort', pwCurrent: 'Aktuelles Passwort', pwNew: 'Neues Passwort (min. 6)', pwChange: 'Passwort ändern',
     cancel: 'Abbrechen', ok: 'OK', saved: 'Einstellungen gespeichert', reconnecting: 'Gespeichert — der Bot verbindet sich neu…', reconnectSent: 'Bot verbindet sich neu…',
     cookiesSaved: 'Cookies gespeichert 🍪', cookiesRemoved: 'Cookies entfernt', cookiesEmpty: 'Füge zuerst eine cookies.txt ein oder wähle eine aus', pwChanged: 'Passwort geändert',
     confirmStop: 'Wiedergabe stoppen und Warteschlange leeren?', confirmClear: 'Die ganze Warteschlange leeren?', confirmCookies: 'Die gespeicherten YouTube-Cookies entfernen?',
@@ -401,7 +401,7 @@ const I18N = {
     sNorm: 'Songs gleich laut abspielen', sNormHint: 'Jeder Song wird auf dieselbe Lautheit gebracht (-14 LUFS, wie bei YouTube und Spotify): gespeicherte Songs ab der ersten Sekunde, neue und Radio in wenigen Sekunden beim Abspielen. Ein Limiter verhindert, dass angehobene Songs verzerren.',
     bots: 'Bots', addBot: 'Bot hinzufügen', botAdded: 'Bot hinzugefügt — leg jetzt seinen Channel fest', idle: 'Bereit',
     sPrefixHint: 'Bots im selben Channel brauchen verschiedene Präfixe, sonst antworten alle.', sShared: 'Gilt für alle Bots.',
-    sRemoveBot: 'Diesen Bot entfernen', sRemoveBotHint: 'Trennt ihn und löscht seine TeamSpeak-Identität und seinen Verlauf.', removeBot: 'Bot entfernen',
+    gSearch: 'Suche', gLinks: 'Links und Dienste', gRadio: 'Radio', gLocal: 'Lokales Netzwerk', gPlayback: 'Wiedergabe', gRetry: 'Wenn YouTube einen Song ablehnt', gThisBot: 'Dieser Bot', gAllBots: 'Alle Bots', gPanel: 'Panel', setSections: 'Bereiche der Einstellungen', sNameDesc: 'Name und Beschreibung', sChatQueue: 'Chat und Warteschlange', sAccess: 'Zugang', unsaved: 'Nicht gespeicherte Änderungen', sRemoveBot: 'Diesen Bot entfernen', sRemoveBotHint: 'Trennt ihn und löscht seine TeamSpeak-Identität und seinen Verlauf.', removeBot: 'Bot entfernen',
     confirmBotRemove: x => `„${x}“ entfernen? Seine Identität und sein Verlauf werden gelöscht.`, botRemoved: 'Bot entfernt',
     roleOwner: "Bot-Besitzer", sBotOwners: "Wer mit !erstellen einen Bot erstellt, kann ihn im Panel verwalten", sBotOwnersHint: "Er schreibt !panel in TeamSpeak und bekommt privat einen Link für sein Konto (dafür braucht es die Adresse des Panels: panel.publicUrl), oder ein Admin legt es unten mit seiner eindeutigen TeamSpeak-ID an. Er sieht nur seine eigenen Bots: er spielt und steuert Musik, ändert die Lautstärke und den Namen und die Beschreibung des Bots (auch mit !name und !beschreibung im Chat). Sonst nichts. Für alle Bots.", sOwner: "Besitzer (eindeutige TeamSpeak-ID)", ownerHintNone: "Niemand: im Panel hinzugefügt, oder der Besitz wurde entzogen.", ownerHintName: n => "Von " + n + " mit !erstellen erstellt. Leere das Feld, um ihm den Bot wegzunehmen.", sDescription: "Beschreibung", sDescriptionHint: "Steht in TeamSpeak unter dem Namen des Bots. Mit „Song in der Bot-Beschreibung zeigen“ steht dort beim Abspielen der Song. Im Chat: !beschreibung <Text>.", userUid: "Eindeutige TeamSpeak-ID", userUidHint: "Die Bots, deren Besitzer diese ID ist (Einstellungen eines Bots, Besitzer), gehören ihm. Er kann darauf Musik spielen, sie steuern, die Lautstärke, ihren Namen und ihre Beschreibung ändern.", "err.bad-uid": "Schreib die eindeutige TeamSpeak-ID der Person.", "err.uid-taken": "Diese TeamSpeak-ID hat schon ein Konto.", "err.not-owner": "Dieses Konto ist keins eines Bot-Besitzers.", ownerTitle: "Dein Panel-Konto", ownerIntro: "Wähle einen Namen und ein Passwort. Du siehst nur deine eigenen Bots: du kannst Musik spielen und steuern, die Lautstärke und den Namen und die Beschreibung des Bots ändern.", ownerHas: n => "Du hast schon ein Konto (" + n + "): wähle ein neues Passwort.", passwordAgain: "Passwort (noch einmal)", ownerGo: "Speichern und anmelden", ownerMismatch: "Die beiden Passwörter sind nicht gleich.", noBots: "Du hast gerade keinen Bot. Erstelle einen in TeamSpeak mit !erstellen.", "err.link-expired": "Dieser Link ist abgelaufen oder wurde schon benutzt. Schreib !panel in TeamSpeak für einen neuen.", "err.name-taken": "Dieser Name ist vergeben; wähle einen anderen.", "err.owners-off": "Das Panel ist gerade nicht für Bot-Besitzer offen.", 
     userName: 'Benutzername', role: 'Rolle', roleAdmin: 'Admin', roleDj: 'Darf nur Songs hinzufügen', sUsers2: 'Panel-Nutzer',
@@ -586,6 +586,7 @@ darkMq.addEventListener?.('change', applyTheme);
 
 function applyLang() {
   document.documentElement.lang = lang;
+  for (const f of pwRuleUpdates) f();
   document.querySelectorAll('[data-i18n]').forEach(e => { e.textContent = t(e.dataset.i18n); });
   document.querySelectorAll('[data-i18n-ph]').forEach(e => { e.placeholder = t(e.dataset.i18nPh); });
   document.querySelectorAll('[data-i18n-aria]').forEach(e => setLabel(e, t(e.dataset.i18nAria)));
@@ -1157,6 +1158,9 @@ const F = () => $('set-form').elements;
 /** Settings of the bot shown in the panel (plus the shared ones). Others only get their password. */
 async function openSettings() {
   if (!$('settings').open) $('settings').showModal();
+  $('set-find').value = ''; findSettings();
+  showPane(store.get('panda.setPane'));
+  for (const f of pwRuleUpdates) f();
   $('set-bot').textContent = canManage() ? botName() : '';
   const v = api('GET', '/api/version').then(v => { $('version').textContent = 'v' + v.version; }).catch(() => {});
   if (canManage()) {
@@ -1171,6 +1175,46 @@ async function openSettings() {
   await v;
 }
 $('open-settings').addEventListener('click', openSettings);
+
+/* What a new password needs, under the field, ticked off while it's typed. PW_MIN is what the server checks
+   (PanelApi: password-too-short). */
+const PW_MIN = 6;
+const pwRuleUpdates = [];
+function pwRules(input) {
+  const list = el('ul', { class: 'pw-rules', 'aria-live': 'polite' });
+  const rule = (ok, text) => el('li', { class: ok ? 'ok' : null }, icon(ok ? 'check' : 'dot', 'ic sm'), el('span', { text }));
+  const update = () => list.replaceChildren(rule(input.value.length >= PW_MIN, t('pwRuleLen', PW_MIN)));
+  input.addEventListener('input', update);
+  (input.closest('.row2') || input.closest('label')).after(list);
+  pwRuleUpdates.push(update);
+  update();
+}
+pwRules($('pw-form').elements.new);
+pwRules($('user-form').elements.password);
+
+/* The settings show one section at a time, picked in the side menu (the last one comes back next time).
+   A section is every element in the settings with its data-pane; the menu shows only what the role may see. */
+function showPane(name) {
+  const items = [...$('set-nav').querySelectorAll('[data-pane]')];
+  const shown = items.filter(b => b.offsetParent !== null);
+  const item = shown.find(b => b.dataset.pane === name) || shown[0];
+  if (!item) return;
+  const pane = item.dataset.pane;
+  for (const b of items) { if (b === item) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); }
+  for (const e of $('set-body').querySelectorAll('[data-pane]')) e.classList.toggle('pane-off', e.dataset.pane !== pane);
+  // Save and Reconnect belong to the bot's settings form, not to users, keys, backups or the password.
+  $('set-actions').classList.toggle('pane-off', !$('set-form').querySelector(`[data-pane="${pane}"]`));
+  $('set-body').scrollTop = 0;
+  if (name !== pane || store.get('panda.setPane') !== pane) store.set('panda.setPane', pane);
+}
+$('set-nav').addEventListener('click', e => {
+  const b = e.target.closest('[data-pane]');
+  if (b) { showPane(b.dataset.pane); b.scrollIntoView({ block: 'nearest', inline: 'nearest' }); }
+});
+// Changed but not saved yet: said next to the title until it's saved or the settings are closed.
+const markDirty = on => { $('set-dirty').hidden = !on; };
+for (const ev of ['input', 'change']) $('set-form').addEventListener(ev, () => { if (settings) markDirty(true); });
+$('settings').addEventListener('close', () => markDirty(false));
 
 /* ---------------- panel users (admins) ---------------- */
 async function loadUsers() {
@@ -1306,6 +1350,7 @@ function renderAfkGroups() {
 
 function fillSettings(s) {
   settings = s; pwTouched = {};
+  markDirty(false);
   $('set-bot').textContent = s.nickname;
   const f = F();
   f.description.value = s.description ?? '';
@@ -1593,16 +1638,112 @@ function renderPerm() {
   document.querySelector('.js-members').hidden = F().everyoneCanUse.checked;
   for (const [list, groups] of Object.entries(PERM_LISTS)) {
     const items = [...perm[list].map(p => ({ p })), ...(groups ? perm[groups].map(id => ({ id })) : [])];
-    document.querySelector(`.people[data-list="${list}"] .pchips`).replaceChildren(...(items.length
-      ? items.map(it => permChip(list, groups, it)) : [el('li', { class: 'none', text: t('noOne') })]));
+    // Nobody yet: one "+ Add" pill; else a small "+" right after the last one.
+    const box = document.querySelector(`.people[data-list="${list}"]`);
+    const add = el('button', { class: 'add' + (items.length ? ' small' : ''), type: 'button', title: t('addPerson'), 'aria-label': t('addPerson') },
+      icon('plus'), !items.length && el('span', { text: t('addPerson') }));
+    add.addEventListener('click', () => openPicker(box));
+    box.querySelector('.pchips').replaceChildren(...items.map(it => permChip(list, groups, it)), el('li', { class: 'add-li' }, add));
   }
   $('cmd-levels').replaceChildren(...Object.keys(perm.commandLevels).map(cmd => {
     const sel = el('select', { 'aria-label': `!${cmd}` }, ...CHAT_LEVELS.map(v => el('option', { value: v, text: t(lvlKey(v)) })));
     sel.value = perm.commandLevels[cmd];
     sel.addEventListener('change', () => { perm.commandLevels[cmd] = sel.value; });
-    return el('label', { class: 'cmd-row' }, el('code', { text: '!' + cmd }), el('span', { class: 'desc', text: t('cmd.' + cmd) }), sel);
+    return el('label', { class: 'cmd-row', 'data-find': `${cmd} ${t('cmd.' + cmd)}`.toLowerCase() },
+      el('code', { 'data-cmd': cmd, text: cmdPrefix() + cmd }), el('span', { class: 'desc', text: t('cmd.' + cmd) }), sel);
   }));
+  filterCmds();
 }
+// Typing in the filter shows only the commands whose name or description has the text.
+function filterCmds() {
+  const q = $('cmd-filter').value.trim().toLowerCase();
+  for (const r of $('cmd-levels').children) r.hidden = !!q && !r.dataset.find.includes(q.replace(/^\W+/, ''));
+}
+$('cmd-filter').addEventListener('input', filterCmds);
+const cmdPrefix = () => F().commandPrefix.value.trim() || settings?.commandPrefix || '!';
+F().commandPrefix.addEventListener('input', () => {
+  for (const c of $('cmd-levels').querySelectorAll('code[data-cmd]')) c.textContent = cmdPrefix() + c.dataset.cmd;
+});
+
+/* Search over every setting: the matching rows show in their sections, outlined in green with the matching words
+   marked, each section says where it is, and the menu says how many each section has. A click in the menu ends the
+   search and goes to that section's first match. */
+const FIND_UNITS = 'legend, h3.legend, .switch, .check, .field, .people-head, .cmd-row, p.hint';
+function unmark() {
+  const body = $('set-body');
+  for (const m of body.querySelectorAll('mark.hl')) { const p = m.parentNode; m.replaceWith(...m.childNodes); p.normalize(); }
+  for (const e of body.querySelectorAll('.hit')) e.classList.remove('hit');
+  for (const e of body.querySelectorAll('.find-where')) e.remove();
+  for (const b of $('set-nav').querySelectorAll('[data-pane]')) { b.removeAttribute('data-count'); b.classList.remove('nohit'); }
+}
+function markText(node, q) {
+  const walk = document.createTreeWalker(node, NodeFilter.SHOW_TEXT,
+    { acceptNode: n => n.parentElement.closest('select, option, textarea, mark') ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT });
+  const found = [];
+  for (let n; (n = walk.nextNode());) if (n.data.toLowerCase().includes(q)) found.push(n);
+  for (const n of found) {
+    const low = n.data.toLowerCase(), frag = document.createDocumentFragment();
+    let i = 0, j;
+    while ((j = low.indexOf(q, i)) >= 0) { frag.append(n.data.slice(i, j), el('mark', { class: 'hl', text: n.data.slice(j, j + q.length) })); i = j + q.length; }
+    frag.append(n.data.slice(i));
+    n.replaceWith(frag);
+  }
+}
+function findSettings() {
+  const q = $('set-find').value.trim().toLowerCase();
+  unmark();
+  const none = $('find-none');
+  if (q.length < 2) {
+    if ($('settings').classList.contains('searching')) { $('settings').classList.remove('searching'); showPane(store.get('panda.setPane')); }
+    none.hidden = true;
+    return;
+  }
+  $('settings').classList.add('searching');
+  for (const b of $('set-nav').querySelectorAll('[data-pane]')) b.removeAttribute('aria-current');
+  const counts = {};
+  let total = 0;
+  for (const g of $('set-body').querySelectorAll('[data-pane]')) {
+    const pane = g.dataset.pane, item = $('set-nav').querySelector(`[data-pane="${pane}"]`);
+    let n = 0;
+    if (item && item.offsetParent !== null)
+      for (const u of g.querySelectorAll(FIND_UNITS)) {
+        if (u.closest('[hidden]') || !u.textContent.toLowerCase().includes(q)) continue;
+        // A hint explains the row above it: that row is outlined too.
+        const prev = u.matches('p.hint') ? u.previousElementSibling : null;
+        (prev?.matches('.switch, .check, .field') ? prev : u).classList.add('hit');
+        markText(u, q);
+        n++;
+      }
+    g.classList.toggle('pane-off', n === 0);
+    if (n && g.offsetParent !== null) {
+      counts[pane] = (counts[pane] || 0) + n; total += n;
+      const head = g.querySelector(':scope > legend, :scope > h3.legend');
+      const where = el('p', { class: 'find-where' }, icon(item.querySelector('use').getAttribute('href').slice(3), 'ic sm'), el('span', { text: item.textContent.trim() }));
+      if (head) head.after(where); else g.prepend(where);
+    }
+  }
+  for (const b of $('set-nav').querySelectorAll('[data-pane]')) {
+    if (counts[b.dataset.pane]) b.dataset.count = counts[b.dataset.pane]; else b.classList.add('nohit');
+  }
+  $('set-actions').classList.remove('pane-off');
+  none.hidden = total > 0;
+  none.textContent = total ? '' : t('findNone', $('set-find').value.trim());
+  $('set-body').scrollTop = 0;
+}
+$('set-find').addEventListener('input', findSettings);
+$('set-find').addEventListener('keydown', e => { if (e.key === 'Escape' && e.target.value) { e.preventDefault(); e.stopPropagation(); e.target.value = ''; findSettings(); } });
+// While searching, a section in the menu opens at its first match, which lights up for a moment.
+$('set-nav').addEventListener('click', e => {
+  const b = e.target.closest('[data-pane]');
+  if (!b || !$('settings').classList.contains('searching')) return;
+  e.stopPropagation();   // the menu's own handler would scroll back to the top
+  const hits = [...$('set-body').querySelectorAll(`[data-pane="${b.dataset.pane}"] .hit`)];
+  $('set-find').value = '';
+  findSettings();
+  showPane(b.dataset.pane);
+  for (const h of hits) { h.classList.remove('flash'); void h.offsetWidth; h.classList.add('flash'); }
+  hits[0]?.scrollIntoView({ block: 'center' });
+}, true);
 function permChip(list, groups, it) {
   const label = it.id != null ? `👥 ${groupName(it.id)}` : `👤 ${it.p.name || it.p.uid}`;
   const x = el('button', { class: 'x', type: 'button', title: t('remove'), 'aria-label': `${t('remove')}: ${label}` }, icon('x'));
@@ -1616,16 +1757,15 @@ function permChip(list, groups, it) {
 
 // The picker: people online and server groups of the bot's server, or a unique id typed in.
 let pickFor = null;
-document.querySelectorAll('.js-pick').forEach(b => b.addEventListener('click', async () => {
+async function openPicker(box) {
   if (!perm) return;   // this bot's settings aren't in yet
-  const box = b.closest('.people');
   pickFor = { list: box.dataset.list, groups: box.dataset.groups || null };
   $('picker-search').value = ''; $('picker-uid').value = '';
   renderPicker();
   $('picker').showModal();
   await loadPeople();
   if ($('picker').open) renderPicker();
-}));
+}
 function addPicked(item) {
   if (!pickFor || !perm || !$('picker').open) return;
   if (item.id != null) { if (!perm[pickFor.groups].includes(item.id)) perm[pickFor.groups].push(item.id); }
