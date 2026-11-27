@@ -23,7 +23,7 @@ tests/run.sh chat 12  # only chat scenario 12
 
 ## Setup (once)
 
-- WSL (Ubuntu) with systemd, `ffmpeg`, `python3`, `curl`; on Windows also `node` and the .NET 8 SDK.
+- WSL (Ubuntu) with systemd, `ffmpeg`, `python3`, `curl`; on Windows also `node` and the .NET 10 SDK.
 - A TeamSpeak 6 server in `~/ts6test/srv` in WSL (or set `PANDA_TS_DIR`): download it from
   teamspeak.com and accept its license yourself. `wsl/env.sh` starts it with the HTTP query on port
   10080 and a local-only test key, raises its flood limits and lets guests change their description.

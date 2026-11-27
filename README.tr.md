@@ -418,14 +418,14 @@ Bazı çağrılar: `GET /api/bots/{bot}/state` (çalan, sıra), `POST /api/bots/
 ## Derleme
 
 ```bash
-dotnet build src/Panda                    # .NET 8 SDK gerekir
+dotnet build src/Panda                    # .NET 10 SDK gerekir
 bash scripts/build-release.sh linux-x64   # dist/ içine tek dosyalık sürüm
 ```
 
 ## Nasıl çalışıyor?
 
 Panda, [TSLib](https://github.com/Splamy/TS3AudioBot) (bir TeamSpeak istemci kütüphanesi) üzerine
-kurulmuş bir C# (.NET 8) uygulaması. TeamSpeak 6 sunucuları bağlantı sırasında TSLib'in tanımadığı yeni
+kurulmuş bir C# (.NET 10) uygulaması. TeamSpeak 6 sunucuları bağlantı sırasında TSLib'in tanımadığı yeni
 bir lisans bloğu gönderiyor; Panda bunu okuyan küçük bir yama içeriyor (bkz. [`lib/`](lib/README.md)).
 Ses `yt-dlp` ile gelir (radyolar doğrudan kendi yayınından), `ffmpeg` ile çözülür ve [Concentus](https://github.com/lostromb/concentus) ile
 Opus'a çevrilir.

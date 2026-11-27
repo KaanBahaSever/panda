@@ -104,7 +104,7 @@ public sealed class PanelCertificate
 		using var pem = X509Certificate2.CreateFromPemFile(cert, key);   // the first certificate of the file, with the key
 		if (!pem.HasPrivateKey) throw new CryptographicException("the key doesn't belong to the certificate");
 		// A PEM key is ephemeral: on Windows TLS can't use it until it's loaded again from PKCS#12.
-		var leaf = new X509Certificate2(pem.Export(X509ContentType.Pkcs12));
+		var leaf = X509CertificateLoader.LoadPkcs12(pem.Export(X509ContentType.Pkcs12), null);
 		var chain = new X509Certificate2Collection();
 		chain.ImportFromPemFile(cert);
 		var rest = new X509Certificate2Collection(chain.Where(c => c.Thumbprint != leaf.Thumbprint).ToArray());

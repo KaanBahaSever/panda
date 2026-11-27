@@ -461,13 +461,13 @@ A few of the calls: `GET /api/bots/{bot}/state` (what plays, the queue), `POST /
 ## Building
 
 ```bash
-dotnet build src/Panda                    # needs the .NET 8 SDK
+dotnet build src/Panda                    # needs the .NET 10 SDK
 bash scripts/build-release.sh linux-x64   # single-file release in dist/
 ```
 
 ## How it works
 
-Panda is a C# (.NET 8) app built on [TSLib](https://github.com/Splamy/TS3AudioBot), a TeamSpeak client
+Panda is a C# (.NET 10) app built on [TSLib](https://github.com/Splamy/TS3AudioBot), a TeamSpeak client
 library. TeamSpeak 6 servers send a new license block during the handshake that TSLib didn't understand;
 Panda carries a small patch that reads it (see [`lib/`](lib/README.md)). Audio comes from `yt-dlp` (radio
 stations straight from their stream), is decoded by `ffmpeg` and encoded to Opus with

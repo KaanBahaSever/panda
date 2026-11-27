@@ -1,11 +1,11 @@
 # syntax=docker/dockerfile:1
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 COPY lib lib
 COPY src src
 RUN dotnet publish src/Panda/Panda.csproj -c Release -o /app -p:DebugType=none -nologo
 
-FROM mcr.microsoft.com/dotnet/aspnet:8.0-bookworm-slim
+FROM mcr.microsoft.com/dotnet/aspnet:10.0
 ARG TARGETARCH
 RUN apt-get update \
 	&& apt-get install -y --no-install-recommends ffmpeg curl unzip ca-certificates tzdata \
